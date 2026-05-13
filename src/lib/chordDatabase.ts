@@ -1,186 +1,186 @@
 /**
- * Base de données d'accords avec leurs voicings (positions sur le manche).
- * Standard tuning (EADGBE).
+ * Catalogue d'accords RiffLab.
  *
- * frets: [low E, A, D, G, B, high E]
- *   -1 = corde mutée (X)
- *    0 = corde à vide (O)
- *   n  = frette n
+ * Format frettes : `[low E, A, D, G, B, high E]`
+ *   - null = corde mutée (X)
+ *   - 0    = corde à vide (O)
+ *   - n    = frette n
  *
- * fingers (optionnel) : doigt utilisé (1=index, 2=majeur, 3=annulaire, 4=auriculaire, 0=open)
- * barre (optionnel) : { fret, fromString, toString }
- *   fromString/toString sont les index de cordes (0 = low E)
- * baseFret : si l'accord est joué plus haut sur le manche (ex: barré F#m en 2e position),
- *           on affiche depuis cette frette pour ne pas dessiner 20 frettes.
+ * Le catalogue est généré par croisement (12 roots × N qualités) via
+ * `chordShapes.ts`. Les voicings ouverts canoniques (formes CAGED naturelles :
+ * C, A, G, E, D, Am, Em, Dm, A7, B7, C7, D7, E7, G7, Am7, Em7, Dm7, Cmaj7,
+ * Amaj7, Fmaj7, Gmaj7, Dmaj7, Asus2, Asus4, Dsus2, Dsus4, A7sus4, Cadd9, etc.)
+ * sont préservés en tant que voicing PREFERRED (premier dans la liste).
+ *
+ * Pour chaque accord, `voicings[]` peut contenir plusieurs entrées (différentes
+ * positions sur le manche). La page Chords laisse l'utilisateur les parcourir.
  */
 
+import { NOTE_NAMES, type NoteName } from './theory';
+import {
+  QUALITY_ORDER,
+  QUALITY_SUFFIX,
+  buildVoicing,
+  TEMPLATES,
+  chordName,
+} from './chordShapes';
+
+// ─── Types ─────────────────────────────────────────────────────────────
+
 export type Voicing = {
-  frets: (number | null)[];   // length 6, null = mute
+  frets: (number | null)[];
   fingers?: (number | null)[];
   barre?: { fret: number; fromString: number; toString: number };
-  baseFret?: number;          // frette de départ du diagramme (default = min des frets jouées)
+  baseFret?: number;
   difficulty: 1 | 2 | 3 | 4 | 5;
 };
 
 export type Chord = {
   name: string;
-  root: string;
+  root: NoteName;
   quality: string;
   voicings: Voicing[];
-  category: 'open' | 'barre' | 'extended' | 'power' | 'jazz';
+  /** Conservé pour compatibilité ancienne UI. `open` si une forme ouverte
+   *  canonique existe pour cet accord, `barre` sinon. */
+  category?: 'open' | 'barre' | 'extended' | 'power' | 'jazz';
 };
 
-// Helper : convert frets array null to number (-1 = mute) for compactness internally
-const m = null; // mute
-const o = 0;    // open
+const m = null;
 
-export const CHORDS: Chord[] = [
-  // ─── OPEN MAJOR ─────────────────────────────────────────────
-  { name: 'C', root: 'C', quality: 'maj', category: 'open',
-    voicings: [{ frets: [m, 3, 2, 0, 1, 0], fingers: [null, 3, 2, 0, 1, 0], difficulty: 1 }] },
-  { name: 'D', root: 'D', quality: 'maj', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 3, 2], fingers: [null, null, 0, 1, 3, 2], difficulty: 1 }] },
-  { name: 'E', root: 'E', quality: 'maj', category: 'open',
-    voicings: [{ frets: [0, 2, 2, 1, 0, 0], fingers: [0, 2, 3, 1, 0, 0], difficulty: 1 }] },
-  { name: 'G', root: 'G', quality: 'maj', category: 'open',
-    voicings: [{ frets: [3, 2, 0, 0, 0, 3], fingers: [3, 2, 0, 0, 0, 4], difficulty: 1 }] },
-  { name: 'A', root: 'A', quality: 'maj', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 2, 2, 0], fingers: [null, 0, 1, 2, 3, 0], difficulty: 1 }] },
+// ─── Voicings ouverts canoniques (fingerings de référence) ────────────
 
-  // ─── OPEN MINOR ─────────────────────────────────────────────
-  { name: 'Am', root: 'A', quality: 'min', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 2, 1, 0], fingers: [null, 0, 2, 3, 1, 0], difficulty: 1 }] },
-  { name: 'Dm', root: 'D', quality: 'min', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 3, 1], fingers: [null, null, 0, 2, 3, 1], difficulty: 1 }] },
-  { name: 'Em', root: 'E', quality: 'min', category: 'open',
-    voicings: [{ frets: [0, 2, 2, 0, 0, 0], fingers: [0, 2, 3, 0, 0, 0], difficulty: 1 }] },
+const PREFERRED_OPEN_VOICINGS: Record<string, Voicing> = {
+  // Majeur ouverts (CAGED)
+  C: { frets: [m, 3, 2, 0, 1, 0], fingers: [null, 3, 2, 0, 1, 0], difficulty: 1 },
+  D: { frets: [m, m, 0, 2, 3, 2], fingers: [null, null, 0, 1, 3, 2], difficulty: 1 },
+  E: { frets: [0, 2, 2, 1, 0, 0], fingers: [0, 2, 3, 1, 0, 0], difficulty: 1 },
+  G: { frets: [3, 2, 0, 0, 0, 3], fingers: [3, 2, 0, 0, 0, 4], difficulty: 1 },
+  A: { frets: [m, 0, 2, 2, 2, 0], fingers: [null, 0, 1, 2, 3, 0], difficulty: 1 },
 
-  // ─── DOMINANT 7 (open) ──────────────────────────────────────
-  { name: 'C7', root: 'C', quality: '7', category: 'open',
-    voicings: [{ frets: [m, 3, 2, 3, 1, 0], fingers: [null, 3, 2, 4, 1, 0], difficulty: 2 }] },
-  { name: 'D7', root: 'D', quality: '7', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 1, 2], fingers: [null, null, 0, 2, 1, 3], difficulty: 2 }] },
-  { name: 'E7', root: 'E', quality: '7', category: 'open',
-    voicings: [{ frets: [0, 2, 0, 1, 0, 0], fingers: [0, 2, 0, 1, 0, 0], difficulty: 1 }] },
-  { name: 'G7', root: 'G', quality: '7', category: 'open',
-    voicings: [{ frets: [3, 2, 0, 0, 0, 1], fingers: [3, 2, 0, 0, 0, 1], difficulty: 1 }] },
-  { name: 'A7', root: 'A', quality: '7', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 0, 2, 0], fingers: [null, 0, 2, 0, 3, 0], difficulty: 1 }] },
-  { name: 'B7', root: 'B', quality: '7', category: 'open',
-    voicings: [{ frets: [m, 2, 1, 2, 0, 2], fingers: [null, 2, 1, 3, 0, 4], difficulty: 2 }] },
+  // Mineur ouverts
+  Am: { frets: [m, 0, 2, 2, 1, 0], fingers: [null, 0, 2, 3, 1, 0], difficulty: 1 },
+  Dm: { frets: [m, m, 0, 2, 3, 1], fingers: [null, null, 0, 2, 3, 1], difficulty: 1 },
+  Em: { frets: [0, 2, 2, 0, 0, 0], fingers: [0, 2, 3, 0, 0, 0], difficulty: 1 },
 
-  // ─── MINOR 7 (open) ─────────────────────────────────────────
-  { name: 'Am7', root: 'A', quality: 'm7', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 0, 1, 0], fingers: [null, 0, 2, 0, 1, 0], difficulty: 1 }] },
-  { name: 'Dm7', root: 'D', quality: 'm7', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 1, 1], fingers: [null, null, 0, 2, 1, 1], difficulty: 2 }] },
-  { name: 'Em7', root: 'E', quality: 'm7', category: 'open',
-    voicings: [{ frets: [0, 2, 0, 0, 0, 0], fingers: [0, 2, 0, 0, 0, 0], difficulty: 1 }] },
+  // Dominant 7 ouverts
+  A7: { frets: [m, 0, 2, 0, 2, 0], fingers: [null, 0, 2, 0, 3, 0], difficulty: 1 },
+  B7: { frets: [m, 2, 1, 2, 0, 2], fingers: [null, 2, 1, 3, 0, 4], difficulty: 2 },
+  C7: { frets: [m, 3, 2, 3, 1, 0], fingers: [null, 3, 2, 4, 1, 0], difficulty: 2 },
+  D7: { frets: [m, m, 0, 2, 1, 2], fingers: [null, null, 0, 2, 1, 3], difficulty: 2 },
+  E7: { frets: [0, 2, 0, 1, 0, 0], fingers: [0, 2, 0, 1, 0, 0], difficulty: 1 },
+  G7: { frets: [3, 2, 0, 0, 0, 1], fingers: [3, 2, 0, 0, 0, 1], difficulty: 1 },
 
-  // ─── MAJ 7 (open) ───────────────────────────────────────────
-  { name: 'Cmaj7', root: 'C', quality: 'maj7', category: 'open',
-    voicings: [{ frets: [m, 3, 2, 0, 0, 0], fingers: [null, 3, 2, 0, 0, 0], difficulty: 1 }] },
-  { name: 'Dmaj7', root: 'D', quality: 'maj7', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 2, 2], fingers: [null, null, 0, 1, 1, 1], difficulty: 2 }] },
-  { name: 'Fmaj7', root: 'F', quality: 'maj7', category: 'open',
-    voicings: [{ frets: [m, m, 3, 2, 1, 0], fingers: [null, null, 3, 2, 1, 0], difficulty: 2 }] },
-  { name: 'Gmaj7', root: 'G', quality: 'maj7', category: 'open',
-    voicings: [{ frets: [3, 2, 0, 0, 0, 2], fingers: [3, 2, 0, 0, 0, 1], difficulty: 2 }] },
-  { name: 'Amaj7', root: 'A', quality: 'maj7', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 1, 2, 0], fingers: [null, 0, 2, 1, 3, 0], difficulty: 2 }] },
+  // Minor 7 ouverts
+  Am7: { frets: [m, 0, 2, 0, 1, 0], fingers: [null, 0, 2, 0, 1, 0], difficulty: 1 },
+  Dm7: { frets: [m, m, 0, 2, 1, 1], fingers: [null, null, 0, 2, 1, 1], difficulty: 2 },
+  Em7: { frets: [0, 2, 0, 0, 0, 0], fingers: [0, 2, 0, 0, 0, 0], difficulty: 1 },
 
-  // ─── SUS (open) ─────────────────────────────────────────────
-  { name: 'Dsus2', root: 'D', quality: 'sus2', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 3, 0], fingers: [null, null, 0, 1, 2, 0], difficulty: 1 }] },
-  { name: 'Dsus4', root: 'D', quality: 'sus4', category: 'open',
-    voicings: [{ frets: [m, m, 0, 2, 3, 3], fingers: [null, null, 0, 1, 2, 3], difficulty: 1 }] },
-  { name: 'Asus2', root: 'A', quality: 'sus2', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 2, 0, 0], fingers: [null, 0, 1, 2, 0, 0], difficulty: 1 }] },
-  { name: 'Asus4', root: 'A', quality: 'sus4', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 2, 3, 0], fingers: [null, 0, 1, 2, 3, 0], difficulty: 1 }] },
-  { name: 'A7sus4', root: 'A', quality: '7sus4', category: 'open',
-    voicings: [{ frets: [m, 0, 2, 0, 3, 0], fingers: [null, 0, 2, 0, 3, 0], difficulty: 2 }] },
+  // Major 7 ouverts
+  Cmaj7: { frets: [m, 3, 2, 0, 0, 0], fingers: [null, 3, 2, 0, 0, 0], difficulty: 1 },
+  Dmaj7: { frets: [m, m, 0, 2, 2, 2], fingers: [null, null, 0, 1, 1, 1], difficulty: 2 },
+  Fmaj7: { frets: [m, m, 3, 2, 1, 0], fingers: [null, null, 3, 2, 1, 0], difficulty: 2 },
+  Gmaj7: { frets: [3, 2, 0, 0, 0, 2], fingers: [3, 2, 0, 0, 0, 1], difficulty: 2 },
+  Amaj7: { frets: [m, 0, 2, 1, 2, 0], fingers: [null, 0, 2, 1, 3, 0], difficulty: 2 },
+  Emaj7: { frets: [0, 2, 1, 1, 0, 0], fingers: [0, 3, 1, 2, 0, 0], difficulty: 2 },
 
-  // ─── ADD9 ───────────────────────────────────────────────────
-  { name: 'Cadd9', root: 'C', quality: 'add9', category: 'extended',
-    voicings: [{ frets: [m, 3, 2, 0, 3, 0], fingers: [null, 2, 1, 0, 3, 0], difficulty: 2 }] },
+  // Sus ouverts
+  Dsus2: { frets: [m, m, 0, 2, 3, 0], fingers: [null, null, 0, 1, 2, 0], difficulty: 1 },
+  Dsus4: { frets: [m, m, 0, 2, 3, 3], fingers: [null, null, 0, 1, 2, 3], difficulty: 1 },
+  Asus2: { frets: [m, 0, 2, 2, 0, 0], fingers: [null, 0, 1, 2, 0, 0], difficulty: 1 },
+  Asus4: { frets: [m, 0, 2, 2, 3, 0], fingers: [null, 0, 1, 2, 3, 0], difficulty: 1 },
+  Esus4: { frets: [0, 2, 2, 2, 0, 0], fingers: [0, 1, 2, 3, 0, 0], difficulty: 1 },
 
-  // ─── BARRÉS ─────────────────────────────────────────────────
-  { name: 'F', root: 'F', quality: 'maj', category: 'barre',
-    voicings: [{
-      frets: [1, 3, 3, 2, 1, 1], fingers: [1, 3, 4, 2, 1, 1],
-      barre: { fret: 1, fromString: 0, toString: 5 }, baseFret: 1, difficulty: 3,
-    }] },
-  { name: 'Bm', root: 'B', quality: 'min', category: 'barre',
-    voicings: [{
-      frets: [m, 2, 4, 4, 3, 2], fingers: [null, 1, 3, 4, 2, 1],
-      barre: { fret: 2, fromString: 1, toString: 5 }, baseFret: 2, difficulty: 3,
-    }] },
-  { name: 'B', root: 'B', quality: 'maj', category: 'barre',
-    voicings: [{
-      frets: [m, 2, 4, 4, 4, 2], fingers: [null, 1, 2, 3, 4, 1],
-      barre: { fret: 2, fromString: 1, toString: 5 }, baseFret: 2, difficulty: 3,
-    }] },
-  { name: 'F#m', root: 'F#', quality: 'min', category: 'barre',
-    voicings: [{
-      frets: [2, 4, 4, 2, 2, 2], fingers: [1, 3, 4, 1, 1, 1],
-      barre: { fret: 2, fromString: 0, toString: 5 }, baseFret: 2, difficulty: 3,
-    }] },
-  { name: 'F#m7', root: 'F#', quality: 'm7', category: 'barre',
-    voicings: [{
-      frets: [2, 4, 2, 2, 2, 2], fingers: [1, 3, 1, 1, 1, 1],
-      barre: { fret: 2, fromString: 0, toString: 5 }, baseFret: 2, difficulty: 3,
-    }] },
-  { name: 'C#m', root: 'C#', quality: 'min', category: 'barre',
-    voicings: [{
-      frets: [m, 4, 6, 6, 5, 4], fingers: [null, 1, 3, 4, 2, 1],
-      barre: { fret: 4, fromString: 1, toString: 5 }, baseFret: 4, difficulty: 3,
-    }] },
-  { name: 'Cm', root: 'C', quality: 'min', category: 'barre',
-    voicings: [{
-      frets: [m, 3, 5, 5, 4, 3], fingers: [null, 1, 3, 4, 2, 1],
-      barre: { fret: 3, fromString: 1, toString: 5 }, baseFret: 3, difficulty: 3,
-    }] },
-  { name: 'Gm', root: 'G', quality: 'min', category: 'barre',
-    voicings: [{
-      frets: [3, 5, 5, 3, 3, 3], fingers: [1, 3, 4, 1, 1, 1],
-      barre: { fret: 3, fromString: 0, toString: 5 }, baseFret: 3, difficulty: 3,
-    }] },
-  { name: 'B♭', root: 'A#', quality: 'maj', category: 'barre',
-    voicings: [{
-      frets: [m, 1, 3, 3, 3, 1], fingers: [null, 1, 2, 3, 4, 1],
-      barre: { fret: 1, fromString: 1, toString: 5 }, baseFret: 1, difficulty: 3,
-    }] },
+  // 7sus4 ouverts
+  A7sus4: { frets: [m, 0, 2, 0, 3, 0], fingers: [null, 0, 2, 0, 3, 0], difficulty: 2 },
+  D7sus4: { frets: [m, m, 0, 2, 1, 3], fingers: [null, null, 0, 2, 1, 3], difficulty: 2 },
+  E7sus4: { frets: [0, 2, 0, 2, 0, 0], fingers: [0, 2, 0, 3, 0, 0], difficulty: 2 },
 
-  // ─── POWER CHORDS ──────────────────────────────────────────
-  { name: 'E5', root: 'E', quality: 'power', category: 'power',
-    voicings: [{ frets: [0, 2, 2, m, m, m], fingers: [0, 1, 2, null, null, null], difficulty: 1 }] },
-  { name: 'A5', root: 'A', quality: 'power', category: 'power',
-    voicings: [{ frets: [m, 0, 2, 2, m, m], fingers: [null, 0, 1, 2, null, null], difficulty: 1 }] },
-  { name: 'D5', root: 'D', quality: 'power', category: 'power',
-    voicings: [{ frets: [m, m, 0, 2, 3, m], fingers: [null, null, 0, 1, 2, null], difficulty: 1 }] },
-  { name: 'G5', root: 'G', quality: 'power', category: 'power',
-    voicings: [{ frets: [3, 5, 5, m, m, m], fingers: [1, 3, 4, null, null, null], difficulty: 1 }] },
-];
+  // Add9 ouverts
+  Cadd9: { frets: [m, 3, 2, 0, 3, 0], fingers: [null, 2, 1, 0, 3, 0], difficulty: 2 },
+  Dadd9: { frets: [m, m, 0, 2, 3, 0], fingers: [null, null, 0, 1, 2, 0], difficulty: 1 },
+  Eadd9: { frets: [0, 2, 4, 1, 0, 0], fingers: [0, 1, 4, 2, 0, 0], difficulty: 2 },
 
-/**
- * Récupère un accord par son nom.
- */
+  // Power chords classiques
+  E5: { frets: [0, 2, 2, m, m, m], fingers: [0, 1, 2, null, null, null], difficulty: 1 },
+  A5: { frets: [m, 0, 2, 2, m, m], fingers: [null, 0, 1, 2, null, null], difficulty: 1 },
+  D5: { frets: [m, m, 0, 2, 3, m], fingers: [null, null, 0, 1, 2, null], difficulty: 1 },
+  G5: { frets: [3, 5, 5, m, m, m], fingers: [1, 3, 4, null, null, null], difficulty: 1 },
+};
+
+// ─── Génération du catalogue complet ──────────────────────────────────
+
+function voicingKey(v: Voicing): string {
+  return v.frets.map((f) => (f === null ? 'x' : f)).join(',');
+}
+
+function generateChords(): Chord[] {
+  const out: Chord[] = [];
+  for (const root of NOTE_NAMES) {
+    const rootPC = NOTE_NAMES.indexOf(root);
+    for (const quality of QUALITY_ORDER) {
+      const name = root + (QUALITY_SUFFIX[quality] ?? quality);
+      const voicings: Voicing[] = [];
+      const seen = new Set<string>();
+
+      // 1) Voicing ouvert canonique (si on en a un hand-codé pour ce nom)
+      const preferred = PREFERRED_OPEN_VOICINGS[name];
+      if (preferred) {
+        voicings.push(preferred);
+        seen.add(voicingKey(preferred));
+      }
+
+      // 2) Voicings générés depuis les templates de cette qualité
+      const templates = TEMPLATES.filter((t) => t.quality === quality);
+      for (const t of templates) {
+        const v = buildVoicing(t, rootPC);
+        const k = voicingKey(v);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        voicings.push(v);
+      }
+
+      // 3) Tri final : par difficulté croissante
+      voicings.sort((a, b) => a.difficulty - b.difficulty);
+
+      out.push({
+        name,
+        root,
+        quality,
+        voicings,
+        category: preferred ? 'open' : voicings.length > 0 ? 'barre' : undefined,
+      });
+    }
+  }
+  return out;
+}
+
+export const CHORDS: Chord[] = generateChords();
+
+// ─── Helpers ───────────────────────────────────────────────────────────
+
 export function getChord(name: string): Chord | undefined {
   return CHORDS.find((c) => c.name === name);
 }
 
-/**
- * Cherche un voicing pour un nom d'accord, retourne null si rien trouvé.
- */
 export function getDefaultVoicing(name: string): Voicing | null {
   const chord = getChord(name);
   return chord?.voicings[0] ?? null;
 }
 
 /**
- * Tous les accords par catégorie.
+ * Curated list of the most-used chord names — pour les palettes rapides
+ * (SongNew "+ ajouter un accord"). Ordre = familles intuitives.
  */
-export function chordsByCategory(category: Chord['category']): Chord[] {
-  return CHORDS.filter((c) => c.category === category);
-}
+export const COMMON_CHORD_NAMES: string[] = [
+  'C', 'G', 'D', 'A', 'E', 'F',
+  'Am', 'Em', 'Dm', 'F#m', 'Bm', 'C#m',
+  'C7', 'G7', 'D7', 'A7', 'E7', 'B7',
+  'Cmaj7', 'Gmaj7', 'Dmaj7', 'Amaj7', 'Fmaj7', 'Emaj7',
+  'Am7', 'Em7', 'Dm7', 'F#m7',
+  'Asus2', 'Dsus2', 'Asus4', 'Dsus4', 'Esus4',
+  'A7sus4', 'Cadd9', 'Dadd9',
+];
+
+// ─── Re-exports ────────────────────────────────────────────────────────
+
+export { chordName, QUALITY_LABELS, QUALITY_ORDER } from './chordShapes';
