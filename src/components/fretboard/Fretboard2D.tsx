@@ -378,105 +378,134 @@ function HeadstockSvg({
   const yBot = PAD_T + INNER_H;
 
   if (type === 'dreadnought') {
-    // Trapèze qui se rétrécit légèrement vers le bout (acoustique slot-head feel)
-    const inset = 14;
+    // Paddle arrondie symétrique. Les 2 coins gauches sont des quarts de cercle
+    // (SVG arc). Réminescent d'une dreadnought ou classique.
+    const r = 18;
+    const boardPath =
+      `M ${baseX} ${yTop}` +
+      ` L ${tipX + r} ${yTop}` +
+      ` A ${r} ${r} 0 0 0 ${tipX} ${yTop + r}` +
+      ` L ${tipX} ${yBot - r}` +
+      ` A ${r} ${r} 0 0 0 ${tipX + r} ${yBot}` +
+      ` L ${baseX} ${yBot}` +
+      ` Z`;
+    const bindingTopPath =
+      `M ${baseX} ${yTop}` +
+      ` L ${tipX + r} ${yTop}` +
+      ` A ${r} ${r} 0 0 0 ${tipX} ${yTop + r}`;
+    const bindingBotPath =
+      `M ${tipX} ${yBot - r}` +
+      ` A ${r} ${r} 0 0 0 ${tipX + r} ${yBot}` +
+      ` L ${baseX} ${yBot}`;
+    // 3 pegs top + 3 pegs bottom, étalés sur la largeur disponible
+    const pegStartX = tipX + 18;
+    const pegSpacing = (baseX - 40 - pegStartX) / 2;
     return (
       <g>
+        <path d={boardPath} fill={boardFill} />
         <path
-          d={`M ${tipX} ${yTop + inset} L ${baseX} ${yTop} L ${baseX} ${yBot} L ${tipX} ${yBot - inset} Z`}
-          fill={boardFill}
-        />
-        {/* Bindings */}
-        <path
-          d={`M ${tipX} ${yTop + inset} L ${baseX} ${yTop}`}
+          d={bindingTopPath}
           stroke={skin.bindingTop}
           strokeWidth={1.3}
           fill="none"
           vectorEffect="non-scaling-stroke"
         />
         <path
-          d={`M ${tipX} ${yBot - inset} L ${baseX} ${yBot}`}
+          d={bindingBotPath}
           stroke={skin.bindingBottom}
           strokeWidth={1.3}
           fill="none"
           vectorEffect="non-scaling-stroke"
         />
-        {/* Top row of 3 tuning pegs */}
         {[0, 1, 2].map((i) => (
           <circle
             key={`peg-top-${i}`}
-            cx={tipX + 14 + i * 16}
-            cy={yTop + 12}
-            r={3.2}
+            cx={pegStartX + i * pegSpacing}
+            cy={yTop + 14}
+            r={3.4}
             fill={pearlFill}
           />
         ))}
-        {/* Bottom row of 3 tuning pegs */}
         {[0, 1, 2].map((i) => (
           <circle
             key={`peg-bot-${i}`}
-            cx={tipX + 14 + i * 16}
-            cy={yBot - 12}
-            r={3.2}
+            cx={pegStartX + i * pegSpacing}
+            cy={yBot - 14}
+            r={3.4}
             fill={pearlFill}
           />
         ))}
-        {/* Thin nut-tone strip on the tip to suggest the carved end */}
+        {/* Subtle nut-tone strip on the tip pour suggérer le bord sculpté */}
         <rect
-          x={tipX}
-          y={yTop + inset - 1.5}
-          width={2.5}
-          height={yBot - yTop - 2 * inset + 3}
+          x={tipX + 0.5}
+          y={yTop + r}
+          width={2}
+          height={yBot - yTop - 2 * r}
           fill={nutFill}
-          opacity={0.7}
+          opacity={0.6}
           rx={1}
         />
       </g>
     );
   }
 
-  // Strat : forme allongée avec bord supérieur incliné, 6 pegs en ligne en haut
-  const topInset = 5;
-  const bottomInset = 22;
+  // Strat : forme paddle asymétrique allongée. Bord haut court, bord bas
+  // plus prononcé qui se courbe → vibe Strat 6-in-line.
+  const rTop = 12;
+  const rBot = 28;
+  const boardPath =
+    `M ${baseX} ${yTop}` +
+    ` L ${tipX + rTop} ${yTop}` +
+    ` A ${rTop} ${rTop} 0 0 0 ${tipX} ${yTop + rTop}` +
+    ` L ${tipX} ${yBot - rBot}` +
+    ` A ${rBot} ${rBot} 0 0 0 ${tipX + rBot} ${yBot}` +
+    ` L ${baseX} ${yBot}` +
+    ` Z`;
+  const bindingTopPath =
+    `M ${baseX} ${yTop}` +
+    ` L ${tipX + rTop} ${yTop}` +
+    ` A ${rTop} ${rTop} 0 0 0 ${tipX} ${yTop + rTop}`;
+  const bindingBotPath =
+    `M ${tipX} ${yBot - rBot}` +
+    ` A ${rBot} ${rBot} 0 0 0 ${tipX + rBot} ${yBot}` +
+    ` L ${baseX} ${yBot}`;
+  // 6 pegs in-line le long du bord haut, étalés
+  const pegStartX = tipX + 16;
+  const pegEndX = baseX - 30;
+  const pegSpacing = (pegEndX - pegStartX) / 5;
   return (
     <g>
+      <path d={boardPath} fill={boardFill} />
       <path
-        d={`M ${tipX} ${yTop + topInset} L ${baseX} ${yTop} L ${baseX} ${yBot} L ${tipX} ${yBot - bottomInset} Z`}
-        fill={boardFill}
-      />
-      {/* Bindings */}
-      <path
-        d={`M ${tipX} ${yTop + topInset} L ${baseX} ${yTop}`}
+        d={bindingTopPath}
         stroke={skin.bindingTop}
         strokeWidth={1.3}
         fill="none"
         vectorEffect="non-scaling-stroke"
       />
       <path
-        d={`M ${tipX} ${yBot - bottomInset} L ${baseX} ${yBot}`}
+        d={bindingBotPath}
         stroke={skin.bindingBottom}
         strokeWidth={1.3}
         fill="none"
         vectorEffect="non-scaling-stroke"
       />
-      {/* 6 in-line tuning pegs along the top edge */}
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <circle
           key={`peg-${i}`}
-          cx={tipX + 8 + i * 11}
-          cy={yTop + 11}
-          r={2.6}
+          cx={pegStartX + i * pegSpacing}
+          cy={yTop + 14}
+          r={2.8}
           fill={pearlFill}
         />
       ))}
-      {/* Tip rounding hint */}
       <rect
-        x={tipX}
-        y={yTop + topInset}
-        width={2.5}
-        height={yBot - yTop - topInset - bottomInset}
+        x={tipX + 0.5}
+        y={yTop + rTop}
+        width={2}
+        height={yBot - yTop - rTop - rBot}
         fill={nutFill}
-        opacity={0.7}
+        opacity={0.6}
         rx={1}
       />
     </g>

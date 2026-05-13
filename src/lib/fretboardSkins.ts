@@ -90,7 +90,7 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     bindingBottom: 'rgba(0, 0, 0, 0.7)',
     openLabel: '#d4b890',
     fret12Label: '#e8c994',
-    headstock: { type: 'dreadnought', width: 70 },
+    headstock: { type: 'dreadnought', width: 110 },
   },
 
   'electrique-erable': {
@@ -103,15 +103,16 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     fret: ['#a0a0a0', '#fafafa', '#888888'],
     nut: ['#c4b596', '#fff5dc', '#9a8966'],
     pearl: ['#3a2a1c', '#1a1208', '#0a0604'],
-    bassString: ['#5a4828', '#d4b76a', '#3a2c18'],
-    trebleString: ['#7a7a82', '#e0e0e4', '#5a5a62'],
+    // Strings sombres car le board est clair (silver/gold normaux invisibles).
+    bassString: ['#2a1c0c', '#5a4220', '#1a0c04'],
+    trebleString: ['#3a3a40', '#6a6a72', '#2a2a32'],
     note: ['#ffffff', '#c8c8d0'],
     tonic: ['#fbe89a', '#d4b76a', '#7a623c'],
     bindingTop: 'rgba(255, 230, 180, 0.7)',
     bindingBottom: 'rgba(70, 40, 20, 0.6)',
     openLabel: '#3a2c18',
     fret12Label: '#3a2c18',
-    headstock: { type: 'strat', width: 80 },
+    headstock: { type: 'strat', width: 130 },
   },
 };
 
