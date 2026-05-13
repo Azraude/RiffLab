@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import {
   CHORDS,
@@ -34,14 +35,10 @@ export function Chords() {
 
   return (
     <>
-      <div className="mb-7">
-        <h1 className="display text-display-md">Accords</h1>
-        <p className="mt-1 text-text-muted">
-          {CHORDS.length} accords. Tape une carte pour entendre. Tape{' '}
-          <ChevronDown size={12} className="inline -mt-0.5" /> pour voir toutes
-          les façons de la jouer sur le manche.
-        </p>
-      </div>
+      <PageHeader
+        title="Accords"
+        subtitle={`${CHORDS.length} accords. Tape une carte pour entendre. Tape la flèche pour voir toutes les façons de jouer l'accord sur le manche.`}
+      />
 
       {/* Tonalité — chips scrollables */}
       <div className="mb-3">

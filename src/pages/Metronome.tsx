@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
 import { useMetronome } from '@/stores/metronomeStore';
 import { Play, Square, Smartphone, Minus, Plus } from 'lucide-react';
@@ -16,12 +17,10 @@ export function Metronome() {
 
   return (
     <>
-      <div className="mb-8 md:mb-9">
-        <h1 className="display text-display-md">Métronome</h1>
-        <p className="mt-1 text-text-muted">
-          Garde le tempo. Tape Démarrer, ajuste le BPM en live.
-        </p>
-      </div>
+      <PageHeader
+        title="Métronome"
+        subtitle="Garde le tempo. Tape Démarrer, ajuste le BPM en live."
+      />
 
       <Card className="mx-auto max-w-2xl">
         {/* BPM display */}

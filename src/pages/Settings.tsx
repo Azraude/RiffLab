@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
 import { usePrefs } from '@/stores/prefsStore';
 import { TUNING_LABELS, type TuningId } from '@/lib/theory';
@@ -29,7 +30,7 @@ export function Settings() {
 
   return (
     <>
-      <h1 className="display mb-9 text-display-md">Préférences</h1>
+      <PageHeader title="Préférences" showSettingsLink={false} />
 
       <div className="grid gap-5 md:grid-cols-2">
         <Card>

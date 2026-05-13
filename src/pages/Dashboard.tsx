@@ -10,6 +10,7 @@ import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Play } from 'lucide-react';
 
 /**
@@ -45,19 +46,14 @@ export function Dashboard() {
 
   return (
     <>
-      <div className="mb-9 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h1 className="display text-display-md">
-          Bon retour, <span className="text-gold">Melvin.</span>
-        </h1>
-        <div className="flex gap-3">
-          <Link
-            to="/songs/new"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:h-10"
-          >
-            + Nouveau son
-          </Link>
-        </div>
-      </div>
+      <PageHeader title="Bon retour, Melvin.">
+        <Link
+          to="/songs/new"
+          className="hidden h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:inline-flex"
+        >
+          + Nouveau son
+        </Link>
+      </PageHeader>
 
       {/* Daily hero */}
       <div className="grid gap-5 md:grid-cols-[2fr_1fr]">

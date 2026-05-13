@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
 import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName } from '@/lib/theory';
@@ -20,14 +21,10 @@ export function Scales() {
 
   return (
     <>
-      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="display text-display-md">Gammes</h1>
-          <p className="mt-1 text-text-muted">
-            Visualise n'importe quelle gamme sur le manche dans la tonalité de ton choix.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Gammes"
+        subtitle="Visualise n'importe quelle gamme sur le manche dans la tonalité de ton choix."
+      />
 
       <Card className="mb-8">
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">

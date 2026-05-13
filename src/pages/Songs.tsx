@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { db, type Song } from '@/lib/db';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Plus, Trash2 } from 'lucide-react';
@@ -14,22 +15,18 @@ export function Songs() {
 
   return (
     <>
-      <div className="mb-9 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="display text-display-md">Mes sons</h1>
-          <p className="mt-1 text-text-muted">
-            {songs?.length ?? 0} sons dans ta bibliothèque.{' '}
-            <span className="md:hidden">Appui long sur une carte = supprimer.</span>
-          </p>
-        </div>
-        {/* Header CTA — desktop only. Mobile uses the floating FAB below. */}
+      <PageHeader
+        title="Mes sons"
+        subtitle={`${songs?.length ?? 0} sons dans ta bibliothèque. Appui long sur une carte = supprimer.`}
+      >
+        {/* Header CTA — desktop only. Mobile uses the floating FAB. */}
         <Link
           to="/songs/new"
           className="hidden h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:inline-flex"
         >
           + Nouveau son
         </Link>
-      </div>
+      </PageHeader>
 
       {!songs ? (
         <div className="text-text-soft">Chargement…</div>

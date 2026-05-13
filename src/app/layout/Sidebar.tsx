@@ -6,6 +6,7 @@ import {
   Grid3x3,
   Waves,
   Timer,
+  Mic,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -21,6 +22,7 @@ const items: NavItem[] = [
   { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'main' },
   { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'main' },
   { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
+  { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
   { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
