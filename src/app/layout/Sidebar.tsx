@@ -5,6 +5,7 @@ import {
   Disc3,
   Grid3x3,
   Waves,
+  Timer,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -13,13 +14,14 @@ type NavItem = {
   to: string;
   label: string;
   icon: React.ReactNode;
-  section?: 'main' | 'library' | 'account';
+  section?: 'main' | 'tools' | 'library' | 'account';
 };
 
 const items: NavItem[] = [
   { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'main' },
   { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'main' },
   { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
+  { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
   { to: '/settings', label: 'Préférences', icon: <SettingsIcon size={18} />, section: 'account' },
@@ -27,6 +29,7 @@ const items: NavItem[] = [
 
 const sectionLabels: Record<string, string> = {
   main: 'Espace perso',
+  tools: 'Outils',
   library: 'Bibliothèques',
   account: 'Compte',
 };
@@ -45,7 +48,7 @@ export function Sidebar() {
         <span className="display text-[28px] tracking-wide">RiffLab</span>
       </Link>
 
-      {(['main', 'library', 'account'] as const).map((sec) => (
+      {(['main', 'tools', 'library', 'account'] as const).map((sec) => (
         <div key={sec} className="mb-2">
           <div className="label-small mb-1 px-2 mt-3">{sectionLabels[sec]}</div>
           {grouped[sec]?.map((it) => (

@@ -8,6 +8,7 @@ import { SongDetail } from '@/pages/SongDetail';
 import { Chords } from '@/pages/Chords';
 import { Scales } from '@/pages/Scales';
 import { Jam } from '@/pages/Jam';
+import { Metronome } from '@/pages/Metronome';
 import { Settings } from '@/pages/Settings';
 
 export const router = createBrowserRouter([
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
       { path: 'jam', element: <Jam /> },
+      { path: 'metronome', element: <Metronome /> },
       { path: 'settings', element: <Settings /> },
     ],
   },

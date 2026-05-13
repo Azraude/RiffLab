@@ -136,5 +136,14 @@ export async function startMetronome(
   };
 }
 
+/**
+ * Met à jour le BPM du métronome en cours sans relancer le loop.
+ * Tone.Transport.bpm est un Signal, le Loop pickup la nouvelle valeur au
+ * prochain tick.
+ */
+export function setMetronomeBpm(bpm: number): void {
+  Tone.Transport.bpm.value = bpm;
+}
+
 // Re-export for convenience
 export { midiToNoteWithOctave };
