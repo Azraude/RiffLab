@@ -67,7 +67,10 @@ export function Fretboard2D({
   const id = (name: string) => `fb-${name}-${uid}`;
 
   const s = getSkin(skin);
-  const headstockWidth = s.headstock?.width ?? 0;
+  // Headstock désactivée volontairement (le rendu n'est pas au niveau, on y
+  // reviendra plus tard). Les tokens skin.headstock et skin.peg restent dans
+  // le type pour préserver l'archi.
+  const headstockWidth = 0;
 
   const fretSpacing = INNER_W / numFrets;
   const x = (fret: number) => PAD_L + fret * fretSpacing;
@@ -179,17 +182,9 @@ export function Fretboard2D({
         </filter>
       </defs>
 
-      {/* Headstock (à gauche du nut, si le skin en a une) */}
-      {s.headstock && (
-        <HeadstockSvg
-          type={s.headstock.type}
-          width={s.headstock.width}
-          skin={s}
-          boardFill={`url(#${id('board')})`}
-          pegsFill={`url(#${id('pegs')})`}
-          nutFill={`url(#${id('nut')})`}
-        />
-      )}
+      {/* Headstock désactivée — voir commentaire dans le corps du composant.
+          Le composant HeadstockSvg reste défini en bas du fichier pour usage
+          futur. */}
 
       {/* Board */}
       <rect
