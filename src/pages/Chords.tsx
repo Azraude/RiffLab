@@ -42,7 +42,7 @@ export function Chords() {
               key={cat.id}
               onClick={() => setFilter(cat.id)}
               className={clsx(
-                'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                'inline-flex h-11 items-center rounded-lg border px-4 text-sm font-medium transition-colors md:h-9 md:px-3 md:text-xs',
                 filter === cat.id
                   ? 'border-gold bg-gold text-bg'
                   : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
@@ -57,7 +57,7 @@ export function Chords() {
           placeholder="Chercher un accord (ex: Em, F#m7)…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-9 rounded-lg border border-border bg-surface px-3 text-sm placeholder:text-text-soft focus:border-gold-soft focus:outline-none md:w-72"
+          className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm placeholder:text-text-soft focus:border-gold-soft focus:outline-none md:h-9 md:w-72"
         />
       </div>
 

@@ -55,7 +55,7 @@ export function Scales() {
           </Field>
           <button
             onClick={toggleNoteNames}
-            className="h-10 self-end rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5"
+            className="h-11 self-end rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
           >
             {showNoteNames ? 'Masquer noms' : 'Afficher noms'}
           </button>
@@ -103,7 +103,7 @@ export function Scales() {
       <style>{`
         .select {
           width: 100%;
-          height: 40px;
+          height: 44px;
           padding: 0 14px;
           background: #141414;
           border: 1px solid #2a2a2a;
@@ -113,6 +113,9 @@ export function Scales() {
           font-size: 14px;
         }
         .select:focus { outline: none; border-color: #9a8454; }
+        @media (min-width: 768px) {
+          .select { height: 40px; }
+        }
       `}</style>
     </>
   );

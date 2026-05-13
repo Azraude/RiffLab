@@ -18,7 +18,7 @@ export function Songs() {
         </div>
         <Link
           to="/songs/new"
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:h-10"
         >
           + Nouveau son
         </Link>
@@ -31,7 +31,7 @@ export function Songs() {
           <p className="text-text-muted">Aucun son pour l'instant.</p>
           <Link
             to="/songs/new"
-            className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright"
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
           >
             Ajouter ton premier son
           </Link>

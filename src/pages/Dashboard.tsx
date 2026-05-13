@@ -50,7 +50,7 @@ export function Dashboard() {
         <div className="flex gap-3">
           <Link
             to="/songs/new"
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:h-10"
           >
             + Nouveau son
           </Link>
@@ -106,13 +106,13 @@ export function Dashboard() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 onClick={() => strum(chord.name)}
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
               >
                 <Play size={14} /> Entendre l'accord
               </button>
               <Link
                 to="/scales"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
               >
                 Voir la gamme sur le manche
               </Link>

@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card';
+import { Toggle } from '@/components/ui/Toggle';
 import { usePrefs } from '@/stores/prefsStore';
 import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
@@ -33,7 +34,7 @@ export function Settings() {
           <select
             value={prefs.tuning}
             onChange={(e) => prefs.setTuning(e.target.value as TuningId)}
-            className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+            className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none md:h-10"
           >
             {Object.entries(TUNING_LABELS).map(([id, label]) => (
               <option key={id} value={id}>
@@ -47,26 +48,22 @@ export function Settings() {
           <h3 className="display text-display-sm mb-3">Capo par défaut</h3>
           <input
             type="number"
+            inputMode="numeric"
             min={0}
             max={12}
             value={prefs.capo}
             onChange={(e) => prefs.setCapo(parseInt(e.target.value) || 0)}
-            className="h-10 w-24 rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+            className="h-11 w-24 rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none md:h-10"
           />
         </Card>
 
         <Card>
           <h3 className="display text-display-sm mb-3">Audio</h3>
-          <div className="space-y-3">
-            <label className="flex items-center justify-between gap-3 text-sm">
-              <span>Activer le son au clic</span>
-              <input
-                type="checkbox"
-                checked={prefs.audioEnabled}
-                onChange={prefs.toggleAudio}
-                className="h-5 w-5 accent-[#d4b76a]"
-              />
-            </label>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Activer le son au clic</span>
+              <Toggle checked={prefs.audioEnabled} onChange={prefs.toggleAudio} />
+            </div>
             <div>
               <div className="label-small mb-1">Volume ({Math.round(prefs.volume * 100)}%)</div>
               <input
@@ -78,15 +75,10 @@ export function Settings() {
                 className="w-full accent-[#d4b76a]"
               />
             </div>
-            <label className="flex items-center justify-between gap-3 text-sm">
-              <span>Afficher les noms de notes sur le manche</span>
-              <input
-                type="checkbox"
-                checked={prefs.showNoteNames}
-                onChange={prefs.toggleNoteNames}
-                className="h-5 w-5 accent-[#d4b76a]"
-              />
-            </label>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Afficher les noms de notes sur le manche</span>
+              <Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />
+            </div>
           </div>
         </Card>
 
@@ -95,13 +87,13 @@ export function Settings() {
           <div className="flex flex-col gap-3">
             <button
               onClick={exportLib}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
             >
               Exporter ma bibliothèque (JSON)
             </button>
             <button
               onClick={clearAll}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-danger/40 px-4 text-sm text-danger hover:bg-danger/5"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-danger/40 px-4 text-sm text-danger hover:bg-danger/5 md:h-10"
             >
               Vider la bibliothèque
             </button>

@@ -15,6 +15,11 @@ import { Plus, X, Trash2 } from 'lucide-react';
 
 const COMMON_CHORDS = CHORDS.map((c) => c.name);
 
+// Keeps the focused input visible above the mobile keyboard.
+function focusScroll(e: React.FocusEvent<HTMLElement>) {
+  e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
 export function SongNew() {
   const navigate = useNavigate();
   const [song, setSong] = useState<Song>(() => emptySong());
@@ -170,7 +175,7 @@ export function SongNew() {
           <h2 className="display text-display-sm">Sections</h2>
           <button
             onClick={addSection}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5"
+            className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5 md:h-9"
           >
             <Plus size={14} /> Section
           </button>
@@ -183,12 +188,14 @@ export function SongNew() {
                 type="text"
                 value={sec.name}
                 onChange={(e) => updateSection(sec.id, { name: e.target.value })}
+                onFocus={focusScroll}
+                aria-label="Nom de la section"
                 className="display flex-1 bg-transparent text-display-sm outline-none focus:border-b focus:border-gold-soft"
               />
               {song.sections.length > 1 && (
                 <button
                   onClick={() => removeSection(sec.id)}
-                  className="rounded p-1.5 text-text-soft hover:bg-surface-2 hover:text-danger"
+                  className="flex h-11 w-11 items-center justify-center rounded-md text-text-soft hover:bg-surface-2 hover:text-danger md:h-9 md:w-9"
                   aria-label="Supprimer la section"
                 >
                   <Trash2 size={16} />
@@ -200,23 +207,28 @@ export function SongNew() {
               {sec.chords.map((c, i) => (
                 <div
                   key={i}
-                  className="group flex items-center gap-2 rounded-lg border border-border-gold bg-gold/5 px-3 py-1.5"
+                  className="group flex h-11 items-center gap-2 rounded-lg border border-border-gold bg-gold/5 px-3 md:h-9"
                 >
                   <span className="font-mono text-sm font-bold text-gold">{c.name}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={16}
-                    value={c.beats}
-                    onChange={(e) =>
-                      updateChord(sec.id, i, { beats: parseInt(e.target.value) || 1 })
-                    }
-                    className="w-10 bg-transparent text-xs text-text-muted outline-none"
-                    title="Nombre de temps"
-                  />
+                  <label className="flex items-center gap-1 text-[10px] text-text-soft">
+                    <span aria-hidden>×</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={16}
+                      value={c.beats}
+                      onChange={(e) =>
+                        updateChord(sec.id, i, { beats: parseInt(e.target.value) || 1 })
+                      }
+                      onFocus={focusScroll}
+                      className="w-7 bg-transparent text-xs font-medium text-text-muted outline-none"
+                      aria-label="Nombre de temps"
+                    />
+                  </label>
                   <button
                     onClick={() => removeChord(sec.id, i)}
-                    className="text-text-soft hover:text-danger"
+                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-md text-text-soft hover:bg-surface-2 hover:text-danger"
                     aria-label="Retirer l'accord"
                   >
                     <X size={14} />
@@ -225,17 +237,19 @@ export function SongNew() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              <span className="text-xs text-text-soft">+ ajouter :</span>
-              {COMMON_CHORDS.slice(0, 20).map((name) => (
-                <button
-                  key={name}
-                  onClick={() => addChord(sec.id, name)}
-                  className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-text-muted hover:border-gold-soft hover:text-gold"
-                >
-                  {name}
-                </button>
-              ))}
+            <div>
+              <div className="label-small mb-2">+ ajouter un accord</div>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10">
+                {COMMON_CHORDS.slice(0, 20).map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => addChord(sec.id, name)}
+                    className="flex h-11 items-center justify-center rounded-lg border border-border bg-surface font-mono text-sm text-text-muted hover:border-gold-soft hover:text-gold md:h-10"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
             </div>
           </Card>
         ))}
@@ -243,13 +257,13 @@ export function SongNew() {
         <div className="flex justify-end gap-3 py-4">
           <Link
             to="/songs"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm text-text-muted hover:text-text"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm text-text-muted hover:text-text md:h-10"
           >
             Annuler
           </Link>
           <button
             onClick={submit}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
           >
             Enregistrer
           </button>
@@ -260,6 +274,9 @@ export function SongNew() {
 }
 
 // ─── Field components ─────────────────────────────────────────
+const fieldInputClass =
+  'h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm placeholder:text-text-soft focus:border-gold-soft focus:outline-none md:h-10';
+
 function FieldText({
   label,
   value,
@@ -278,8 +295,9 @@ function FieldText({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={focusScroll}
         placeholder={placeholder}
-        className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm placeholder:text-text-soft focus:border-gold-soft focus:outline-none"
+        className={fieldInputClass}
       />
     </div>
   );
@@ -303,11 +321,13 @@ function FieldNumber({
       <div className="label-small mb-2">{label}</div>
       <input
         type="number"
+        inputMode="numeric"
         value={value}
         min={min}
         max={max}
         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-        className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+        onFocus={focusScroll}
+        className={fieldInputClass}
       />
     </div>
   );
@@ -330,7 +350,8 @@ function FieldSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+        onFocus={focusScroll}
+        className={fieldInputClass}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

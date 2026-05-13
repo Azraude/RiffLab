@@ -109,9 +109,9 @@ export function SongDetail() {
                     );
                   }
                 }}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-xs hover:bg-gold/5"
+                className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5 md:h-8 md:text-xs"
               >
-                <Play size={12} /> Jouer la section
+                <Play size={14} /> Jouer la section
               </button>
             </div>
 
@@ -121,7 +121,7 @@ export function SongDetail() {
                   key={i}
                   onClick={() => handleChordClick(c.name)}
                   className={
-                    'group flex items-center gap-2 rounded-lg border px-3 py-2 transition-all ' +
+                    'group flex h-11 items-center gap-2 rounded-lg border px-3 transition-all md:h-auto md:py-2 ' +
                     (activeChord === c.name
                       ? 'border-gold bg-gold/10'
                       : 'border-border bg-surface hover:border-gold-soft')
