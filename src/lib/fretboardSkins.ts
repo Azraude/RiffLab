@@ -49,6 +49,12 @@ export type FretboardSkin = {
 
   // Optional headstock (extends the viewBox to the left of the nut)
   headstock?: { type: HeadstockType; width: number };
+
+  /**
+   * Couleur des chevilles (tuning pegs) sur la headstock. 3 stops radial
+   * (center highlight, mid, edge). Si non défini, fallback sur `pearl`.
+   */
+  peg?: [string, string, string];
 };
 
 export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
@@ -91,6 +97,8 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     openLabel: '#d4b890',
     fret12Label: '#e8c994',
     headstock: { type: 'dreadnought', width: 110 },
+    // Tuners or-bronze (chevilles dorées style folk vintage)
+    peg: ['#e8c994', '#c9a96a', '#8a7548'],
   },
 
   'electrique-erable': {
@@ -113,6 +121,8 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     openLabel: '#3a2c18',
     fret12Label: '#3a2c18',
     headstock: { type: 'strat', width: 130 },
+    // Tuners chrome argenté (style Strat moderne)
+    peg: ['#f0f0f0', '#dadada', '#a0a0a8'],
   },
 };
 

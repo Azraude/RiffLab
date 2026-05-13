@@ -124,6 +124,13 @@ export function Fretboard2D({
           <stop offset="100%" stopColor={s.pearl[2]} stopOpacity="0.78" />
         </radialGradient>
 
+        {/* Tuning pegs gradient — fallback sur pearl si le skin ne le surcharge pas */}
+        <radialGradient id={id('pegs')} cx="0.3" cy="0.3" r="0.7">
+          <stop offset="0%" stopColor={s.peg?.[0] ?? s.pearl[0]} />
+          <stop offset="55%" stopColor={s.peg?.[1] ?? s.pearl[1]} />
+          <stop offset="100%" stopColor={s.peg?.[2] ?? s.pearl[2]} />
+        </radialGradient>
+
         <linearGradient id={id('str-bass')} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={s.bassString[0]} />
           <stop offset="50%" stopColor={s.bassString[1]} />
@@ -171,7 +178,7 @@ export function Fretboard2D({
           width={s.headstock.width}
           skin={s}
           boardFill={`url(#${id('board')})`}
-          pearlFill={`url(#${id('pearl')})`}
+          pegsFill={`url(#${id('pegs')})`}
           nutFill={`url(#${id('nut')})`}
         />
       )}
@@ -362,14 +369,14 @@ function HeadstockSvg({
   width,
   skin,
   boardFill,
-  pearlFill,
+  pegsFill,
   nutFill,
 }: {
   type: HeadstockType;
   width: number;
   skin: FretboardSkin;
   boardFill: string;
-  pearlFill: string;
+  pegsFill: string;
   nutFill: string;
 }) {
   const tipX = -width;
@@ -423,7 +430,7 @@ function HeadstockSvg({
             cx={pegStartX + i * pegSpacing}
             cy={yTop + 14}
             r={3.4}
-            fill={pearlFill}
+            fill={pegsFill}
           />
         ))}
         {[0, 1, 2].map((i) => (
@@ -432,7 +439,7 @@ function HeadstockSvg({
             cx={pegStartX + i * pegSpacing}
             cy={yBot - 14}
             r={3.4}
-            fill={pearlFill}
+            fill={pegsFill}
           />
         ))}
         {/* Subtle nut-tone strip on the tip pour suggérer le bord sculpté */}
@@ -496,7 +503,7 @@ function HeadstockSvg({
           cx={pegStartX + i * pegSpacing}
           cy={yTop + 14}
           r={2.8}
-          fill={pearlFill}
+          fill={pegsFill}
         />
       ))}
       <rect
