@@ -131,13 +131,21 @@ export function Fretboard2D({
           <stop offset="100%" stopColor={s.peg?.[2] ?? s.pearl[2]} />
         </radialGradient>
 
-        <linearGradient id={id('str-bass')} x1="0" y1="0" x2="0" y2="1">
+        {/*
+          Strings — gradient HORIZONTAL le long de la corde (x direction).
+          Crucial : un gradient vertical sur <line> horizontale collapse car la
+          bounding box a height=0, donc objectBoundingBox-relative coords sont
+          dégénérées et Chrome ne dessine rien (bug Phase 2C). En horizontal,
+          la bbox a une largeur > 0 → le gradient se calcule. Effet visuel
+          bonus : éclat métallique au centre du manche.
+        */}
+        <linearGradient id={id('str-bass')} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor={s.bassString[0]} />
           <stop offset="50%" stopColor={s.bassString[1]} />
           <stop offset="100%" stopColor={s.bassString[2]} />
         </linearGradient>
 
-        <linearGradient id={id('str-treble')} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={id('str-treble')} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor={s.trebleString[0]} />
           <stop offset="50%" stopColor={s.trebleString[1]} />
           <stop offset="100%" stopColor={s.trebleString[2]} />
