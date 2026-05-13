@@ -4,6 +4,8 @@ import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
 import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName } from '@/lib/theory';
 import { usePrefs } from '@/stores/prefsStore';
+import { SKIN_LIST } from '@/lib/fretboardSkins';
+import clsx from 'clsx';
 
 export function Scales() {
   const [key, setKey] = useState<NoteName>('A');
@@ -11,6 +13,8 @@ export function Scales() {
   const tuning = usePrefs((s) => s.tuning);
   const showNoteNames = usePrefs((s) => s.showNoteNames);
   const toggleNoteNames = usePrefs((s) => s.toggleNoteNames);
+  const fretboardSkin = usePrefs((s) => s.fretboardSkin);
+  const setFretboardSkin = usePrefs((s) => s.setFretboardSkin);
 
   const current = SCALES.find((s) => s.id === scaleId)!;
 
@@ -61,12 +65,34 @@ export function Scales() {
           </button>
         </div>
 
-        <div className="relative mt-6 -mx-2 overflow-x-auto pb-2">
+        {/* Live skin switcher — horizontal scroll on mobile */}
+        <div className="mt-6 -mx-2 overflow-x-auto px-2 pb-1">
+          <div className="flex gap-2">
+            {SKIN_LIST.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setFretboardSkin(s.id)}
+                aria-pressed={fretboardSkin === s.id}
+                className={clsx(
+                  'inline-flex h-9 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-colors',
+                  fretboardSkin === s.id
+                    ? 'border-gold bg-gold text-bg'
+                    : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
+                )}
+              >
+                {s.short}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative mt-4 -mx-2 overflow-x-auto pb-2">
           <Fretboard2D
             tuning={tuning}
             numFrets={15}
             scale={{ key, scaleId }}
             showNoteNames={showNoteNames}
+            skin={fretboardSkin}
             className="min-w-[640px]"
           />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />

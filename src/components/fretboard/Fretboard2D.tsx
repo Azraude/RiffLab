@@ -8,16 +8,18 @@ import {
   type NoteName,
   type ScaleId,
 } from '@/lib/theory';
+import { getSkin, type FretboardSkinId } from '@/lib/fretboardSkins';
 
 /**
- * Premium 2D fretboard — palette "Noir mat doré" (default skin).
+ * Premium 2D fretboard. Couleurs pilotées par un skin (Phase 2C).
  *
- * Layout : SVG 880×168 viewBox, scale via width="100%". Tokens visuels
- * définis dans <defs> ci-dessous. La Phase 2C remplacera ces tokens par
- * un système de skins (acoustique rosewood, électrique érable, etc.).
- *
- * Bug fix Phase 2B : la liste précédente des inlays omettait 12, donc
- * l'octave n'avait pas son double-dot et la fret 12 paraissait "vide".
+ * Bugs fixés :
+ *  - Fret 12 (octave) avait perdu son double-dot car 12 manquait dans
+ *    la liste des inlays. Corrigé.
+ *  - Les cordes disparaissaient sur mobile à cause du sub-pixel scaling
+ *    (viewBox 880 scale à ~0.38x sur 375px → strokes < 1px = invisibles).
+ *    Corrigé avec `vectorEffect="non-scaling-stroke"` : les cordes
+ *    gardent leur épaisseur écran peu importe le zoom du SVG.
  */
 
 // Geometry
@@ -40,6 +42,7 @@ interface Fretboard2DProps {
   highlightNotes?: number[];
   tonic?: NoteName;
   showNoteNames?: boolean;
+  skin?: FretboardSkinId;
   className?: string;
 }
 
@@ -51,16 +54,19 @@ export function Fretboard2D({
   highlightNotes,
   tonic,
   showNoteNames = true,
+  skin = 'noir-mat',
   className,
 }: Fretboard2DProps) {
   // Unique IDs prevent collisions if multiple fretboards live on the page.
   const uid = useId().replace(/:/g, '');
   const id = (name: string) => `fb-${name}-${uid}`;
 
+  const s = getSkin(skin);
+
   const fretSpacing = INNER_W / numFrets;
   const x = (fret: number) => PAD_L + fret * fretSpacing;
   const y = (stringIdx: number) => PAD_T + (STRING_COUNT - 1 - stringIdx) * STRING_SPACING;
-  // stringIdx 0 = low E (bass, drawn at bottom), stringIdx 5 = high E (treble, top)
+  // stringIdx 0 = low E (bass, drawn at bottom), 5 = high E (treble, top)
 
   const tonicPC = useMemo(() => {
     if (tonic) return NOTE_NAMES.indexOf(tonic);
@@ -74,7 +80,7 @@ export function Fretboard2D({
     return new Set();
   }, [scale, highlightNotes]);
 
-  // Inlay positions. 12 and 24 get a double-dot (octave markers).
+  // Inlays — 12 et 24 ont un double-dot (marqueurs d'octave).
   const inlayFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24].filter((f) => f <= numFrets);
 
   const openTuning = TUNINGS[tuning];
@@ -88,67 +94,57 @@ export function Fretboard2D({
       preserveAspectRatio="xMidYMid meet"
     >
       <defs>
-        {/* Board — noir mat avec léger éclairage haut */}
         <linearGradient id={id('board')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a1a1c" />
-          <stop offset="55%" stopColor="#101012" />
-          <stop offset="100%" stopColor="#0a0a0c" />
+          <stop offset="0%" stopColor={s.board[0]} />
+          <stop offset="55%" stopColor={s.board[1]} />
+          <stop offset="100%" stopColor={s.board[2]} />
         </linearGradient>
 
-        {/* Frets — or brillant avec highlight central (effet métal poli) */}
         <linearGradient id={id('fret')} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#8a7548" />
-          <stop offset="50%" stopColor="#f5d97a" />
-          <stop offset="100%" stopColor="#8a7548" />
+          <stop offset="0%" stopColor={s.fret[0]} />
+          <stop offset="50%" stopColor={s.fret[1]} />
+          <stop offset="100%" stopColor={s.fret[2]} />
         </linearGradient>
 
-        {/* Nut — os crème */}
         <linearGradient id={id('nut')} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#c4b596" />
-          <stop offset="50%" stopColor="#fff5dc" />
-          <stop offset="100%" stopColor="#9a8966" />
+          <stop offset="0%" stopColor={s.nut[0]} />
+          <stop offset="50%" stopColor={s.nut[1]} />
+          <stop offset="100%" stopColor={s.nut[2]} />
         </linearGradient>
 
-        {/* Pearl inlay — nacre iridescente */}
         <radialGradient id={id('pearl')} cx="0.35" cy="0.35" r="0.75">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.96" />
-          <stop offset="55%" stopColor="#dee0eb" stopOpacity="0.88" />
-          <stop offset="100%" stopColor="#7a7a85" stopOpacity="0.75" />
+          <stop offset="0%" stopColor={s.pearl[0]} stopOpacity="0.96" />
+          <stop offset="55%" stopColor={s.pearl[1]} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={s.pearl[2]} stopOpacity="0.78" />
         </radialGradient>
 
-        {/* Bass strings — bronze / or chaud */}
         <linearGradient id={id('str-bass')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5a4828" />
-          <stop offset="50%" stopColor="#d4b76a" />
-          <stop offset="100%" stopColor="#3a2c18" />
+          <stop offset="0%" stopColor={s.bassString[0]} />
+          <stop offset="50%" stopColor={s.bassString[1]} />
+          <stop offset="100%" stopColor={s.bassString[2]} />
         </linearGradient>
 
-        {/* Treble strings — argent / chrome clair */}
         <linearGradient id={id('str-treble')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7a7a82" />
-          <stop offset="50%" stopColor="#f0f0f4" />
-          <stop offset="100%" stopColor="#5a5a62" />
+          <stop offset="0%" stopColor={s.trebleString[0]} />
+          <stop offset="50%" stopColor={s.trebleString[1]} />
+          <stop offset="100%" stopColor={s.trebleString[2]} />
         </linearGradient>
 
-        {/* Note non-tonique — blanc avec ombrage subtil */}
         <radialGradient id={id('note')} cx="0.35" cy="0.3">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#c8c8d0" />
+          <stop offset="0%" stopColor={s.note[0]} />
+          <stop offset="100%" stopColor={s.note[1]} />
         </radialGradient>
 
-        {/* Note tonique — or avec halo */}
         <radialGradient id={id('tonic')} cx="0.35" cy="0.35">
-          <stop offset="0%" stopColor="#fbe89a" />
-          <stop offset="55%" stopColor="#d4b76a" />
-          <stop offset="100%" stopColor="#7a623c" />
+          <stop offset="0%" stopColor={s.tonic[0]} />
+          <stop offset="55%" stopColor={s.tonic[1]} />
+          <stop offset="100%" stopColor={s.tonic[2]} />
         </radialGradient>
 
-        {/* Ombre portée des notes */}
         <filter id={id('note-shadow')} x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="1.8" stdDeviation="1.3" floodOpacity="0.55" />
         </filter>
 
-        {/* Halo doré autour de la tonique */}
         <filter id={id('tonic-glow')} x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur stdDeviation="2.2" result="blur" />
           <feMerge>
@@ -157,13 +153,12 @@ export function Fretboard2D({
           </feMerge>
         </filter>
 
-        {/* Légère ombre sous les inlays pour leur donner du relief */}
         <filter id={id('inlay-shadow')} x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="1" stdDeviation="0.8" floodOpacity="0.45" />
         </filter>
       </defs>
 
-      {/* Board background */}
+      {/* Board */}
       <rect
         x={PAD_L}
         y={PAD_T}
@@ -173,20 +168,20 @@ export function Fretboard2D({
         rx={2}
       />
 
-      {/* Subtle bindings (top : or atténué, bottom : noir profond pour la profondeur) */}
-      <rect x={PAD_L} y={PAD_T} width={INNER_W} height={1.3} fill="rgba(212, 183, 106, 0.32)" />
+      {/* Bindings (top : ton skin, bottom : profondeur sombre) */}
+      <rect x={PAD_L} y={PAD_T} width={INNER_W} height={1.3} fill={s.bindingTop} />
       <rect
         x={PAD_L}
         y={PAD_T + INNER_H - 1.3}
         width={INNER_W}
         height={1.3}
-        fill="rgba(0, 0, 0, 0.6)"
+        fill={s.bindingBottom}
       />
 
       {/* Nut */}
       <rect x={PAD_L - 4} y={PAD_T} width={5} height={INNER_H} fill={`url(#${id('nut')})`} rx={0.5} />
 
-      {/* Pearl inlays (12 et 24 = double-dot octave) */}
+      {/* Inlays */}
       {inlayFrets.map((f) => {
         const cx = x(f) - fretSpacing / 2;
         if (f === 12 || f === 24) {
@@ -209,7 +204,7 @@ export function Fretboard2D({
         );
       })}
 
-      {/* Frets (or métallique) */}
+      {/* Frets */}
       {Array.from({ length: numFrets }).map((_, i) => (
         <rect
           key={`fret-${i}`}
@@ -221,11 +216,12 @@ export function Fretboard2D({
         />
       ))}
 
-      {/* Strings — bass (0-2) en bronze, treble (3-5) en argent */}
+      {/* Strings — vectorEffect non-scaling-stroke pour rester visibles
+          quand le SVG est compressé sur mobile (sinon < 1px = sub-pixel). */}
       {Array.from({ length: STRING_COUNT }).map((_, i) => {
         const isBass = i < 3;
-        // Plus grave = plus épaisse
-        const sw = isBass ? 1.7 - i * 0.25 : 1 - (i - 3) * 0.15;
+        // Différenciation par épaisseur écran (pas par échelle SVG).
+        const sw = isBass ? 2.2 - i * 0.3 : 1.3 - (i - 3) * 0.15;
         return (
           <line
             key={`str-${i}`}
@@ -235,6 +231,7 @@ export function Fretboard2D({
             y2={y(i)}
             stroke={isBass ? `url(#${id('str-bass')})` : `url(#${id('str-treble')})`}
             strokeWidth={sw}
+            vectorEffect="non-scaling-stroke"
           />
         );
       })}
@@ -249,16 +246,17 @@ export function Fretboard2D({
           fontFamily="JetBrains Mono"
           fontSize={11}
           fontWeight={700}
-          fill="#9a8454"
+          fill={s.openLabel}
         >
           {NOTE_NAMES[pitchClass(midi)]}
         </text>
       ))}
 
-      {/* Fret number labels (12 = doré en gras pour rappeler l'octave) */}
+      {/* Fret number labels */}
       {Array.from({ length: numFrets }).map((_, i) => {
         const fret = i + 1;
         if (![3, 5, 7, 9, 12, 15, 17, 19, 21].includes(fret)) return null;
+        const isOctave = fret === 12;
         return (
           <text
             key={`num-${fret}`}
@@ -267,8 +265,8 @@ export function Fretboard2D({
             textAnchor="middle"
             fontFamily="Inter"
             fontSize={10}
-            fontWeight={fret === 12 ? 700 : 400}
-            fill={fret === 12 ? '#d4b76a' : '#6a6a6a'}
+            fontWeight={isOctave ? 700 : 400}
+            fill={isOctave ? s.fret12Label : '#6a6a6a'}
           >
             {fret}
           </text>
@@ -281,7 +279,7 @@ export function Fretboard2D({
           Array.from({ length: numFrets + 1 }).map((_, f) => {
             const pc = pitchClass(openMidi + f);
             if (!noteSet.has(pc)) return null;
-            if (f === 0) return null; // open positions are shown as side labels
+            if (f === 0) return null;
             const isTonic = pc === tonicPC;
             const cx = x(f) - fretSpacing / 2;
             return (
@@ -311,7 +309,7 @@ export function Fretboard2D({
           })
         )}
 
-      {/* Chord overlay (positions de l'accord) */}
+      {/* Chord overlay */}
       {chord &&
         chord.frets.map((f, sIdx) => {
           if (f == null || f === 0) return null;

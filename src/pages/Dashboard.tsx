@@ -9,6 +9,7 @@ import { CHORDS, getDefaultVoicing } from '@/lib/chordDatabase';
 import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
+import { usePrefs } from '@/stores/prefsStore';
 import { Play } from 'lucide-react';
 
 /**
@@ -33,6 +34,7 @@ export function Dashboard() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().limit(3).toArray(), []);
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
   const { strum } = useAudio();
+  const fretboardSkin = usePrefs((s) => s.fretboardSkin);
 
   const todayLabel = new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
@@ -155,6 +157,7 @@ export function Dashboard() {
             <Fretboard2D
               numFrets={12}
               scale={{ key, scaleId: scale.id as ScaleId }}
+              skin={fretboardSkin}
               className="min-w-[640px]"
             />
             {/* Mobile scroll hint: fade right edge so user sees content continues */}
