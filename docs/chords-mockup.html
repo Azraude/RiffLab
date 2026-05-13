@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RiffLab — Chords page mockup (A vs B)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --surface: #141414;
+        --surface-2: #1c1c1c;
+        --border: #2a2a2a;
+        --border-gold: rgba(212, 183, 106, 0.18);
+        --text: #fff;
+        --text-muted: #9a9a9a;
+        --text-soft: #6a6a6a;
+        --gold: #d4b76a;
+        --gold-bright: #f5d97a;
+        --gold-soft: #9a8454;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 32px 16px 80px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .container { max-width: 1400px; margin: 0 auto; }
+      .display { font-family: 'Cormorant Garamond', serif; font-weight: 600; }
+      .mono { font-family: 'JetBrains Mono', monospace; }
+      .eyebrow {
+        font-size: 11px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 2px;
+        color: var(--gold);
+      }
+      .label-small {
+        font-size: 11px; font-weight: 500;
+        text-transform: uppercase; letter-spacing: 1.5px;
+        color: var(--text-soft);
+      }
+      .gold { color: var(--gold); }
+      .text-muted { color: var(--text-muted); }
+      .text-soft { color: var(--text-soft); }
+
+      .pageheader {
+        text-align: center;
+        margin-bottom: 36px;
+      }
+      .pageheader h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 600;
+        font-size: clamp(32px, 5vw, 52px);
+        margin: 8px 0;
+      }
+      .pageheader p {
+        color: var(--text-muted);
+        margin: 0;
+        max-width: 580px;
+        margin-inline: auto;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .tab.active {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--bg);
+      }
+      .tab:hover:not(.active) { border-color: var(--gold-soft); color: var(--text); }
+
+      .option {
+        display: none;
+        animation: fadeIn 0.25s ease-out;
+      }
+      .option.active { display: block; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+      .option-title {
+        margin-bottom: 18px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .option-title h2 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 600;
+        font-size: 28px;
+        margin: 0;
+      }
+      .option-title .verdict {
+        font-size: 12px;
+        color: var(--text-soft);
+        max-width: 460px;
+      }
+
+      /* ===== Chips bar ===== */
+      .chip-bar {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+      }
+      .chip-bar::-webkit-scrollbar { height: 4px; }
+      .chip-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      .chip {
+        flex-shrink: 0;
+        height: 36px;
+        padding: 0 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+      }
+      .chip.mono { font-family: 'JetBrains Mono', monospace; }
+      .chip.active {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--bg);
+        font-weight: 600;
+      }
+      .chip:hover:not(.active) {
+        border-color: var(--gold-soft);
+        color: var(--text);
+      }
+
+      .filter-block {
+        margin-bottom: 14px;
+      }
+      .filter-block .label-small {
+        margin-bottom: 8px;
+        padding-left: 2px;
+      }
+
+      .search {
+        height: 44px;
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0 14px;
+        color: var(--text);
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .search:focus { outline: none; border-color: var(--gold-soft); }
+
+      /* ===== Option A: chord cards grid ===== */
+      .chord-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        margin-top: 18px;
+      }
+      @media (min-width: 640px) {
+        .chord-grid { grid-template-columns: repeat(3, 1fr); }
+      }
+      @media (min-width: 900px) {
+        .chord-grid { grid-template-columns: repeat(4, 1fr); }
+      }
+      @media (min-width: 1200px) {
+        .chord-grid { grid-template-columns: repeat(6, 1fr); }
+      }
+      .chord-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s ease-out;
+      }
+      .chord-card:hover {
+        border-color: var(--gold-soft);
+        transform: translateY(-1px);
+      }
+      .chord-card .name {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--gold);
+        margin-bottom: 8px;
+      }
+      .chord-card .mini-diagram {
+        width: 56px;
+        height: 64px;
+        margin: 0 auto;
+        background: linear-gradient(180deg, #1a1a1c, #0a0a0c);
+        border-radius: 4px;
+        position: relative;
+      }
+      /* Tiny dots representing chord shape (just for visual filler) */
+      .chord-card .mini-diagram::before {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        background-image:
+          radial-gradient(circle, #fff 25%, transparent 28%),
+          radial-gradient(circle, #fff 25%, transparent 28%),
+          radial-gradient(circle, #fff 25%, transparent 28%);
+        background-size: 12px 12px;
+        background-repeat: no-repeat;
+        background-position: 14px 18px, 26px 28px, 38px 38px;
+        opacity: 0.5;
+      }
+      .chord-card .qualtag {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--text-soft);
+      }
+
+      /* ===== Option B: matrix table ===== */
+      .matrix-wrap {
+        margin-top: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .matrix-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+      }
+      .matrix th,
+      .matrix td {
+        padding: 0;
+        text-align: center;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .matrix th:last-child,
+      .matrix td:last-child { border-right: none; }
+      .matrix tr:last-child td { border-bottom: none; }
+      .matrix thead th {
+        background: var(--surface-2);
+        height: 38px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        position: sticky;
+        top: 0;
+      }
+      .matrix tbody th {
+        background: var(--surface-2);
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        color: var(--gold);
+        font-size: 14px;
+        width: 56px;
+        padding: 0 8px;
+        text-align: left;
+        position: sticky;
+        left: 0;
+        z-index: 1;
+      }
+      .matrix-cell {
+        display: block;
+        padding: 12px 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.12s ease-out;
+        min-width: 64px;
+        min-height: 44px;
+      }
+      .matrix-cell:hover {
+        background: rgba(212, 183, 106, 0.08);
+        color: var(--gold);
+      }
+      .matrix-cell.open {
+        color: var(--gold);
+        font-weight: 700;
+      }
+      .matrix-legend {
+        padding: 10px 14px;
+        font-size: 11px;
+        color: var(--text-soft);
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .matrix-legend .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        margin-right: 5px;
+        vertical-align: -1px;
+      }
+
+      .verdict-card {
+        margin-top: 40px;
+        padding: 24px;
+        border: 1px solid var(--border-gold);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #1a1812 0%, #141414 60%);
+      }
+      .verdict-card h3 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 24px;
+        font-weight: 600;
+        margin: 8px 0;
+      }
+      .verdict-card p { color: var(--text-muted); margin: 6px 0; }
+      .verdict-card .reco { color: var(--gold); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="pageheader">
+        <div class="eyebrow">RiffLab · UX décision</div>
+        <h1>Page Chords avec ~180 accords</h1>
+        <p>
+          Le filtre actuel <span class="mono">all / open / barre / extended / power</span>
+          ne scale pas. Voilà deux directions, mockuppées avec un dataset complet
+          (12 roots × 15 qualités).
+        </p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="a">Option A — 2 filtres</button>
+        <button class="tab" data-tab="b">Option B — Matrice</button>
+      </div>
+
+      <!-- ============= OPTION A ============= -->
+      <section class="option active" data-option="a">
+        <div class="option-title">
+          <h2>Option A — Filtres root + quality</h2>
+          <div class="verdict">
+            2 chips horizontales scrollables (root + quality) + recherche.
+            Filtres combinés. Liste classique de cards. Mobile-friendly.
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <div class="label-small">Tonique</div>
+          <div class="chip-bar" id="root-filter"></div>
+        </div>
+        <div class="filter-block">
+          <div class="label-small">Qualité</div>
+          <div class="chip-bar" id="quality-filter"></div>
+        </div>
+        <input type="text" class="search" placeholder="Chercher un accord (ex: Em7, F#m, Cmaj7)…" id="search-a" />
+
+        <div class="chord-grid" id="grid-a"></div>
+      </section>
+
+      <!-- ============= OPTION B ============= -->
+      <section class="option" data-option="b">
+        <div class="option-title">
+          <h2>Option B — Matrice 2D</h2>
+          <div class="verdict">
+            Lignes = roots, colonnes = qualités. Vue dense pour scanner.
+            Excellent desktop, scroll horizontal sur mobile. Cells cliquables.
+          </div>
+        </div>
+
+        <input type="text" class="search" placeholder="Chercher un accord…" id="search-b" />
+
+        <div class="matrix-wrap">
+          <div class="matrix-scroll">
+            <table class="matrix" id="matrix-b"></table>
+          </div>
+          <div class="matrix-legend">
+            <span><span class="dot" style="background:#d4b76a"></span>Open chord (jouable sans barré)</span>
+            <span><span class="dot" style="background:#fff"></span>Barré ou position haute</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="verdict-card">
+        <div class="eyebrow">Reco perso</div>
+        <h3>Probablement <span class="reco">Option A</span> en défaut + toggle vers B</h3>
+        <p>
+          Option A est <strong>mobile-friendly natif</strong> (chips scrollables,
+          cards à 2 col sur 375px). C'est ton use case principal.
+        </p>
+        <p>
+          Option B est <strong>magnifique en desktop pour scanner</strong> mais
+          force un scroll horizontal serré sur mobile. Tu y vas en deuxième
+          intention quand tu cherches "tous les accords de C" d'un coup d'œil.
+        </p>
+        <p class="text-soft" style="font-size: 13px; margin-top: 14px;">
+          → Mon plan : implémenter A en priorité, ajouter un toggle "Vue
+          matrice" en haut de la page qui swap vers B (lazy-affiché pour pas
+          plomber le rendu mobile par défaut).
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // ===== Data =====
+      const ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const QUALITIES = [
+        { id: 'maj', label: 'Major', suffix: '' },
+        { id: 'min', label: 'Minor', suffix: 'm' },
+        { id: '7', label: 'Dom 7', suffix: '7' },
+        { id: 'maj7', label: 'Maj 7', suffix: 'maj7' },
+        { id: 'm7', label: 'Min 7', suffix: 'm7' },
+        { id: 'sus2', label: 'Sus2', suffix: 'sus2' },
+        { id: 'sus4', label: 'Sus4', suffix: 'sus4' },
+        { id: '7sus4', label: '7sus4', suffix: '7sus4' },
+        { id: 'add9', label: 'Add 9', suffix: 'add9' },
+        { id: '6', label: '6', suffix: '6' },
+        { id: 'm6', label: 'Min 6', suffix: 'm6' },
+        { id: '9', label: '9', suffix: '9' },
+        { id: 'maj9', label: 'Maj 9', suffix: 'maj9' },
+        { id: 'm9', label: 'Min 9', suffix: 'm9' },
+        { id: 'dim', label: 'Dim', suffix: 'dim' },
+        { id: 'aug', label: 'Aug', suffix: 'aug' },
+        { id: '5', label: 'Power', suffix: '5' },
+      ];
+      // Open chord whitelist (cf. capoSuggest.ts)
+      const OPEN_SET = new Set([
+        'C','A','G','E','D','Am','Em','Dm','A7','B7','C7','D7','E7','G7',
+        'Cmaj7','Amaj7','Dmaj7','Am7','Dm7','Em7',
+        'Asus2','Asus4','Dsus2','Dsus4','Esus4','Cadd9','Dadd9','Eadd9',
+        'A7sus4','D7sus4','E7sus4'
+      ]);
+
+      const ALL_CHORDS = [];
+      for (const r of ROOTS) {
+        for (const q of QUALITIES) {
+          const name = r + q.suffix;
+          ALL_CHORDS.push({ name, root: r, quality: q.id, qualityLabel: q.label, isOpen: OPEN_SET.has(name) });
+        }
+      }
+
+      // ===== Tabs =====
+      document.querySelectorAll('.tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+          tab.classList.add('active');
+          const id = tab.getAttribute('data-tab');
+          document.querySelectorAll('.option').forEach((o) => {
+            o.classList.toggle('active', o.getAttribute('data-option') === id);
+          });
+        });
+      });
+
+      // ===== Option A: filters =====
+      let stateA = { root: 'all', quality: 'all', search: '' };
+
+      function renderRootFilter() {
+        const bar = document.getElementById('root-filter');
+        bar.innerHTML = '';
+        const items = [{ id: 'all', label: 'Toutes' }, ...ROOTS.map((r) => ({ id: r, label: r }))];
+        for (const item of items) {
+          const btn = document.createElement('button');
+          btn.className = 'chip mono' + (stateA.root === item.id ? ' active' : '');
+          btn.textContent = item.label;
+          btn.onclick = () => { stateA.root = item.id; renderRootFilter(); renderGridA(); };
+          bar.appendChild(btn);
+        }
+      }
+      function renderQualityFilter() {
+        const bar = document.getElementById('quality-filter');
+        bar.innerHTML = '';
+        const items = [{ id: 'all', label: 'Toutes' }, ...QUALITIES.map((q) => ({ id: q.id, label: q.label }))];
+        for (const item of items) {
+          const btn = document.createElement('button');
+          btn.className = 'chip' + (stateA.quality === item.id ? ' active' : '');
+          btn.textContent = item.label;
+          btn.onclick = () => { stateA.quality = item.id; renderQualityFilter(); renderGridA(); };
+          bar.appendChild(btn);
+        }
+      }
+      function renderGridA() {
+        const grid = document.getElementById('grid-a');
+        const term = stateA.search.trim().toLowerCase();
+        const filtered = ALL_CHORDS.filter((c) => {
+          if (stateA.root !== 'all' && c.root !== stateA.root) return false;
+          if (stateA.quality !== 'all' && c.quality !== stateA.quality) return false;
+          if (term && !c.name.toLowerCase().includes(term)) return false;
+          return true;
+        });
+        grid.innerHTML = '';
+        for (const c of filtered) {
+          const card = document.createElement('div');
+          card.className = 'chord-card';
+          card.innerHTML =
+            '<div class="name">' + c.name + '</div>' +
+            '<div class="mini-diagram"></div>' +
+            '<div class="qualtag">' + c.qualityLabel + (c.isOpen ? ' · OPEN' : '') + '</div>';
+          if (c.isOpen) card.style.borderColor = 'rgba(212, 183, 106, 0.5)';
+          grid.appendChild(card);
+        }
+        if (filtered.length === 0) {
+          grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-soft); padding: 30px;">Aucun accord ne correspond.</p>';
+        }
+      }
+      document.getElementById('search-a').addEventListener('input', (e) => {
+        stateA.search = e.target.value;
+        renderGridA();
+      });
+
+      // ===== Option B: matrix =====
+      let stateB = { search: '' };
+      function renderMatrix() {
+        const t = document.getElementById('matrix-b');
+        const term = stateB.search.trim().toLowerCase();
+        let html = '<thead><tr><th></th>';
+        for (const q of QUALITIES) html += '<th>' + q.label + '</th>';
+        html += '</tr></thead><tbody>';
+        for (const r of ROOTS) {
+          html += '<tr><th>' + r + '</th>';
+          for (const q of QUALITIES) {
+            const name = r + q.suffix;
+            const isOpen = OPEN_SET.has(name);
+            const matchSearch = !term || name.toLowerCase().includes(term);
+            const dim = term && !matchSearch ? 'opacity: 0.25;' : '';
+            html += '<td><a class="matrix-cell ' + (isOpen ? 'open' : '') + '" style="' + dim + '">' + name + '</a></td>';
+          }
+          html += '</tr>';
+        }
+        html += '</tbody>';
+        t.innerHTML = html;
+      }
+      document.getElementById('search-b').addEventListener('input', (e) => {
+        stateB.search = e.target.value;
+        renderMatrix();
+      });
+
+      // ===== Init =====
+      renderRootFilter();
+      renderQualityFilter();
+      renderGridA();
+      renderMatrix();
+    </script>
+  </body>
+</html>
