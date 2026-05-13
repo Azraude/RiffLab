@@ -60,7 +60,7 @@ export function Dashboard() {
       {/* Daily hero */}
       <div className="grid gap-5 md:grid-cols-[2fr_1fr]">
         <div
-          className="relative overflow-hidden rounded-3xl border border-border-gold p-8"
+          className="relative overflow-hidden rounded-3xl border border-border-gold p-5 md:p-8"
           style={{
             background: 'linear-gradient(135deg, #1a1812 0%, #141414 60%)',
           }}
@@ -74,15 +74,20 @@ export function Dashboard() {
           />
           <div className="relative">
             <div className="eyebrow">Entraînement du jour · {todayLabel}</div>
-            <h2 className="display mt-3 text-display-lg">
+            <h2 className="display mt-3 text-display-sm md:text-display-lg">
               Travaille l'accord <span className="text-gold">{chord.name}</span>
             </h2>
-            <p className="mt-3 max-w-xl text-text-muted">
+            <p className="mt-3 max-w-xl text-sm text-text-muted md:text-base">
               Combine-le avec la gamme <strong className="text-text">{scale.name}</strong> en{' '}
               <strong className="text-text">{key}</strong> pour {scale.mood.toLowerCase()}.
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-7">
+            {/* Mobile : ChordDiagram dominant in lg, centered under the title */}
+            <div className="mt-6 flex justify-center md:hidden">
+              <ChordDiagram voicing={voicing} name={chord.name} size="lg" />
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-4 md:flex md:flex-wrap md:items-center md:gap-7">
               <div>
                 <div className="label-small">Accord</div>
                 <div className="mt-1 font-mono text-lg font-semibold">{chord.name}</div>
@@ -98,6 +103,7 @@ export function Dashboard() {
                 <div className="mt-1 font-mono text-lg font-semibold">{scale.category}</div>
               </div>
 
+              {/* Desktop : ChordDiagram inline right */}
               <div className="ml-auto hidden md:block">
                 <ChordDiagram voicing={voicing} name={chord.name} size="md" />
               </div>
@@ -120,22 +126,23 @@ export function Dashboard() {
           </div>
         </div>
 
+        {/* Streak card — compact on mobile, full on desktop */}
         <Card className="text-center">
           <CardTitle>Série</CardTitle>
-          <div className="display text-[64px] leading-none text-gold">—</div>
+          <div className="display text-[40px] leading-none text-gold md:text-[64px]">—</div>
           <div className="label-small mt-2">jours d'affilée</div>
-          <div className="mt-5 flex justify-center gap-1.5">
+          <div className="mt-4 flex justify-center gap-1.5">
             {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
               <div
                 key={i}
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-[11px] text-text-soft"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-[10px] text-text-soft md:h-7 md:w-7 md:text-[11px]"
               >
                 {d}
               </div>
             ))}
           </div>
-          <p className="mt-4 text-xs text-text-soft">
-            Le suivi de série arrive en Phase 2.
+          <p className="mt-3 text-xs text-text-soft">
+            Suivi de série — Phase 2.
           </p>
         </Card>
       </div>
@@ -144,12 +151,14 @@ export function Dashboard() {
       <div className="mt-10">
         <h2 className="eyebrow mb-3">Gamme du jour — {key} {scale.name}</h2>
         <Card>
-          <div className="-mx-2 overflow-x-auto">
+          <div className="relative -mx-2 overflow-x-auto">
             <Fretboard2D
               numFrets={12}
               scale={{ key, scaleId: scale.id as ScaleId }}
               className="min-w-[640px]"
             />
+            {/* Mobile scroll hint: fade right edge so user sees content continues */}
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
           </div>
         </Card>
       </div>
@@ -170,7 +179,7 @@ export function Dashboard() {
             <p className="text-text-muted">Pas encore de sons. Ajoute ton premier !</p>
           </Card>
         ) : (
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
             {songs.map((s) => {
               const chords = Array.from(
                 new Set(s.sections.flatMap((sec) => sec.chords.map((c) => c.name)))

@@ -60,7 +60,7 @@ export function SongDetail() {
       {/* Chord palette */}
       <div className="mt-8">
         <h2 className="eyebrow mb-4">Accords du morceau</h2>
-        <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
           {uniqueChords.map((name) => {
             const voicing = getDefaultVoicing(name);
             const chord = getChord(name);

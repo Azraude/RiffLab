@@ -61,7 +61,7 @@ export function Scales() {
           </button>
         </div>
 
-        <div className="mt-6 -mx-2 overflow-x-auto pb-2">
+        <div className="relative mt-6 -mx-2 overflow-x-auto pb-2">
           <Fretboard2D
             tuning={tuning}
             numFrets={15}
@@ -69,6 +69,7 @@ export function Scales() {
             showNoteNames={showNoteNames}
             className="min-w-[640px]"
           />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-5 text-xs text-text-muted">
