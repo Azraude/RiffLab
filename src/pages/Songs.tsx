@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { db, type Song } from '@/lib/db';
@@ -7,6 +7,10 @@ import { Plus, Trash2 } from 'lucide-react';
 
 export function Songs() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
+  // Quand la route /songs/new est active, le Sheet de création est par-dessus :
+  // on cache le FAB (sinon il transparaît à travers le backdrop).
+  const location = useLocation();
+  const isNewModalOpen = location.pathname === '/songs/new';
 
   return (
     <>
@@ -47,15 +51,18 @@ export function Songs() {
         </div>
       )}
 
-      {/* Mobile FAB — sits above the bottom nav + safe-area */}
-      <Link
-        to="/songs/new"
-        aria-label="Ajouter un son"
-        className="fixed right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-bg shadow-gold-strong transition-transform active:scale-95 md:hidden"
-        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 1rem)' }}
-      >
-        <Plus size={26} strokeWidth={2.5} />
-      </Link>
+      {/* Mobile FAB — sits above the bottom nav + safe-area. Caché quand
+          le modal /songs/new est ouvert. */}
+      {!isNewModalOpen && (
+        <Link
+          to="/songs/new"
+          aria-label="Ajouter un son"
+          className="fixed right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-bg shadow-gold-strong transition-transform active:scale-95 md:hidden"
+          style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 1rem)' }}
+        >
+          <Plus size={26} strokeWidth={2.5} />
+        </Link>
+      )}
     </>
   );
 }
