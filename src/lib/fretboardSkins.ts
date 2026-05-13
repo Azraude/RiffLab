@@ -17,6 +17,13 @@ export type FretboardSkinId =
   | 'acoustique-rosewood'
   | 'electrique-erable';
 
+/**
+ * Type de headstock dessinée à gauche du nut quand le skin en a une.
+ *  - 'dreadnought' : 3+3 pegs en haut/bas, forme légèrement trapézoïdale (folk)
+ *  - 'strat'       : 6-in-line le long du bord haut (rock/blues)
+ */
+export type HeadstockType = 'dreadnought' | 'strat';
+
 export type FretboardSkin = {
   id: FretboardSkinId;
   name: string;
@@ -39,6 +46,9 @@ export type FretboardSkin = {
   bindingBottom: string;
   openLabel: string;
   fret12Label: string;
+
+  // Optional headstock (extends the viewBox to the left of the nut)
+  headstock?: { type: HeadstockType; width: number };
 };
 
 export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
@@ -66,7 +76,7 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     id: 'acoustique-rosewood',
     name: 'Acoustique rosewood',
     short: 'Acoustique',
-    description: 'Manche palissandre naturel, frets nickel poli, dots nacre. Vibe folk / classique.',
+    description: 'Manche palissandre, frets nickel, dots nacre. Vibe folk / classique.',
     category: 'realistic',
     board: ['#4a2a18', '#2e1810', '#1a0a04'],
     fret: ['#888888', '#f0f0f0', '#888888'],
@@ -80,13 +90,14 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     bindingBottom: 'rgba(0, 0, 0, 0.7)',
     openLabel: '#d4b890',
     fret12Label: '#e8c994',
+    headstock: { type: 'dreadnought', width: 70 },
   },
 
   'electrique-erable': {
     id: 'electrique-erable',
     name: 'Électrique érable',
     short: 'Électrique',
-    description: 'Manche érable clair façon Strat, frets chromées, dots noirs. Vibe rock / blues.',
+    description: 'Érable clair façon Strat, frets chromées, dots noirs. Vibe rock / blues.',
     category: 'realistic',
     board: ['#f0d4a0', '#e0b878', '#b89858'],
     fret: ['#a0a0a0', '#fafafa', '#888888'],
@@ -100,6 +111,7 @@ export const FRETBOARD_SKINS: Record<FretboardSkinId, FretboardSkin> = {
     bindingBottom: 'rgba(70, 40, 20, 0.6)',
     openLabel: '#3a2c18',
     fret12Label: '#3a2c18',
+    headstock: { type: 'strat', width: 80 },
   },
 };
 

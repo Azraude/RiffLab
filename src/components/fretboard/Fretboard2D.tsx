@@ -8,7 +8,12 @@ import {
   type NoteName,
   type ScaleId,
 } from '@/lib/theory';
-import { getSkin, type FretboardSkinId } from '@/lib/fretboardSkins';
+import {
+  getSkin,
+  type FretboardSkin,
+  type FretboardSkinId,
+  type HeadstockType,
+} from '@/lib/fretboardSkins';
 
 /**
  * Premium 2D fretboard. Couleurs pilotées par un skin (Phase 2C).
@@ -62,6 +67,7 @@ export function Fretboard2D({
   const id = (name: string) => `fb-${name}-${uid}`;
 
   const s = getSkin(skin);
+  const headstockWidth = s.headstock?.width ?? 0;
 
   const fretSpacing = INNER_W / numFrets;
   const x = (fret: number) => PAD_L + fret * fretSpacing;
@@ -88,7 +94,7 @@ export function Fretboard2D({
   return (
     <svg
       width="100%"
-      viewBox={`0 0 ${W} ${H}`}
+      viewBox={`${-headstockWidth} 0 ${W + headstockWidth} ${H}`}
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       preserveAspectRatio="xMidYMid meet"
@@ -157,6 +163,18 @@ export function Fretboard2D({
           <feDropShadow dx="0" dy="1" stdDeviation="0.8" floodOpacity="0.45" />
         </filter>
       </defs>
+
+      {/* Headstock (à gauche du nut, si le skin en a une) */}
+      {s.headstock && (
+        <HeadstockSvg
+          type={s.headstock.type}
+          width={s.headstock.width}
+          skin={s}
+          boardFill={`url(#${id('board')})`}
+          pearlFill={`url(#${id('pearl')})`}
+          nutFill={`url(#${id('nut')})`}
+        />
+      )}
 
       {/* Board */}
       <rect
@@ -236,7 +254,8 @@ export function Fretboard2D({
         );
       })}
 
-      {/* Open string labels (left of nut) */}
+      {/* Open string labels — toujours juste avant le nut (entre la dernière
+          colonne de pegs et le nut, lisible sur tous les skins). */}
       {openTuning.map((midi, i) => (
         <text
           key={`open-${i}`}
@@ -328,5 +347,138 @@ export function Fretboard2D({
           );
         })}
     </svg>
+  );
+}
+
+/**
+ * Headstock épurée à gauche du nut. Stylisée (pas hyper-réaliste) :
+ * juste assez pour donner le contexte instrument.
+ *
+ *  - dreadnought : forme trapézoïdale + 6 pegs nacre disposés 3+3
+ *  - strat       : forme allongée + 6 pegs chrome en ligne sur le haut
+ */
+function HeadstockSvg({
+  type,
+  width,
+  skin,
+  boardFill,
+  pearlFill,
+  nutFill,
+}: {
+  type: HeadstockType;
+  width: number;
+  skin: FretboardSkin;
+  boardFill: string;
+  pearlFill: string;
+  nutFill: string;
+}) {
+  const tipX = -width;
+  const baseX = PAD_L - 6; // s'arrête juste avant le nut (qui démarre à PAD_L - 4)
+  const yTop = PAD_T;
+  const yBot = PAD_T + INNER_H;
+
+  if (type === 'dreadnought') {
+    // Trapèze qui se rétrécit légèrement vers le bout (acoustique slot-head feel)
+    const inset = 14;
+    return (
+      <g>
+        <path
+          d={`M ${tipX} ${yTop + inset} L ${baseX} ${yTop} L ${baseX} ${yBot} L ${tipX} ${yBot - inset} Z`}
+          fill={boardFill}
+        />
+        {/* Bindings */}
+        <path
+          d={`M ${tipX} ${yTop + inset} L ${baseX} ${yTop}`}
+          stroke={skin.bindingTop}
+          strokeWidth={1.3}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          d={`M ${tipX} ${yBot - inset} L ${baseX} ${yBot}`}
+          stroke={skin.bindingBottom}
+          strokeWidth={1.3}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* Top row of 3 tuning pegs */}
+        {[0, 1, 2].map((i) => (
+          <circle
+            key={`peg-top-${i}`}
+            cx={tipX + 14 + i * 16}
+            cy={yTop + 12}
+            r={3.2}
+            fill={pearlFill}
+          />
+        ))}
+        {/* Bottom row of 3 tuning pegs */}
+        {[0, 1, 2].map((i) => (
+          <circle
+            key={`peg-bot-${i}`}
+            cx={tipX + 14 + i * 16}
+            cy={yBot - 12}
+            r={3.2}
+            fill={pearlFill}
+          />
+        ))}
+        {/* Thin nut-tone strip on the tip to suggest the carved end */}
+        <rect
+          x={tipX}
+          y={yTop + inset - 1.5}
+          width={2.5}
+          height={yBot - yTop - 2 * inset + 3}
+          fill={nutFill}
+          opacity={0.7}
+          rx={1}
+        />
+      </g>
+    );
+  }
+
+  // Strat : forme allongée avec bord supérieur incliné, 6 pegs en ligne en haut
+  const topInset = 5;
+  const bottomInset = 22;
+  return (
+    <g>
+      <path
+        d={`M ${tipX} ${yTop + topInset} L ${baseX} ${yTop} L ${baseX} ${yBot} L ${tipX} ${yBot - bottomInset} Z`}
+        fill={boardFill}
+      />
+      {/* Bindings */}
+      <path
+        d={`M ${tipX} ${yTop + topInset} L ${baseX} ${yTop}`}
+        stroke={skin.bindingTop}
+        strokeWidth={1.3}
+        fill="none"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={`M ${tipX} ${yBot - bottomInset} L ${baseX} ${yBot}`}
+        stroke={skin.bindingBottom}
+        strokeWidth={1.3}
+        fill="none"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* 6 in-line tuning pegs along the top edge */}
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <circle
+          key={`peg-${i}`}
+          cx={tipX + 8 + i * 11}
+          cy={yTop + 11}
+          r={2.6}
+          fill={pearlFill}
+        />
+      ))}
+      {/* Tip rounding hint */}
+      <rect
+        x={tipX}
+        y={yTop + topInset}
+        width={2.5}
+        height={yBot - yTop - topInset - bottomInset}
+        fill={nutFill}
+        opacity={0.7}
+        rx={1}
+      />
+    </g>
   );
 }
