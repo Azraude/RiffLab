@@ -11,6 +11,7 @@ import {
   ListMusic,
   Workflow,
   Ear,
+  Activity,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -34,6 +35,7 @@ const items: NavItem[] = [
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
   { to: '/progressions', label: 'Progressions', icon: <Workflow size={18} />, section: 'library' },
+  { to: '/strum-patterns', label: 'Rythmiques', icon: <Activity size={18} />, section: 'library' },
   { to: '/settings', label: 'Préférences', icon: <SettingsIcon size={18} />, section: 'account' },
 ];
 
