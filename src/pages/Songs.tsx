@@ -3,7 +3,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { db, type Song } from '@/lib/db';
-import { useLongPress } from '@/hooks/useLongPress';
 import { Plus, Trash2 } from 'lucide-react';
 
 export function Songs() {
@@ -17,7 +16,7 @@ export function Songs() {
     <>
       <PageHeader
         title="Mes sons"
-        subtitle={`${songs?.length ?? 0} sons dans ta bibliothèque. Appui long sur une carte = supprimer.`}
+        subtitle={`${songs?.length ?? 0} sons dans ta bibliothèque.`}
       >
         {/* Header CTA — desktop only. Mobile uses the floating FAB. */}
         <Link
@@ -75,17 +74,9 @@ function SongTile({ song }: { song: Song }) {
     }
   };
 
-  const longPress = useLongPress(deleteSong, 550);
-
   return (
-    <Card hover className="group relative select-none" {...longPress.handlers}>
-      <Link
-        to={`/songs/${song.id}`}
-        onClick={(e) => {
-          if (longPress.wasLongPress()) e.preventDefault();
-        }}
-        className="block"
-      >
+    <Card hover className="relative pr-12">
+      <Link to={`/songs/${song.id}`} className="block">
         <h3 className="display text-[22px] leading-tight">{song.title || 'Sans titre'}</h3>
         {song.artist && <p className="mt-0.5 text-sm text-text-muted">{song.artist}</p>}
         <div className="mt-4 flex flex-wrap gap-1.5">
@@ -104,16 +95,20 @@ function SongTile({ song }: { song: Song }) {
           <span>● {song.status}</span>
         </div>
       </Link>
-      {/* Desktop : hover reveals trash. Mobile : long-press the card. */}
+      {/* Trash icon top-right, toujours visible. Bouton séparé du Link
+          parent → tap dessus ≠ navigation, tap sur la card ailleurs =
+          navigation. */}
       <button
-        onClick={async (e) => {
+        type="button"
+        onClick={(e) => {
           e.preventDefault();
-          await deleteSong();
+          e.stopPropagation();
+          void deleteSong();
         }}
-        className="absolute right-3 top-3 hidden h-8 w-8 items-center justify-center rounded-md text-text-soft opacity-0 transition-opacity hover:bg-surface-2 hover:text-danger group-hover:opacity-100 md:flex"
-        aria-label="Supprimer"
+        aria-label={`Supprimer ${song.title}`}
+        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2/70 text-text-soft backdrop-blur transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
       >
-        <Trash2 size={16} />
+        <Trash2 size={15} />
       </button>
     </Card>
   );

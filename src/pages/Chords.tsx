@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
@@ -10,7 +11,6 @@ import {
 } from '@/lib/chordDatabase';
 import { NOTE_NAMES } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
-import { ChevronDown, Play } from 'lucide-react';
 import clsx from 'clsx';
 
 type RootFilter = 'all' | (typeof NOTE_NAMES)[number];
@@ -20,7 +20,6 @@ export function Chords() {
   const [rootFilter, setRootFilter] = useState<RootFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState<string | null>(null);
   const { strum } = useAudio();
 
   const filtered = useMemo(() => {
@@ -37,7 +36,7 @@ export function Chords() {
     <>
       <PageHeader
         title="Accords"
-        subtitle={`${CHORDS.length} accords. Tape une carte pour entendre. Tape la flèche pour voir toutes les façons de jouer l'accord sur le manche.`}
+        subtitle={`${CHORDS.length} accords. Tape une carte pour entendre, swipe pour voir d'autres positions.`}
       />
 
       {/* Tonalité — chips scrollables */}
@@ -100,16 +99,10 @@ export function Chords() {
         {filtered.length} accord{filtered.length > 1 ? 's' : ''}
       </div>
 
-      {/* Grille */}
+      {/* Grille de cards swipeables */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
         {filtered.map((c) => (
-          <ChordEntry
-            key={c.name}
-            chord={c}
-            isExpanded={expanded === c.name}
-            onToggle={() => setExpanded((e) => (e === c.name ? null : c.name))}
-            onPlay={() => strum(c.name)}
-          />
+          <SwipeableChordCard key={c.name} chord={c} onPlay={() => strum(c.name)} />
         ))}
       </div>
 
@@ -122,106 +115,88 @@ export function Chords() {
   );
 }
 
-// ─── Chord entry (card + expanded voicings) ─────────────────────────────
+// ─── Swipeable chord card ──────────────────────────────────────────────
 
-function ChordEntry({
-  chord,
-  isExpanded,
-  onToggle,
-  onPlay,
-}: {
-  chord: Chord;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onPlay: () => void;
-}) {
-  const primary = chord.voicings[0];
-  const hasMore = chord.voicings.length > 1;
-  const isOpen = chord.category === 'open';
+function SwipeableChordCard({ chord, onPlay }: { chord: Chord; onPlay: () => void }) {
+  const [idx, setIdx] = useState(0);
+  const voicing = chord.voicings[idx];
+  const total = chord.voicings.length;
+  const hasMultiple = total > 1;
+
+  const goTo = (newIdx: number) => {
+    const clamped = Math.max(0, Math.min(total - 1, newIdx));
+    if (clamped === idx) return;
+    setIdx(clamped);
+  };
 
   return (
-    <Card
-      hover
-      className={clsx(
-        'flex flex-col p-4',
-        isExpanded ? 'col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-6' : '',
-        isOpen && !isExpanded && 'border-gold-soft/50'
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <button
-          type="button"
-          onClick={onPlay}
-          className="flex flex-1 items-center gap-2 text-left"
-          aria-label={`Jouer ${chord.name}`}
+    <Card hover className="flex flex-col p-3">
+      <button
+        type="button"
+        onClick={onPlay}
+        aria-label={`Jouer ${chord.name}`}
+        className="flex items-baseline gap-2 text-left"
+      >
+        <span className="font-mono text-xl font-bold text-gold">{chord.name}</span>
+        <span className="text-[10px] uppercase tracking-wider text-text-soft">
+          {QUALITY_LABELS[chord.quality] ?? chord.quality}
+        </span>
+      </button>
+
+      {/* Zone swipe — drag horizontal pour changer de voicing.
+          Re-mount via key={idx} → la motion.div retombe à x=0 entre les
+          changements de voicing (effet "snap"). */}
+      <div className="mt-2 select-none">
+        <motion.div
+          key={idx}
+          initial={{ x: 0 }}
+          animate={{ x: 0 }}
+          drag={hasMultiple ? 'x' : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.25}
+          onDragEnd={(_, info) => {
+            const threshold = 50;
+            if (info.offset.x < -threshold || info.velocity.x < -400) {
+              goTo(idx + 1);
+            } else if (info.offset.x > threshold || info.velocity.x > 400) {
+              goTo(idx - 1);
+            }
+          }}
+          className={clsx(
+            'flex justify-center',
+            hasMultiple && 'cursor-grab active:cursor-grabbing'
+          )}
         >
-          <span className="font-mono text-xl font-bold text-gold">{chord.name}</span>
-          <span className="text-[10px] uppercase tracking-wider text-text-soft">
-            {QUALITY_LABELS[chord.quality] ?? chord.quality}
-          </span>
-        </button>
-        {hasMore && (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={isExpanded}
-            aria-label={isExpanded ? 'Réduire' : `Voir ${chord.voicings.length} voicings`}
-            className={clsx(
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-all',
-              isExpanded
-                ? 'border-gold bg-gold/10 text-gold'
-                : 'border-border text-text-soft hover:border-gold-soft hover:text-text'
-            )}
-          >
-            <ChevronDown
-              size={16}
-              className={clsx('transition-transform', isExpanded && 'rotate-180')}
-            />
-          </button>
-        )}
+          <ChordDiagram voicing={voicing} name={chord.name} size="md" />
+        </motion.div>
       </div>
 
-      {/* Voicing principal (toujours affiché) */}
-      <div className="mt-3 flex justify-center">
-        {primary && <ChordDiagram voicing={primary} name={chord.name} size="md" />}
-      </div>
-
-      {hasMore && !isExpanded && (
-        <div className="mt-2 text-center text-[10px] uppercase tracking-wider text-text-soft">
-          + {chord.voicings.length - 1} autre{chord.voicings.length - 1 > 1 ? 's' : ''}
-          &nbsp;façon{chord.voicings.length - 1 > 1 ? 's' : ''}
-        </div>
-      )}
-
-      {/* Voicings additionnels (visibles quand expand) */}
-      {isExpanded && (
-        <div className="mt-5 border-t border-border pt-5">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="label-small">Toutes les positions sur le manche</span>
+      {/* Indicateurs pagination — petits traits gold si plusieurs voicings */}
+      {hasMultiple && (
+        <div className="mt-2 flex items-center justify-center gap-1.5">
+          {chord.voicings.map((_, i) => (
             <button
+              key={i}
               type="button"
-              onClick={onPlay}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-gold px-2 text-xs hover:bg-gold/5"
-            >
-              <Play size={12} /> Écouter
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {chord.voicings.map((v, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center gap-1 rounded-lg border border-border bg-surface-2 p-3"
-              >
-                <ChordDiagram voicing={v} name={chord.name} size="sm" />
-                <DifficultyDots level={v.difficulty} />
-              </div>
-            ))}
-          </div>
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(i);
+              }}
+              aria-label={`Voicing ${i + 1} sur ${total}`}
+              aria-current={i === idx}
+              className={clsx(
+                'h-1 rounded-full transition-all',
+                i === idx ? 'w-6 bg-gold' : 'w-2 bg-border hover:bg-gold-soft'
+              )}
+            />
+          ))}
         </div>
       )}
     </Card>
   );
 }
+
+// ─── Filter chip ───────────────────────────────────────────────────────
 
 function FilterChip({
   active,
@@ -249,21 +224,5 @@ function FilterChip({
     >
       {children}
     </button>
-  );
-}
-
-function DifficultyDots({ level }: { level: 1 | 2 | 3 | 4 | 5 }) {
-  return (
-    <div className="mt-1 flex justify-center gap-0.5" aria-label={`Difficulté ${level}/5`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span
-          key={i}
-          className={clsx(
-            'h-1 w-2.5 rounded-full',
-            i < level ? 'bg-gold' : 'bg-border'
-          )}
-        />
-      ))}
-    </div>
   );
 }

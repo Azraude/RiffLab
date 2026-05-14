@@ -33,7 +33,10 @@ export function PageHeader({
   return (
     <div
       className={clsx(
-        'mb-8 flex flex-col gap-3 md:mb-9 md:flex-row md:items-center md:justify-between',
+        // flex-row partout : titre flex-1 à gauche, actions à droite (jamais
+        // de wrap à la ligne). Le subtitle wrap sous le h1 dans son propre
+        // bloc, libérant la place pour le gear top-right.
+        'mb-8 flex items-start justify-between gap-3 md:mb-9 md:items-center',
         className
       )}
     >
@@ -43,7 +46,7 @@ export function PageHeader({
       </div>
 
       {(children || showSettingsLink) && (
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {children}
           {showSettingsLink && (
             <Link
