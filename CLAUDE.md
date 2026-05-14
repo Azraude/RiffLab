@@ -17,7 +17,8 @@
 
 ### Features décidées (cf. ROADMAP.md pour le détail)
 - **Phase 2 (actuelle)** : audit mobile-first, refonte Fretboard2D, **système de skins** de manche, **tuner intégré** (mic + FFT), **métronome UI** (déjà câblé dans `audio.ts`), **capo intelligent** (suggère la position qui maximise les open chords), **stats + streak** quotidien.
-- **Phase 3** : **mode live teleprompter** (full-screen, wakeLock), **setlists** + lecture enchaînée, **audio recorder par song** (MediaRecorder + Dexie Blob), **chord progressions library** (30+ progressions taggées par mood), **speed trainer** (60→100 % du tempo), **ear training** mini-jeu, **practice plan** personnalisé, strum pattern editor.
+- **Phase 3** (actuelle) : closeout **PracticeSession + Stats + Streak**, **setlists** + lecture enchaînée, **audio recorder par song** (MediaRecorder + Dexie Blob), **chord progressions library** (30+ progressions taggées par mood). Reste pour la session suivante : **speed trainer** (60→100 % du tempo), **ear training** mini-jeu, **practice plan** personnalisé, strum pattern editor.
+- **Phase 3.5 (décalée)** : **Mode Lecture / teleprompter** (full-screen, wakeLock, accords énormes, défilement synchro tempo) — ouvre un problème non trivial de mapping chord-on-syllable. 3 pistes ouvertes : (a) mapping manuel avec `[ChordName]` inline dans les lyrics façon UG, (b) AI assist Phase 5 qui aligne automatiquement, (c) time-based estimation linéaire depuis `beats: n` (MVP imprécis mais zéro friction).
 - **Phase 4** : Three.js sélectif (hero landing + cordes ambient Dashboard + toggle "Vue 3D" Scales, lazy chunk < 200 Ko), **thèmes UI** (Dark Gold default + Sunset / Studio Blue / Pure White / Néon), sons de strum custom, **shareable songs/setlists** via URL base64, **profil public** guitariste, riff de la semaine.
 - **Phase 5** : AI (génération progressions, theory hints, composer assistant), auth Supabase, tier Free/Pro Stripe, **cosmetics shop** (skins/thèmes premium), AI credits.
 - **Phase 6** : **extension Chrome** sur YouTube (bouton "📥 Capturer dans RiffLab"), détection d'accords mp3/SoundCloud.
@@ -186,21 +187,21 @@ src/
 | Phase | Focus | Statut |
 |---|---|---|
 | **1** | MVP utilisable — layout, CRUD songs, accords + gammes, audio Tone.js, prefs | ✅ livrée |
-| **2** | **Mobile-first + fondations** : audit responsive, refonte Fretboard SVG, skins, tuner, métronome UI, capo intelligent, stats/streak | 🔴 en cours |
-| **3** | Performance & pratique : mode live teleprompter, setlists, audio recorder, progressions library, speed trainer, ear training, practice plan, strum editor | ⏳ |
+| **2** | **Mobile-first + fondations** : audit responsive, refonte Fretboard SVG, skins, tuner, métronome UI, capo intelligent | ✅ |
+| **3** | **Performance & pratique** : PracticeSession + stats/streak, setlists, audio recorder, progressions library, (puis speed trainer + ear training + practice plan + strum editor en session suivante) | 🔴 en cours |
+| **3.5** | Mode Lecture teleprompter (décalé après Phase 3 — mapping chord/syllabe à trancher) | ⏳ |
 | **4** | Polish + partage : Three.js décoratif (hero, ambient), thèmes UI, sons strum custom, shareable songs, profil public, riff de la semaine | ⏳ |
 | **5** | AI & monétisation : génération de progressions, theory hints, auth Supabase, Stripe Free/Pro, cosmetics shop | ⏳ |
 | **6** | Extension Chrome (capture YouTube → RiffLab), détection d'accords mp3 | ⏳ |
 | **7+** | Moonshots : marketplace, mode AR (caméra + overlay manche), voice command, watch app, pédale Bluetooth | 🌠 |
 
-**Ordre Phase 2 (cf. ROADMAP §Phase 2)** :
-A. Audit responsive 375-768px (bloquant)
-B. Refonte Fretboard2D (SVG premium, noir mat + or, fix du bug fret manquante)
-C. Système de skins (`src/lib/fretboardSkins.ts` + sélecteur Préférences)
-D. Tuner intégré (Web Audio + AnalyserNode + autocorrélation YIN/FFT)
-E. Métronome UI (page `/metronome` ou widget global, vibration mobile)
-F. Capo intelligent (suggère la position qui maximise les open chords)
-G. Stats + streak (Dashboard + page `/stats`)
+**Ordre Phase 3 (session actuelle, cf. ROADMAP §Phase 3)** :
+1. PracticeSession + Stats + Streak (~2h) — closeout Phase 2G : bouton "J'ai pratiqué" sur DailyCard → écrit dans Dexie, StreakDisplay calcule depuis sessions, page `/stats` avec top accords/gammes + courbe 30j.
+2. Setlists (~3h) — type `Setlist`, CRUD `/setlists`, mode lecture enchaînée, share base64.
+3. Audio recorder par song (~3h) — table Dexie `recordings`, REC button + MediaRecorder + waveform AnalyserNode SVG + indicateur "🎙 N essais" sur SongCard.
+4. Chord progressions library (~4h) — `src/lib/progressionDatabase.ts` (30+ progressions), `/progressions`, filtre mood/key/difficulty, preview audio loop, "Ajouter à un song".
+
+**Reporté en session Phase 3 suivante** : Speed trainer, Strum editor, Ear training, Practice plan.
 
 ---
 

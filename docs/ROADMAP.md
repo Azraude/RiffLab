@@ -58,60 +58,121 @@
 
 ## 🟠 Phase 3 — Performance & pratique
 
-### Mode live / teleprompter
-- [ ] Bouton "Mode live" sur la page détail d'un morceau
-- [ ] Full-screen, écran toujours actif (`screen.wakeLock`)
-- [ ] Accords énormes, défilement synchronisé au tempo
-- [ ] Compte-à-rebours 4 temps avant démarrage
-- [ ] Bouton pause géant au tap n'importe où
+> **Recadrage** : le Mode Lecture (teleprompter lyrics + chords) est
+> reporté en **Phase 3.5** car il dépend du mapping chord-on-syllable
+> qui ouvre une complexité importante (cf. section dédiée plus bas).
+> Phase 3 actuelle = practice tracking + library + outils de travail.
 
-### Setlists
-- [ ] Modèle de données : `Setlist { id, name, songIds[], transitions }`
-- [ ] CRUD setlists (page `/setlists`)
-- [ ] Mode "Lecture setlist" : enchaîne les morceaux avec count-in
-- [ ] Affichage transition de tonalité entre 2 morceaux
-- [ ] Export PDF (chord chart classique imprimable)
-- [ ] Share par URL (encode en query string)
+### Ordre de bataille Phase 3 (session actuelle)
 
-### Audio recorder par son
-- [ ] Bouton REC sur chaque song detail
-- [ ] Capture micro via `MediaRecorder` API
-- [ ] Stockage Blob dans IndexedDB (Dexie peut)
-- [ ] Liste des essais d'un morceau (datés)
-- [ ] Replay, suppression, partage (URL avec blob → option fallback Supabase plus tard)
-- [ ] Indicateur "12 essais enregistrés" sur la carte song
+#### 1. PracticeSession + Stats + Streak (closeout Phase 2G)
+- [ ] DailyCard du Dashboard : bouton **"J'ai pratiqué aujourd'hui ✓"**
+- [ ] Click → écrit `PracticeSession {date, chord: dailyChord, scale, completed:true}`
+- [ ] État bouton : "Pas encore fait" → "Fait ✓ aujourd'hui" (or)
+- [ ] `<StreakDisplay />` remplace le `—` placeholder, calcule streak depuis les sessions Dexie
+- [ ] Indicateurs des 7 derniers jours (cercles L M M J V S D allumés/éteints)
+- [ ] Page `/stats` accessible depuis le gear menu :
+  - Compteur "Total sessions"
+  - Top 5 accords les plus joués (count distinct dans sessions)
+  - Top 5 gammes les plus travaillées
+  - Courbe pratique 30j (SVG simple, 1 point par jour)
 
-### Bibliothèque de chord progressions
+#### 2. Setlists
+- [ ] Modèle Dexie `Setlist { id, name, songIds[], createdAt, updatedAt }`
+- [ ] Seed avec 1 démo "Répèt du jeudi" contenant les 3 songs du seed
+- [ ] Page `/setlists` : liste avec CRUD (mêmes patterns que Songs)
+- [ ] Page `/setlists/:id` : détail, songs ordonnables (up/down arrows ou DnD)
+- [ ] Mode "Lecture setlist" : enchaîne en mode SongDetail avec compteur "Song 2/4 → Suivant : Sweet Child"
+- [ ] Share : URL avec base64 du JSON setlist
+- [ ] Export PDF (chord chart classique imprimable) — plus tard
+
+#### 3. Audio recorder par song
+- [ ] Nouvelle table Dexie `recordings : { id, songId, blob, durationMs, name?, createdAt }`
+- [ ] Section "Mes enregistrements" sur SongDetail
+- [ ] Bouton REC géant rond rouge pulsant pendant capture
+- [ ] `MediaRecorder` API → blob
+- [ ] Liste : date + durée + play/delete/share buttons
+- [ ] Player inline avec waveform simple (`AnalyserNode` SVG)
+- [ ] Indicateur "🎙 12 essais" en footer de SongCard sur `/songs`
+
+#### 4. Bibliothèque de chord progressions
 - [ ] Page `/progressions`
-- [ ] 30+ progressions précodées tagguées par mood (chill / epic / jazzy / sad / latin)
-- [ ] Filtre par mood + tonalité + complexité
-- [ ] Transpose en 1 clic (recalcul dans toutes les keys)
-- [ ] Preview audio en boucle
-- [ ] Bouton "Ajouter à un son" → préremplit une section
+- [ ] 30+ progressions précodées dans `src/lib/progressionDatabase.ts` (I-V-vi-IV, ii-V-I jazz, vi-IV-I-V emo, I-IV-V blues, Andalousian Am-G-F-E, Canon de Pachelbel, etc.)
+- [ ] Tagged par mood (chill / epic / jazzy / sad / latin / cinematic)
+- [ ] Filtre par mood + tonalité + difficulté
+- [ ] Transpose 1-clic (recalcule pour toutes les keys)
+- [ ] Preview audio loop (strum chaque chord 1 mesure, répète)
+- [ ] Bouton "Ajouter à un song" → préremplit une section
 
-### Speed trainer
+### Reste de Phase 3 (session suivante)
+
+#### Speed trainer
 - [ ] Sur n'importe quelle section/progression : bouton "Train speed"
 - [ ] Lecture à 60% → 70% → 80% → 90% → 100% du tempo
 - [ ] Validation manuelle ("c'était propre") avant de monter le palier
 - [ ] Affichage de la courbe de progression sur le morceau
 
-### Ear training mini-jeu
+#### Ear training mini-jeu
 - [ ] Page `/ear-training` (ou modale)
 - [ ] Modes : intervalles / accords (maj/min/dim/sus) / progressions (I-V-vi-IV ?)
 - [ ] Scoring + streak quotidien
 - [ ] Difficulty levels (beginner → expert)
 
-### Practice plan personnalisé
+#### Practice plan personnalisé
 - [ ] Onboarding : "ton objectif ?" (jazzy / fluide / rapide / technique / songwriting)
 - [ ] Génération d'un plan 4 semaines (5-15 min/jour)
 - [ ] Chaque jour : warm-up gamme + accord + technique + morceau lié
 - [ ] Tracking de complétion
 
-### Strum pattern editor avec lecture
+#### Strum pattern editor avec lecture
 - [ ] Grille cliquable ↓↑X·
 - [ ] Subdivision 8e / 16e / triolets
 - [ ] Lecture audio synchronisée avec l'accord en cours
 - [ ] Patterns précodés (folk, reggae, ballad, funk strum, etc.)
+
+---
+
+## 🎤 Phase 3.5 — Mode Lecture / teleprompter (décalé)
+
+> **Pourquoi décalé après Phase 3** : le mapping chord↔syllabe ouvre
+> une complexité non triviale. Plutôt que de bricoler maintenant, on
+> creuse soit indépendamment soit conjointement avec l'AI helper de
+> Phase 5 qui peut résoudre l'alignement automatiquement.
+
+### Périmètre fonctionnel
+- Bouton "Mode live" sur la page détail d'un morceau
+- Full-screen, écran toujours actif (`screen.wakeLock`)
+- Accords énormes, défilement synchronisé au tempo
+- Compte-à-rebours 4 temps avant démarrage
+- Bouton pause géant au tap n'importe où
+
+### Open question : mapping chord-on-syllable
+
+Trois pistes envisagées, **à trancher avant l'implémentation** :
+
+1. **Mapping manuel** dans le formulaire de song : l'utilisateur tape
+   les lyrics et insère des `[ChordName]` directement à la position
+   voulue (style Ultimate Guitar). Pas d'inférence, l'user est en
+   contrôle total.
+   - ➕ Précis, prédictible, déjà familier aux guitaristes
+   - ➖ UX d'édition lourde sur mobile (tap-pos-tap-pos…)
+
+2. **AI assist (Phase 5)** : l'utilisateur tape les lyrics + liste les
+   accords + tempo, l'AI propose l'alignement le plus probable basé
+   sur le rythme prosodique du français/anglais.
+   - ➕ UX zéro friction
+   - ➖ Demande l'infra AI (Phase 5), peut se tromper
+
+3. **Time-based estimation** : chaque ChordRef a `beats: n`, on compute
+   le temps total de chaque section, on répartit les syllabes
+   linéairement sur cette durée. Pas de mapping explicite.
+   - ➕ Aucun input user supplémentaire, marche dès aujourd'hui
+   - ➖ Approximation grossière, les accords ne tombent jamais
+     pile sur la bonne syllabe
+
+→ Reco probable : option 3 en MVP Phase 3.5 (avec marge d'erreur
+acceptable parce que l'user joue, il s'adapte), option 2 en
+amélioration Phase 5+ pour ceux qui veulent du précis.
 
 ---
 
