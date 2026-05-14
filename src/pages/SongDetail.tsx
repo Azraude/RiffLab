@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
+import { Sheet } from '@/components/ui/Sheet';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import { RecorderSection } from '@/components/songs/RecorderSection';
+import { SpeedTrainer } from '@/components/songs/SpeedTrainer';
+import type { Section } from '@/lib/db';
 import { db, saveSong } from '@/lib/db';
 import { getChord, getDefaultVoicing } from '@/lib/chordDatabase';
 import { suggestCapo, OPEN_CHORD_SHAPES } from '@/lib/capoSuggest';
 import { useAudio } from '@/hooks/useAudio';
-import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2 } from 'lucide-react';
+import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2, Gauge } from 'lucide-react';
 import clsx from 'clsx';
 
 export function SongDetail() {
@@ -18,6 +21,7 @@ export function SongDetail() {
   const { strum } = useAudio();
   const [activeChord, setActiveChord] = useState<string | null>(null);
   const [showCapoSuggestion, setShowCapoSuggestion] = useState(false);
+  const [trainerSection, setTrainerSection] = useState<Section | null>(null);
 
   const handleDelete = async () => {
     if (!song) return;
@@ -161,22 +165,33 @@ export function SongDetail() {
       <div className="mt-10 space-y-6">
         {song.sections.map((sec) => (
           <Card key={sec.id}>
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h3 className="display text-display-sm">{sec.name}</h3>
-              <button
-                onClick={async () => {
-                  // Play all chords in sequence
-                  for (const c of sec.chords) {
-                    await strum(c.name, 'down');
-                    await new Promise((r) =>
-                      setTimeout(r, (c.beats * 60_000) / song.tempo)
-                    );
-                  }
-                }}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5 md:h-8 md:text-xs"
-              >
-                <Play size={14} /> Jouer la section
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTrainerSection(sec)}
+                  disabled={sec.chords.length === 0}
+                  className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5 disabled:opacity-40 disabled:hover:bg-transparent md:h-8 md:text-xs"
+                >
+                  <Gauge size={14} /> Speed trainer
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Play all chords in sequence
+                    for (const c of sec.chords) {
+                      await strum(c.name, 'down');
+                      await new Promise((r) =>
+                        setTimeout(r, (c.beats * 60_000) / song.tempo)
+                      );
+                    }
+                  }}
+                  className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border-gold px-3 text-sm hover:bg-gold/5 md:h-8 md:text-xs"
+                >
+                  <Play size={14} /> Jouer la section
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -245,6 +260,24 @@ export function SongDetail() {
           </button>
         </div>
       </div>
+
+      {/* Speed Trainer Sheet */}
+      <Sheet
+        open={trainerSection !== null}
+        onOpenChange={(o) => {
+          if (!o) setTrainerSection(null);
+        }}
+        title="Speed Trainer"
+        description={
+          trainerSection
+            ? `Section "${trainerSection.name}" — monte progressivement de 60 % à 100 % du tempo.`
+            : undefined
+        }
+      >
+        {trainerSection && (
+          <SpeedTrainer section={trainerSection} originalTempo={song.tempo} />
+        )}
+      </Sheet>
     </>
   );
 }
