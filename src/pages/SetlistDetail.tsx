@@ -12,6 +12,7 @@ import {
   type Setlist,
   type Song,
 } from '@/lib/db';
+import { encodeSetlist, buildShareUrl, copyShareUrl } from '@/lib/share';
 import {
   ArrowDown,
   ArrowUp,
@@ -86,21 +87,19 @@ export function SetlistDetail() {
   };
 
   const handleShare = async () => {
-    const payload = btoa(
-      encodeURIComponent(
-        JSON.stringify({
-          name: setlist.name,
-          songIds: setlist.songIds,
-        })
-      )
-    );
-    const url = `${window.location.origin}/setlists?share=${payload}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      alert('Lien de partage copié dans le presse-papier.');
-    } catch {
-      prompt('Copie ce lien :', url);
+    // Encode setlist + full songs (le destinataire n'a pas nos IDs dans sa
+    // DB locale). Le payload reste raisonnable : ~2kB par song.
+    const orderedSongs = setlist.songIds
+      .map((sid) => songsById.get(sid))
+      .filter(Boolean) as Song[];
+    if (orderedSongs.length === 0) {
+      alert('Ajoute au moins un son avant de partager.');
+      return;
     }
+    const encoded = encodeSetlist(setlist, orderedSongs);
+    const url = buildShareUrl(encoded);
+    const ok = await copyShareUrl(url);
+    if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
   };
 
   const ordered = setlist.songIds.map((id) => songsById.get(id)).filter(Boolean);

@@ -11,7 +11,8 @@ import { db, saveSong } from '@/lib/db';
 import { getChord, getDefaultVoicing } from '@/lib/chordDatabase';
 import { suggestCapo, OPEN_CHORD_SHAPES } from '@/lib/capoSuggest';
 import { useAudio } from '@/hooks/useAudio';
-import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2, Gauge } from 'lucide-react';
+import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2, Gauge, Share2 } from 'lucide-react';
+import { encodeSong, buildShareUrl, copyShareUrl } from '@/lib/share';
 import clsx from 'clsx';
 
 export function SongDetail() {
@@ -83,7 +84,7 @@ export function SongDetail() {
       </Link>
 
       <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="display text-display-lg">{song.title}</h1>
           {song.artist && <p className="mt-1 text-text-muted">{song.artist}</p>}
           <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-soft">
@@ -95,6 +96,18 @@ export function SongDetail() {
             <span>● {song.status}</span>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={async () => {
+            const url = buildShareUrl(encodeSong(song));
+            const ok = await copyShareUrl(url);
+            if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
+          }}
+          className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-xl border border-border bg-surface px-3 text-sm text-text-muted hover:border-gold-soft hover:text-text md:self-end"
+          aria-label="Partager ce son"
+        >
+          <Share2 size={14} /> Partager
+        </button>
       </div>
 
       {/* Chord palette */}
