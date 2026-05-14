@@ -19,6 +19,7 @@ import { EarTraining } from '@/pages/EarTraining';
 import { StrumPatterns } from '@/pages/StrumPatterns';
 import { PracticePlan } from '@/pages/PracticePlan';
 import { SharePreview } from '@/pages/SharePreview';
+import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
 
 export const router = createBrowserRouter([
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: 'strum-patterns', element: <StrumPatterns /> },
       { path: 'practice-plan', element: <PracticePlan /> },
       { path: 'share/:encoded', element: <SharePreview /> },
+      { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
       { path: 'jam', element: <Jam /> },
       { path: 'metronome', element: <Metronome /> },
       { path: 'tuner', element: <Tuner /> },

@@ -18,8 +18,9 @@ import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Play, Check, Flame } from 'lucide-react';
+import { Play, Check, Flame, Sparkles, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
+import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -42,6 +43,7 @@ function pickOfTheDay() {
 export function Dashboard() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().limit(3).toArray(), []);
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
+  const weeklyRiff = useMemo(() => getRiffOfTheWeek(), []);
   const { strum } = useAudio();
   const fretboardSkin = usePrefs((s) => s.fretboardSkin);
 
@@ -229,6 +231,31 @@ export function Dashboard() {
             <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
           </div>
         </Card>
+      </div>
+
+      {/* Riff de la semaine — teaser */}
+      <div className="mt-12">
+        <Link
+          to="/riff-of-the-week"
+          className="group block rounded-2xl border border-border-gold bg-gradient-to-br from-surface to-surface-2 p-5 transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-gold"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
+              <Sparkles size={22} strokeWidth={1.5} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="eyebrow !text-gold-soft">Riff de la semaine</div>
+              <div className="display mt-1 text-display-sm">{weeklyRiff.title}</div>
+              <div className="mt-1 text-sm text-text-muted">
+                {weeklyRiff.source} · {weeklyRiff.genre} · {weeklyRiff.bpm} BPM
+              </div>
+            </div>
+            <ArrowRight
+              size={20}
+              className="mt-1 shrink-0 text-text-soft transition-transform group-hover:translate-x-1 group-hover:text-gold"
+            />
+          </div>
+        </Link>
       </div>
 
       {/* Recent songs */}
