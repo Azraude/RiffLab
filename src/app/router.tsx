@@ -14,6 +14,7 @@ import { Stats } from '@/pages/Stats';
 import { Setlists } from '@/pages/Setlists';
 import { SetlistDetail } from '@/pages/SetlistDetail';
 import { SetlistPlay } from '@/pages/SetlistPlay';
+import { Progressions } from '@/pages/Progressions';
 import { Settings } from '@/pages/Settings';
 
 export const router = createBrowserRouter([
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: 'setlists/:id/play', element: <SetlistPlay /> },
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
+      { path: 'progressions', element: <Progressions /> },
       { path: 'jam', element: <Jam /> },
       { path: 'metronome', element: <Metronome /> },
       { path: 'tuner', element: <Tuner /> },
