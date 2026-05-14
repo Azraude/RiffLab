@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
+import { RecorderSection } from '@/components/songs/RecorderSection';
 import { db, saveSong } from '@/lib/db';
 import { getChord, getDefaultVoicing } from '@/lib/chordDatabase';
 import { suggestCapo, OPEN_CHORD_SHAPES } from '@/lib/capoSuggest';
@@ -220,6 +221,9 @@ export function SongDetail() {
         Clique sur un accord pour l'entendre · La lecture audio nécessite une première interaction
         (politique navigateur).
       </p>
+
+      {/* Enregistrements audio du morceau */}
+      <RecorderSection songId={song.id} />
 
       {/* Zone dangereuse — suppression du song, isolée en bas de page
           dans une card bordée danger pour éviter les faux-clics */}

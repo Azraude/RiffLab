@@ -2,11 +2,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { db, type Song } from '@/lib/db';
-import { Plus } from 'lucide-react';
+import { countRecordingsBySong, db, type Song } from '@/lib/db';
+import { Mic, Plus } from 'lucide-react';
 
 export function Songs() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
+  const recCounts = useLiveQuery(() => countRecordingsBySong(), []);
   // Quand la route /songs/new est active, le Sheet de création est par-dessus :
   // on cache le FAB (sinon il transparaît à travers le backdrop).
   const location = useLocation();
@@ -42,7 +43,7 @@ export function Songs() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
           {songs.map((s) => (
-            <SongTile key={s.id} song={s} />
+            <SongTile key={s.id} song={s} recordingsCount={recCounts?.[s.id] ?? 0} />
           ))}
         </div>
       )}
@@ -63,7 +64,7 @@ export function Songs() {
   );
 }
 
-function SongTile({ song }: { song: Song }) {
+function SongTile({ song, recordingsCount }: { song: Song; recordingsCount: number }) {
   const chords = Array.from(
     new Set(song.sections.flatMap((sec) => sec.chords.map((c) => c.name)))
   ).slice(0, 6);
@@ -80,13 +81,18 @@ function SongTile({ song }: { song: Song }) {
             </span>
           ))}
         </div>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-soft">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-soft">
           <span>♩ {song.tempo} BPM</span>
           <span>
             {song.key} {song.mode === 'minor' ? 'min' : 'maj'}
           </span>
           {song.capo > 0 && <span>capo {song.capo}</span>}
           <span>● {song.status}</span>
+          {recordingsCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-gold">
+              <Mic size={11} /> {recordingsCount} essai{recordingsCount > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </Card>
     </Link>

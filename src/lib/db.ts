@@ -66,11 +66,22 @@ export type Setlist = {
   updatedAt: number;
 };
 
+export type Recording = {
+  id: string;
+  songId: string;
+  blob: Blob;
+  mimeType: string;
+  durationMs: number;
+  name?: string;            // titre custom optionnel
+  createdAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
   sessions!: Table<PracticeSession, number>;
   setlists!: Table<Setlist, string>;
+  recordings!: Table<Recording, string>;
 
   constructor() {
     super('rifflab');
@@ -83,6 +94,13 @@ class RiffLabDB extends Dexie {
       songs: 'id, title, artist, key, updatedAt, status',
       sessions: '++id, date, completed',
       setlists: 'id, name, updatedAt',
+    });
+    // v3 : ajout des recordings (blob audio par song)
+    this.version(3).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
     });
   }
 }
@@ -112,6 +130,34 @@ export function emptySetlist(partial: Partial<Setlist> = {}): Setlist {
     updatedAt: now,
     ...partial,
   };
+}
+
+export function newRecordingId() {
+  return 'rec_' + crypto.randomUUID();
+}
+
+// ─── Recording CRUD ──────────────────────────────────────────────
+export async function listRecordings(songId: string): Promise<Recording[]> {
+  return db.recordings.where('songId').equals(songId).reverse().sortBy('createdAt');
+}
+
+export async function saveRecording(rec: Recording): Promise<void> {
+  await db.recordings.put(rec);
+}
+
+export async function deleteRecording(id: string): Promise<void> {
+  await db.recordings.delete(id);
+}
+
+export async function countRecordings(songId: string): Promise<number> {
+  return db.recordings.where('songId').equals(songId).count();
+}
+
+export async function countRecordingsBySong(): Promise<Record<string, number>> {
+  const all = await db.recordings.toArray();
+  const out: Record<string, number> = {};
+  for (const r of all) out[r.songId] = (out[r.songId] ?? 0) + 1;
+  return out;
 }
 
 // ─── Setlist CRUD ──────────────────────────────────────────────
