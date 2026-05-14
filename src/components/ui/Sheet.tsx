@@ -14,15 +14,11 @@
  *    Framer (qui override transform). Maintenant un wrapper fixed inset-0
  *    flex items-center justify-center → le motion.div peut animer
  *    librement sans casser le centrage.
- *  - Soumission du form impossible : Dialog.Content asChild a besoin que
- *    son enfant forwarde ref + props sur son root DOM, sinon Radix n'a
- *    pas la ref du contenu et traite TOUT click intérieur comme
- *    « outside » → modal ferme dès qu'on touche un input/bouton.
- *    Fix : MobileSheet et DesktopDialog en forwardRef qui spread les
- *    props Radix sur leur élément racine.
+ *  - Click sur input fermait le modal sur desktop : onInteractOutside
+ *    protégé pour les éléments rendus en portail (Radix Select, etc.).
  */
 
-import { forwardRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -106,27 +102,23 @@ export function Sheet({ open, onOpenChange, title, description, children, classN
 
 // ─── Desktop : centered modal via flex parent ─────────────────────────
 
-interface DesktopDialogProps extends React.HTMLAttributes<HTMLDivElement> {
+function DesktopDialog({
+  title,
+  description,
+  onClose,
+  children,
+  className,
+}: {
   title?: string;
   description?: string;
   onClose: () => void;
   children: React.ReactNode;
-}
-
-const DesktopDialog = forwardRef<HTMLDivElement, DesktopDialogProps>(function DesktopDialog(
-  { title, description, onClose, children, className, ...rest },
-  ref
-) {
+  className?: string;
+}) {
   return (
-    // Wrapper fixed inset-0 + flex centering. C'est ICI que Radix attache
-    // sa ref via Dialog.Content asChild, donc on spread {...rest} + ref
-    // sur ce wrapper (sinon Radix ne sait pas ce qui est « inside »
-    // et ferme le modal au moindre click sur un input/bouton).
-    <div
-      ref={ref}
-      {...rest}
-      className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6"
-    >
+    // Wrapper fixed inset-0 + flex centering. Le motion.div animé reste
+    // libre de transformer sans casser le centrage.
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6">
       <motion.div
         className={clsx(
           'pointer-events-auto flex max-h-[90vh] w-[min(640px,92vw)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl',
@@ -161,25 +153,25 @@ const DesktopDialog = forwardRef<HTMLDivElement, DesktopDialogProps>(function De
       </motion.div>
     </div>
   );
-});
+}
 
 // ─── Mobile : bottom sheet with drag-to-dismiss ────────────────────────
 
-interface MobileSheetProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag' | 'onDragEnd' | 'onDragStart' | 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'> {
+function MobileSheet({
+  title,
+  description,
+  onClose,
+  children,
+  className,
+}: {
   title?: string;
   description?: string;
   onClose: () => void;
   children: React.ReactNode;
-}
-
-const MobileSheet = forwardRef<HTMLDivElement, MobileSheetProps>(function MobileSheet(
-  { title, description, onClose, children, className, ...rest },
-  ref
-) {
+  className?: string;
+}) {
   return (
     <motion.div
-      ref={ref}
-      {...rest}
       className={clsx(
         'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-3xl border-t border-border bg-surface shadow-2xl',
         className
@@ -223,4 +215,4 @@ const MobileSheet = forwardRef<HTMLDivElement, MobileSheetProps>(function Mobile
       <div className="flex-1 overflow-y-auto px-5 pb-6">{children}</div>
     </motion.div>
   );
-});
+}
