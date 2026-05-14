@@ -1,21 +1,24 @@
 /**
  * Moteur audio basé sur Tone.js.
- * - 6 PluckSynth (un par corde) pour polyphonie correcte
- * - Reverb légère, master gain
- * - API : playNote(midi), playChordVoicing(frets, tuning), strum(frets, tuning, direction)
+ * - 6 voix (un Synth par corde) construites via la recette du timbre actif.
+ * - Reverb légère, master gain.
+ * - API : playNote(midi), playChordVoicing(frets, tuning), strum(frets, tuning, direction).
+ * - rebuildVoices(timbreId) pour switcher de timbre à chaud.
  */
 import * as Tone from 'tone';
 import { TUNINGS, midiToFreq, midiToNoteWithOctave, type TuningId } from './theory';
+import { buildVoices, type StrumSoundId, type SynthVoice } from './strumSounds';
 
 let initialized = false;
-const synths: Tone.PluckSynth[] = [];
+let voices: SynthVoice[] = [];
+let activeTimbre: StrumSoundId = 'karplus';
 let reverb: Tone.Reverb | null = null;
 let masterGain: Tone.Gain | null = null;
 
 /**
  * Init audio. À appeler après une interaction utilisateur (politique navigateur).
  */
-export async function initAudio(): Promise<void> {
+export async function initAudio(timbre: StrumSoundId = 'karplus'): Promise<void> {
   if (initialized) return;
   await Tone.start();
 
@@ -24,16 +27,8 @@ export async function initAudio(): Promise<void> {
   await reverb.generate();
   reverb.connect(masterGain);
 
-  // 6 PluckSynth, un par corde (Tone.PluckSynth est monophonique)
-  for (let i = 0; i < 6; i++) {
-    const s = new Tone.PluckSynth({
-      attackNoise: 1.2,
-      dampening: 4200,
-      resonance: 0.96,
-    });
-    s.connect(reverb);
-    synths.push(s);
-  }
+  activeTimbre = timbre;
+  voices = buildVoices(timbre, reverb);
 
   initialized = true;
 }
@@ -48,14 +43,44 @@ export function setMasterVolume(value: number): void {
 }
 
 /**
- * Joue une seule note (MIDI) via le synth de la 1ère corde (utility / mélodie).
+ * Switch le timbre actif. Dispose les voix actuelles et rebuild avec la
+ * nouvelle recette. No-op si l'audio n'est pas encore init (le timbre sera
+ * lu au prochain initAudio).
+ */
+export function rebuildVoices(timbre: StrumSoundId): void {
+  if (!initialized || !reverb) {
+    activeTimbre = timbre;
+    return;
+  }
+  if (timbre === activeTimbre) return;
+  // Dispose en différé pour laisser les notes en cours finir leur release.
+  const oldVoices = voices;
+  setTimeout(() => {
+    oldVoices.forEach((v) => {
+      try {
+        v.dispose();
+      } catch {
+        // ignore
+      }
+    });
+  }, 1500);
+  voices = buildVoices(timbre, reverb);
+  activeTimbre = timbre;
+}
+
+export function getActiveTimbre(): StrumSoundId {
+  return activeTimbre;
+}
+
+/**
+ * Joue une seule note (MIDI) via la 1ère voix (utility / mélodie).
  */
 export async function playNote(midi: number, duration = '2n', when?: number): Promise<void> {
-  if (!initialized) await initAudio();
-  const s = synths[0];
-  if (!s) return;
+  if (!initialized) await initAudio(activeTimbre);
+  const v = voices[0];
+  if (!v) return;
   const time = when ?? Tone.now();
-  s.triggerAttackRelease(midiToFreq(midi), duration, time);
+  v.trigger(midiToFreq(midi), duration, time, 0.8);
 }
 
 /**
@@ -66,13 +91,13 @@ export async function playChordVoicing(
   tuning: TuningId = 'standard',
   capo = 0
 ): Promise<void> {
-  if (!initialized) await initAudio();
+  if (!initialized) await initAudio(activeTimbre);
   const openTuning = TUNINGS[tuning];
   const now = Tone.now();
   frets.forEach((f, i) => {
     if (f == null || f < 0) return;
     const midi = openTuning[i] + f + capo;
-    synths[i]?.triggerAttackRelease(midiToFreq(midi), '2n', now, 0.8);
+    voices[i]?.trigger(midiToFreq(midi), '2n', now, 0.8);
   });
 }
 
@@ -86,7 +111,7 @@ export async function strumChord(
   direction: 'down' | 'up' = 'down',
   spreadMs = 22
 ): Promise<void> {
-  if (!initialized) await initAudio();
+  if (!initialized) await initAudio(activeTimbre);
   const openTuning = TUNINGS[tuning];
   const indices = direction === 'down' ? [0, 1, 2, 3, 4, 5] : [5, 4, 3, 2, 1, 0];
   let offset = 0;
@@ -95,7 +120,7 @@ export async function strumChord(
     const f = frets[i];
     if (f == null || f < 0) return;
     const midi = openTuning[i] + f + capo;
-    synths[i]?.triggerAttackRelease(midiToFreq(midi), '2n', now + offset / 1000, 0.78);
+    voices[i]?.trigger(midiToFreq(midi), '2n', now + offset / 1000, 0.78);
     offset += spreadMs;
   });
 }
@@ -108,7 +133,7 @@ export async function startMetronome(
   bpm: number,
   onBeat?: (beat: number) => void
 ): Promise<() => void> {
-  if (!initialized) await initAudio();
+  if (!initialized) await initAudio(activeTimbre);
   Tone.Transport.bpm.value = bpm;
 
   let beat = 0;

@@ -6,11 +6,14 @@ import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
 import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
-import { Check, Lock } from 'lucide-react';
+import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
+import { useAudio } from '@/hooks/useAudio';
+import { Check, Lock, Volume2 } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
   const prefs = usePrefs();
+  const { strum } = useAudio();
 
   const exportLib = async () => {
     const songs = await db.songs.toArray();
@@ -88,6 +91,31 @@ export function Settings() {
         </Card>
 
         <Card className="md:col-span-2">
+          <h3 className="display text-display-sm mb-1">Son de strum</h3>
+          <p className="mb-4 text-sm text-text-muted">
+            Le timbre des accords joués partout dans l'app. Clique sur un timbre pour le tester.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {STRUM_SOUNDS.map((sound) => (
+              <StrumSoundOption
+                key={sound.id}
+                sound={sound}
+                active={prefs.strumSound === sound.id}
+                onSelect={() => {
+                  if (sound.premium) {
+                    alert('Ce son est premium — disponible Phase 5 (cosmetics shop).');
+                    return;
+                  }
+                  prefs.setStrumSound(sound.id);
+                  // Preview après un court délai pour laisser le hot-swap rebuild
+                  setTimeout(() => void strum('Em', 'down'), 80);
+                }}
+              />
+            ))}
+          </div>
+        </Card>
+
+        <Card className="md:col-span-2">
           <h3 className="display text-display-sm mb-1">Thème de l'app</h3>
           <p className="mb-4 text-sm text-text-muted">
             Switch instantané — toutes les couleurs s'adaptent (sauf le manche, qui a son propre skin ci-dessous).
@@ -146,6 +174,56 @@ export function Settings() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** Strum sound picker — icone Volume + nom + chips de caractère. */
+function StrumSoundOption({
+  sound,
+  active,
+  onSelect,
+}: {
+  sound: StrumSound;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      aria-label={`Son ${sound.label}`}
+      className={clsx(
+        'group flex items-start gap-3 rounded-xl border bg-surface-2 p-3 text-left transition-all',
+        active ? 'border-gold shadow-gold' : 'border-border hover:border-gold-soft'
+      )}
+    >
+      <span
+        className={clsx(
+          'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border',
+          active ? 'border-gold bg-gold/10 text-gold' : 'border-border bg-surface text-text-muted'
+        )}
+      >
+        <Volume2 size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
+          {sound.label}
+          {sound.premium && <Lock size={12} className="text-text-soft" />}
+        </div>
+        <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{sound.description}</div>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {sound.tags.map((t) => (
+            <span key={t} className="chip text-[10px]">{t}</span>
+          ))}
+        </div>
+      </div>
+      {active && (
+        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
+          <Check size={12} strokeWidth={3} />
+        </span>
+      )}
+    </button>
   );
 }
 

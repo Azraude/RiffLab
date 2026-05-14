@@ -5,6 +5,7 @@ import { router } from '@/app/router';
 import { seedIfEmpty } from '@/lib/db';
 import { usePrefs } from '@/stores/prefsStore';
 import { applyTheme } from '@/lib/themes';
+import { rebuildVoices } from '@/lib/audio';
 import '@/styles/globals.css';
 
 // Seed the local DB with example songs on first run (non-blocking).
@@ -15,6 +16,9 @@ seedIfEmpty().catch((err) => console.warn('seed failed', err));
 applyTheme(usePrefs.getState().theme);
 usePrefs.subscribe((state, prev) => {
   if (state.theme !== prev.theme) applyTheme(state.theme);
+  // Hot-swap du timbre audio quand le user change dans Préférences.
+  // No-op si l'audio n'est pas encore init (le timbre sera lu au prochain initAudio).
+  if (state.strumSound !== prev.strumSound) rebuildVoices(state.strumSound);
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

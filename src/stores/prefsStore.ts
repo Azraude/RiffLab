@@ -4,6 +4,7 @@ import type { TuningId } from '@/lib/theory';
 import type { FretboardSkinId } from '@/lib/fretboardSkins';
 import type { PracticePlanData } from '@/lib/practicePlan';
 import type { ThemeId } from '@/lib/themes';
+import type { StrumSoundId } from '@/lib/strumSounds';
 
 type PrefsState = {
   tuning: TuningId;
@@ -13,6 +14,7 @@ type PrefsState = {
   showNoteNames: boolean;
   fretboardSkin: FretboardSkinId;
   theme: ThemeId;
+  strumSound: StrumSoundId;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
   setCapo: (n: number) => void;
@@ -21,6 +23,7 @@ type PrefsState = {
   toggleNoteNames: () => void;
   setFretboardSkin: (id: FretboardSkinId) => void;
   setTheme: (id: ThemeId) => void;
+  setStrumSound: (id: StrumSoundId) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
 };
@@ -35,6 +38,7 @@ export const usePrefs = create<PrefsState>()(
       showNoteNames: true,
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
+      strumSound: 'karplus',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
       setCapo: (capo) => set({ capo }),
@@ -43,6 +47,7 @@ export const usePrefs = create<PrefsState>()(
       toggleNoteNames: () => set((s) => ({ showNoteNames: !s.showNoteNames })),
       setFretboardSkin: (fretboardSkin) => set({ fretboardSkin }),
       setTheme: (theme) => set({ theme }),
+      setStrumSound: (strumSound) => set({ strumSound }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
         set((s) => {
@@ -62,7 +67,7 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 4,
+      version: 5,
       /**
        * Migration permissive : on garde tous les champs reconnus et on
        * remplit les nouveaux avec les valeurs par défaut. Comme ça,
@@ -78,6 +83,7 @@ export const usePrefs = create<PrefsState>()(
           showNoteNames: p.showNoteNames ?? true,
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
+          strumSound: p.strumSound ?? 'karplus',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
       },

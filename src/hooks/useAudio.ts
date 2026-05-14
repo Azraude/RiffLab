@@ -18,6 +18,7 @@ export function useAudio() {
   const capo = usePrefs((s) => s.capo);
   const audioEnabled = usePrefs((s) => s.audioEnabled);
   const volume = usePrefs((s) => s.volume);
+  const strumSound = usePrefs((s) => s.strumSound);
 
   const [ready, setReady] = useState(isAudioReady());
 
@@ -27,10 +28,10 @@ export function useAudio() {
 
   const ensureInit = useCallback(async () => {
     if (!ready) {
-      await initAudio();
+      await initAudio(strumSound);
       setReady(true);
     }
-  }, [ready]);
+  }, [ready, strumSound]);
 
   const playChordByName = useCallback(
     async (name: string) => {
