@@ -4,14 +4,22 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
-import { db } from '@/lib/db';
+import {
+  db,
+  logSession,
+  todaysSession,
+  computeStreak,
+  lastSevenDays,
+  todayKey,
+} from '@/lib/db';
 import { CHORDS, getDefaultVoicing } from '@/lib/chordDatabase';
 import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Play } from 'lucide-react';
+import { Play, Check, Flame } from 'lucide-react';
+import clsx from 'clsx';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -36,6 +44,23 @@ export function Dashboard() {
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
   const { strum } = useAudio();
   const fretboardSkin = usePrefs((s) => s.fretboardSkin);
+
+  // Practice tracking : session du jour + streak + 7 derniers jours
+  const today = useLiveQuery(() => todaysSession(), []);
+  const streak = useLiveQuery(() => computeStreak(), [today]);
+  const weekDays = useLiveQuery(() => lastSevenDays(), [today]);
+  const practicedToday = today?.completed === true;
+
+  const markPracticed = async () => {
+    if (practicedToday) return;
+    await logSession({
+      date: todayKey(),
+      chord: chord.name,
+      scale: scale.id,
+      progression: [],
+      completed: true,
+    });
+  };
 
   const todayLabel = new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
@@ -120,28 +145,64 @@ export function Dashboard() {
               >
                 Voir la gamme sur le manche
               </Link>
+              <button
+                type="button"
+                onClick={markPracticed}
+                disabled={practicedToday}
+                className={clsx(
+                  'inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-all md:h-10',
+                  practicedToday
+                    ? 'cursor-default border border-success/40 bg-success/10 text-success'
+                    : 'border border-border-gold text-text hover:bg-gold/5'
+                )}
+              >
+                <Check size={16} />
+                {practicedToday ? 'Fait ✓ aujourd\'hui' : "J'ai pratiqué aujourd'hui"}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Streak card — compact on mobile, full on desktop */}
+        {/* Streak card — vraies données depuis sessions Dexie */}
         <Card className="text-center">
           <CardTitle>Série</CardTitle>
-          <div className="display text-[40px] leading-none text-gold md:text-[64px]">—</div>
-          <div className="label-small mt-2">jours d'affilée</div>
-          <div className="mt-4 flex justify-center gap-1.5">
-            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-              <div
-                key={i}
-                className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-[10px] text-text-soft md:h-7 md:w-7 md:text-[11px]"
-              >
-                {d}
-              </div>
-            ))}
+          <div className="mt-1 flex items-center justify-center gap-2">
+            <div className="display text-[40px] leading-none text-gold md:text-[64px]">
+              {streak ?? 0}
+            </div>
+            {(streak ?? 0) > 0 && (
+              <Flame size={28} className="text-gold-bright md:h-9 md:w-9" />
+            )}
           </div>
-          <p className="mt-3 text-xs text-text-soft">
-            Suivi de série — Phase 2.
-          </p>
+          <div className="label-small mt-2">
+            jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée
+          </div>
+          <div className="mt-4 flex justify-center gap-1.5">
+            {(weekDays ?? []).map((d) => {
+              const isToday = d.date === todayKey();
+              return (
+                <div
+                  key={d.date}
+                  title={d.date}
+                  className={clsx(
+                    'flex h-6 w-6 items-center justify-center rounded-full text-[10px] md:h-7 md:w-7 md:text-[11px]',
+                    d.practiced
+                      ? 'border border-gold-soft bg-gold/20 font-semibold text-gold'
+                      : 'border border-border text-text-soft',
+                    isToday && !d.practiced && 'ring-1 ring-gold-soft/50'
+                  )}
+                >
+                  {d.weekday}
+                </div>
+              );
+            })}
+          </div>
+          <Link
+            to="/stats"
+            className="mt-3 inline-block text-xs text-gold hover:text-gold-bright"
+          >
+            Voir mes stats →
+          </Link>
         </Card>
       </div>
 
