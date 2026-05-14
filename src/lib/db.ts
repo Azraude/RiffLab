@@ -57,16 +57,32 @@ export type PracticeSession = {
   createdAt: number;
 };
 
+export type Setlist = {
+  id: string;
+  name: string;
+  songIds: string[];        // ordre = ordre de lecture
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
   sessions!: Table<PracticeSession, number>;
+  setlists!: Table<Setlist, string>;
 
   constructor() {
     super('rifflab');
     this.version(1).stores({
       songs: 'id, title, artist, key, updatedAt, status',
       sessions: '++id, date, completed',
+    });
+    // v2 : ajout des setlists
+    this.version(2).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
     });
   }
 }
@@ -80,6 +96,40 @@ export function newSongId() {
 
 export function newSectionId() {
   return 'sec_' + crypto.randomUUID();
+}
+
+export function newSetlistId() {
+  return 'sl_' + crypto.randomUUID();
+}
+
+export function emptySetlist(partial: Partial<Setlist> = {}): Setlist {
+  const now = Date.now();
+  return {
+    id: newSetlistId(),
+    name: 'Nouvelle setlist',
+    songIds: [],
+    createdAt: now,
+    updatedAt: now,
+    ...partial,
+  };
+}
+
+// ─── Setlist CRUD ──────────────────────────────────────────────
+export async function listSetlists(): Promise<Setlist[]> {
+  return db.setlists.orderBy('updatedAt').reverse().toArray();
+}
+
+export async function getSetlist(id: string): Promise<Setlist | undefined> {
+  return db.setlists.get(id);
+}
+
+export async function saveSetlist(setlist: Setlist): Promise<void> {
+  setlist.updatedAt = Date.now();
+  await db.setlists.put(setlist);
+}
+
+export async function deleteSetlist(id: string): Promise<void> {
+  await db.setlists.delete(id);
 }
 
 export function emptySong(partial: Partial<Song> = {}): Song {
@@ -234,15 +284,16 @@ export async function last30DaysPracticed(): Promise<{ date: string; count: numb
   return out;
 }
 
-// Seed: create 2-3 example songs if DB is empty on first load
+// Seed: create 2-3 example songs + 1 démo setlist if DB is empty on first load
 export async function seedIfEmpty(): Promise<void> {
   const count = await db.songs.count();
   if (count > 0) return;
 
   const now = Date.now();
+  const songIds = [newSongId(), newSongId(), newSongId()];
   await db.songs.bulkAdd([
     {
-      id: newSongId(),
+      id: songIds[0],
       title: 'Wonderwall',
       artist: 'Oasis',
       key: 'F#' as NoteName,
@@ -281,7 +332,7 @@ export async function seedIfEmpty(): Promise<void> {
       updatedAt: now - 86400000 * 3,
     },
     {
-      id: newSongId(),
+      id: songIds[1],
       title: "Sweet Child o' Mine",
       artist: "Guns N' Roses",
       key: 'D' as NoteName,
@@ -306,7 +357,7 @@ export async function seedIfEmpty(): Promise<void> {
       updatedAt: now - 86400000 * 1,
     },
     {
-      id: newSongId(),
+      id: songIds[2],
       title: 'No Surprises',
       artist: 'Radiohead',
       key: 'F' as NoteName,
@@ -332,4 +383,13 @@ export async function seedIfEmpty(): Promise<void> {
       updatedAt: now,
     },
   ]);
+
+  // Setlist démo : "Répèt du jeudi"
+  await db.setlists.add({
+    id: newSetlistId(),
+    name: 'Répèt du jeudi',
+    songIds,
+    createdAt: now,
+    updatedAt: now,
+  });
 }

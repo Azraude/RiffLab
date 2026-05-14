@@ -8,6 +8,7 @@ import {
   Timer,
   Mic,
   BarChart3,
+  ListMusic,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -22,6 +23,7 @@ type NavItem = {
 const items: NavItem[] = [
   { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'main' },
   { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'main' },
+  { to: '/setlists', label: 'Setlists', icon: <ListMusic size={18} />, section: 'main' },
   { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'main' },
   { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
   { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },

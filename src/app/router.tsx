@@ -11,6 +11,9 @@ import { Jam } from '@/pages/Jam';
 import { Metronome } from '@/pages/Metronome';
 import { Tuner } from '@/pages/Tuner';
 import { Stats } from '@/pages/Stats';
+import { Setlists } from '@/pages/Setlists';
+import { SetlistDetail } from '@/pages/SetlistDetail';
+import { SetlistPlay } from '@/pages/SetlistPlay';
 import { Settings } from '@/pages/Settings';
 
 export const router = createBrowserRouter([
@@ -26,6 +29,9 @@ export const router = createBrowserRouter([
       { path: 'songs', element: <Songs /> },
       { path: 'songs/new', element: <SongNew /> },
       { path: 'songs/:id', element: <SongDetail /> },
+      { path: 'setlists', element: <Setlists /> },
+      { path: 'setlists/:id', element: <SetlistDetail /> },
+      { path: 'setlists/:id/play', element: <SetlistPlay /> },
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
       { path: 'jam', element: <Jam /> },
