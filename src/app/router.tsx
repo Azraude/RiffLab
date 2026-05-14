@@ -17,6 +17,7 @@ import { SetlistPlay } from '@/pages/SetlistPlay';
 import { Progressions } from '@/pages/Progressions';
 import { EarTraining } from '@/pages/EarTraining';
 import { StrumPatterns } from '@/pages/StrumPatterns';
+import { PracticePlan } from '@/pages/PracticePlan';
 import { Settings } from '@/pages/Settings';
 
 export const router = createBrowserRouter([
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: 'progressions', element: <Progressions /> },
       { path: 'ear-training', element: <EarTraining /> },
       { path: 'strum-patterns', element: <StrumPatterns /> },
+      { path: 'practice-plan', element: <PracticePlan /> },
       { path: 'jam', element: <Jam /> },
       { path: 'metronome', element: <Metronome /> },
       { path: 'tuner', element: <Tuner /> },

@@ -197,12 +197,20 @@ export function Dashboard() {
               );
             })}
           </div>
-          <Link
-            to="/stats"
-            className="mt-3 inline-block text-xs text-gold hover:text-gold-bright"
-          >
-            Voir mes stats →
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <Link
+              to="/stats"
+              className="inline-block text-xs text-gold hover:text-gold-bright"
+            >
+              Voir mes stats →
+            </Link>
+            <Link
+              to="/practice-plan"
+              className="inline-block text-xs text-gold hover:text-gold-bright"
+            >
+              Mon plan →
+            </Link>
+          </div>
         </Card>
       </div>
 

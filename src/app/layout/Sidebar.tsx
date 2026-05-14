@@ -12,6 +12,7 @@ import {
   Workflow,
   Ear,
   Activity,
+  Target,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -28,6 +29,7 @@ const items: NavItem[] = [
   { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'main' },
   { to: '/setlists', label: 'Setlists', icon: <ListMusic size={18} />, section: 'main' },
   { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'main' },
+  { to: '/practice-plan', label: 'Mon plan', icon: <Target size={18} />, section: 'main' },
   { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
   { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
   { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
