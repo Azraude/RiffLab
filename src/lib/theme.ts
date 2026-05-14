@@ -1,7 +1,13 @@
 /**
- * Design tokens — single source of truth pour les couleurs / typo.
- * Reflète tailwind.config.ts pour utilisation dans des composants TS
- * (ex: Three.js, SVG dynamiques).
+ * Design tokens (legacy) — defaults Dark Gold uniquement.
+ *
+ * Pour les contextes "Tailwind", utilise les utilitaires (`bg-gold`, etc.) :
+ * ils consomment les variables CSS et suivent automatiquement le thème actif.
+ *
+ * Pour les contextes "runtime hex" (Three.js, SVG dynamiques qui ont besoin
+ * d'une string `#xxxxxx`), lire les variables CSS au runtime via
+ * `getComputedStyle(document.documentElement).getPropertyValue('--gold')` et
+ * recomposer en `rgb()`. Ces tokens ne sont qu'un fallback statique.
  */
 export const colors = {
   bg: '#0a0a0a',

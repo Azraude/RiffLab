@@ -5,7 +5,8 @@ import { usePrefs } from '@/stores/prefsStore';
 import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
 import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
-import { Check } from 'lucide-react';
+import { THEMES, type Theme } from '@/lib/themes';
+import { Check, Lock } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
@@ -76,13 +77,36 @@ export function Settings() {
                 max={100}
                 value={prefs.volume * 100}
                 onChange={(e) => prefs.setVolume(parseInt(e.target.value) / 100)}
-                className="w-full accent-[#d4b76a]"
+                className="w-full accent-gold"
               />
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm">Afficher les noms de notes sur le manche</span>
               <Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />
             </div>
+          </div>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <h3 className="display text-display-sm mb-1">Thème de l'app</h3>
+          <p className="mb-4 text-sm text-text-muted">
+            Switch instantané — toutes les couleurs s'adaptent (sauf le manche, qui a son propre skin ci-dessous).
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {THEMES.map((theme) => (
+              <ThemeOption
+                key={theme.id}
+                theme={theme}
+                active={prefs.theme === theme.id}
+                onSelect={() => {
+                  if (theme.premium) {
+                    alert('Ce thème est premium — disponible Phase 5 (cosmetics shop).');
+                    return;
+                  }
+                  prefs.setTheme(theme.id);
+                }}
+              />
+            ))}
           </div>
         </Card>
 
@@ -122,6 +146,77 @@ export function Settings() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** Theme selector — vignette colorée 3-stripes + nom + check si actif. */
+function ThemeOption({
+  theme,
+  active,
+  onSelect,
+}: {
+  theme: Theme;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      aria-label={`Thème ${theme.label}`}
+      className={clsx(
+        'group flex flex-col gap-3 rounded-xl border bg-surface-2 p-3 text-left transition-all',
+        active ? 'border-gold shadow-gold' : 'border-border hover:border-gold-soft'
+      )}
+    >
+      {/* Vignette : 3 bandes horizontales bg / surface / accent + dot bright */}
+      <div
+        className="relative h-16 w-full overflow-hidden rounded-lg border border-border"
+        style={{ backgroundColor: theme.preview.bg }}
+      >
+        <div
+          className="absolute inset-x-0 top-0 h-1/3"
+          style={{ backgroundColor: theme.preview.bg }}
+        />
+        <div
+          className="absolute inset-x-0 top-1/3 h-1/3"
+          style={{ backgroundColor: theme.preview.surface }}
+        />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-1/3 flex items-center justify-between px-3"
+          style={{ backgroundColor: theme.preview.bg }}
+        >
+          <span
+            className="font-serif text-base font-semibold"
+            style={{ color: theme.preview.accent, textShadow: `0 0 12px ${theme.preview.accentBright}40` }}
+          >
+            RiffLab
+          </span>
+          <span
+            className="h-3 w-3 rounded-full"
+            style={{
+              backgroundColor: theme.preview.accentBright,
+              boxShadow: `0 0 8px ${theme.preview.accentBright}80`,
+            }}
+          />
+        </div>
+      </div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
+            {theme.label}
+            {theme.premium && <Lock size={12} className="text-text-soft" />}
+          </div>
+          <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{theme.description}</div>
+        </div>
+        {active && (
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
+            <Check size={12} strokeWidth={3} />
+          </span>
+        )}
+      </div>
+    </button>
   );
 }
 

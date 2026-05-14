@@ -1,26 +1,39 @@
 import type { Config } from 'tailwindcss';
 
+/**
+ * Couleurs basées sur des variables CSS (RGB triplet) définies dans
+ * `src/styles/globals.css`. Permet le theming via `data-theme="..."`
+ * sur `<html>` sans toucher au CSS bundle.
+ *
+ * Syntaxe `rgb(var(--xxx) / <alpha-value>)` → conserve les utilitaires
+ * Tailwind comme `bg-gold/10`, `text-text/50`, etc.
+ */
+const themeColor = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        bg: '#0a0a0a',
-        surface: '#141414',
-        'surface-2': '#1c1c1c',
-        border: '#2a2a2a',
-        'border-gold': 'rgba(212, 183, 106, 0.18)',
-        text: '#ffffff',
-        'text-muted': '#9a9a9a',
-        'text-soft': '#6a6a6a',
+        bg: themeColor('bg'),
+        surface: themeColor('surface'),
+        'surface-2': themeColor('surface-2'),
+        border: themeColor('border'),
+        // border-gold = gold à 0.18 d'opacité, fixe (pas de <alpha-value>
+        // car personne n'utilise border-border-gold/N — c'est toujours le
+        // halo doré subtil sur les CTAs et cartes hover).
+        'border-gold': 'rgb(var(--gold) / 0.18)',
+        text: themeColor('text'),
+        'text-muted': themeColor('text-muted'),
+        'text-soft': themeColor('text-soft'),
         gold: {
-          DEFAULT: '#d4b76a',
-          bright: '#f5d97a',
-          soft: '#9a8454',
-          glow: 'rgba(245, 217, 122, 0.35)',
+          DEFAULT: themeColor('gold'),
+          bright: themeColor('gold-bright'),
+          soft: themeColor('gold-soft'),
+          glow: themeColor('gold-glow'),
         },
-        success: '#4caf85',
-        danger: '#d4685e',
+        success: themeColor('success'),
+        danger: themeColor('danger'),
       },
       fontFamily: {
         serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
@@ -40,8 +53,8 @@ const config: Config = {
         '3xl': '20px',
       },
       boxShadow: {
-        gold: '0 0 24px rgba(245, 217, 122, 0.18)',
-        'gold-strong': '0 0 32px rgba(245, 217, 122, 0.32)',
+        gold: '0 0 24px rgb(var(--gold-glow) / 0.18)',
+        'gold-strong': '0 0 32px rgb(var(--gold-glow) / 0.32)',
       },
       transitionTimingFunction: {
         'out-quart': 'cubic-bezier(0.25, 1, 0.5, 1)',

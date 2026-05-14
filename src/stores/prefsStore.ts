@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { TuningId } from '@/lib/theory';
 import type { FretboardSkinId } from '@/lib/fretboardSkins';
 import type { PracticePlanData } from '@/lib/practicePlan';
+import type { ThemeId } from '@/lib/themes';
 
 type PrefsState = {
   tuning: TuningId;
@@ -11,6 +12,7 @@ type PrefsState = {
   volume: number;
   showNoteNames: boolean;
   fretboardSkin: FretboardSkinId;
+  theme: ThemeId;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
   setCapo: (n: number) => void;
@@ -18,6 +20,7 @@ type PrefsState = {
   setVolume: (v: number) => void;
   toggleNoteNames: () => void;
   setFretboardSkin: (id: FretboardSkinId) => void;
+  setTheme: (id: ThemeId) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
 };
@@ -31,6 +34,7 @@ export const usePrefs = create<PrefsState>()(
       volume: 0.65,
       showNoteNames: true,
       fretboardSkin: 'noir-mat',
+      theme: 'dark-gold',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
       setCapo: (capo) => set({ capo }),
@@ -38,6 +42,7 @@ export const usePrefs = create<PrefsState>()(
       setVolume: (volume) => set({ volume }),
       toggleNoteNames: () => set((s) => ({ showNoteNames: !s.showNoteNames })),
       setFretboardSkin: (fretboardSkin) => set({ fretboardSkin }),
+      setTheme: (theme) => set({ theme }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
         set((s) => {
@@ -57,7 +62,25 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 3,
+      version: 4,
+      /**
+       * Migration permissive : on garde tous les champs reconnus et on
+       * remplit les nouveaux avec les valeurs par défaut. Comme ça,
+       * bumper la version ne reset PAS les préférences existantes du user.
+       */
+      migrate: (persisted, _version) => {
+        const p = (persisted ?? {}) as Partial<PrefsState>;
+        return {
+          tuning: p.tuning ?? 'standard',
+          capo: p.capo ?? 0,
+          audioEnabled: p.audioEnabled ?? true,
+          volume: p.volume ?? 0.65,
+          showNoteNames: p.showNoteNames ?? true,
+          fretboardSkin: p.fretboardSkin ?? 'noir-mat',
+          theme: p.theme ?? 'dark-gold',
+          practicePlan: p.practicePlan ?? null,
+        } as PrefsState;
+      },
     }
   )
 );

@@ -3,8 +3,112 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ─── Thèmes UI — variables CSS en RGB triplet pour <alpha-value> Tailwind ─── */
+
+  /* Dark Gold (default) */
+  :root,
+  :root[data-theme='dark-gold'] {
     color-scheme: dark;
+    --bg: 10 10 10;
+    --surface: 20 20 20;
+    --surface-2: 28 28 28;
+    --border: 42 42 42;
+    --text: 255 255 255;
+    --text-muted: 154 154 154;
+    --text-soft: 106 106 106;
+    --gold: 212 183 106;
+    --gold-bright: 245 217 122;
+    --gold-soft: 154 132 84;
+    --gold-glow: 245 217 122;
+    --success: 76 175 133;
+    --danger: 212 104 94;
+    --scrollbar-track: 10 10 10;
+    --scrollbar-thumb: 42 42 42;
+    --scrollbar-thumb-hover: 58 58 58;
+  }
+
+  /* Sunset — orangé chaud, ambiance studio enregistrement night-mode */
+  :root[data-theme='sunset'] {
+    color-scheme: dark;
+    --bg: 26 13 8;
+    --surface: 37 21 16;
+    --surface-2: 47 28 22;
+    --border: 61 40 32;
+    --text: 255 236 224;
+    --text-muted: 207 173 152;
+    --text-soft: 150 120 100;
+    --gold: 255 122 69;
+    --gold-bright: 255 178 133;
+    --gold-soft: 183 89 49;
+    --gold-glow: 255 178 133;
+    --success: 100 200 130;
+    --danger: 230 90 80;
+    --scrollbar-track: 26 13 8;
+    --scrollbar-thumb: 61 40 32;
+    --scrollbar-thumb-hover: 80 56 45;
+  }
+
+  /* Studio Blue — Lake Placid, calme et froid */
+  :root[data-theme='studio-blue'] {
+    color-scheme: dark;
+    --bg: 10 16 24;
+    --surface: 20 26 38;
+    --surface-2: 28 36 50;
+    --border: 42 51 68;
+    --text: 232 238 245;
+    --text-muted: 158 174 196;
+    --text-soft: 110 124 145;
+    --gold: 107 168 212;
+    --gold-bright: 156 197 229;
+    --gold-soft: 78 124 162;
+    --gold-glow: 156 197 229;
+    --success: 80 200 160;
+    --danger: 215 110 105;
+    --scrollbar-track: 10 16 24;
+    --scrollbar-thumb: 42 51 68;
+    --scrollbar-thumb-hover: 62 75 95;
+  }
+
+  /* Pure White — mode jour répèt, contraste élevé */
+  :root[data-theme='pure-white'] {
+    color-scheme: light;
+    --bg: 250 250 250;
+    --surface: 255 255 255;
+    --surface-2: 240 240 240;
+    --border: 212 212 212;
+    --text: 26 26 26;
+    --text-muted: 90 90 90;
+    --text-soft: 138 138 138;
+    --gold: 184 149 74;
+    --gold-bright: 212 183 106;
+    --gold-soft: 138 110 56;
+    --gold-glow: 212 183 106;
+    --success: 56 145 100;
+    --danger: 200 80 70;
+    --scrollbar-track: 240 240 240;
+    --scrollbar-thumb: 200 200 200;
+    --scrollbar-thumb-hover: 170 170 170;
+  }
+
+  /* Néon Synthwave — magenta + violet, vibe arcade */
+  :root[data-theme='neon-synthwave'] {
+    color-scheme: dark;
+    --bg: 10 5 24;
+    --surface: 26 14 46;
+    --surface-2: 38 21 64;
+    --border: 61 38 88;
+    --text: 253 232 255;
+    --text-muted: 186 156 220;
+    --text-soft: 128 105 168;
+    --gold: 255 45 208;
+    --gold-bright: 255 107 224;
+    --gold-soft: 184 31 156;
+    --gold-glow: 255 107 224;
+    --success: 0 230 180;
+    --danger: 255 80 110;
+    --scrollbar-track: 10 5 24;
+    --scrollbar-thumb: 61 38 88;
+    --scrollbar-thumb-hover: 88 56 122;
   }
 
   *,
@@ -27,27 +131,29 @@
     /* Kill iOS 300ms tap delay on any tappable element */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    /* Transition smooth lors du switch de thème */
+    transition: background-color 220ms ease, color 220ms ease;
   }
 
   ::selection {
-    background-color: rgba(245, 217, 122, 0.25);
-    color: #ffffff;
+    background-color: rgb(var(--gold-bright) / 0.25);
+    color: rgb(var(--text));
   }
 
-  /* Scrollbar */
+  /* Scrollbar — utilise les variables du thème */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: rgb(var(--scrollbar-track));
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: rgb(var(--scrollbar-thumb));
     border-radius: 6px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3a3a3a;
+    background: rgb(var(--scrollbar-thumb-hover));
   }
 }
 
@@ -80,7 +186,7 @@
     background-image: linear-gradient(
       to right,
       transparent,
-      rgba(212, 183, 106, 0.35),
+      rgb(var(--gold) / 0.35),
       transparent
     );
     height: 1px;
@@ -90,5 +196,5 @@
 
 /* Utility: subtle gold glow text */
 .text-gold-glow {
-  text-shadow: 0 0 18px rgba(245, 217, 122, 0.35);
+  text-shadow: 0 0 18px rgb(var(--gold-glow) / 0.35);
 }
