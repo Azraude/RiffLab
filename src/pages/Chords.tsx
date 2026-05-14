@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
@@ -117,8 +117,23 @@ export function Chords() {
 
 // ─── Swipeable chord card ──────────────────────────────────────────────
 
+// Option A retenue : AnimatePresence mode="popLayout" + variants slide
+// directionnels. popLayout (vs "wait") laisse l'enter mounter immédiatement
+// avec son own animation pendant que l'exit fade out → SVG passe direct au
+// bon voicing sans flicker, contrairement à mode="wait" qui gardait le
+// snapshot exitant figé (bug précédent).
+// Option B (3 voicings absolute side-by-side) aurait été plus propre pour
+// le swipe gesture continu, mais Option A est suffisante ici (le swipe est
+// "discret" : un voicing à la fois).
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+};
+
 function SwipeableChordCard({ chord, onPlay }: { chord: Chord; onPlay: () => void }) {
   const [idx, setIdx] = useState(0);
+  const [direction, setDirection] = useState(0);
   const voicing = chord.voicings[idx];
   const total = chord.voicings.length;
   const hasMultiple = total > 1;
@@ -126,6 +141,7 @@ function SwipeableChordCard({ chord, onPlay }: { chord: Chord; onPlay: () => voi
   const goTo = (newIdx: number) => {
     const clamped = Math.max(0, Math.min(total - 1, newIdx));
     if (clamped === idx) return;
+    setDirection(clamped > idx ? 1 : -1);
     setIdx(clamped);
   };
 
@@ -143,32 +159,37 @@ function SwipeableChordCard({ chord, onPlay }: { chord: Chord; onPlay: () => voi
         </span>
       </button>
 
-      {/* Zone swipe — drag horizontal pour changer de voicing.
-          Re-mount via key={idx} → la motion.div retombe à x=0 entre les
-          changements de voicing (effet "snap"). */}
-      <div className="mt-2 select-none">
-        <motion.div
-          key={idx}
-          initial={{ x: 0 }}
-          animate={{ x: 0 }}
-          drag={hasMultiple ? 'x' : false}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.25}
-          onDragEnd={(_, info) => {
-            const threshold = 50;
-            if (info.offset.x < -threshold || info.velocity.x < -400) {
-              goTo(idx + 1);
-            } else if (info.offset.x > threshold || info.velocity.x > 400) {
-              goTo(idx - 1);
-            }
-          }}
-          className={clsx(
-            'flex justify-center',
-            hasMultiple && 'cursor-grab active:cursor-grabbing'
-          )}
-        >
-          <ChordDiagram voicing={voicing} name={chord.name} size="md" />
-        </motion.div>
+      {/* Zone swipe — drag horizontal pour changer de voicing. overflow-hidden
+          contient les translations d'entrée/sortie. */}
+      <div className="mt-2 select-none overflow-hidden">
+        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+          <motion.div
+            key={idx}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ x: { type: 'spring', stiffness: 360, damping: 32 }, opacity: { duration: 0.15 } }}
+            drag={hasMultiple ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.25}
+            onDragEnd={(_, info) => {
+              const threshold = 50;
+              if (info.offset.x < -threshold || info.velocity.x < -400) {
+                goTo(idx + 1);
+              } else if (info.offset.x > threshold || info.velocity.x > 400) {
+                goTo(idx - 1);
+              }
+            }}
+            className={clsx(
+              'flex justify-center',
+              hasMultiple && 'cursor-grab active:cursor-grabbing'
+            )}
+          >
+            <ChordDiagram voicing={voicing} name={chord.name} size="md" />
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Indicateurs pagination — petits traits gold si plusieurs voicings */}

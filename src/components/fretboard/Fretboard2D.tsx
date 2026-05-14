@@ -135,20 +135,36 @@ export function Fretboard2D({
         </radialGradient>
 
         {/*
-          Strings — gradient HORIZONTAL le long de la corde (x direction).
-          Crucial : un gradient vertical sur <line> horizontale collapse car la
-          bounding box a height=0, donc objectBoundingBox-relative coords sont
-          dégénérées et Chrome ne dessine rien (bug Phase 2C). En horizontal,
-          la bbox a une largeur > 0 → le gradient se calcule. Effet visuel
-          bonus : éclat métallique au centre du manche.
+          Strings — gradientUnits="userSpaceOnUse" avec coords absolues.
+          Crucial : sur <line> horizontale, la bounding box a height=0
+          donc objectBoundingBox (défaut) rend des coords dégénérées et
+          Chrome ne dessine rien (cordes invisibles). userSpaceOnUse
+          utilise le système de coords du SVG (en pixels viewBox), ce qui
+          fonctionne quelle que soit la forme de la bbox. Le commit
+          d2747d5 (vertical → horizontal) n'a pas suffi car c'était
+          l'unit qui posait problème, pas la direction.
         */}
-        <linearGradient id={id('str-bass')} x1="0" y1="0" x2="1" y2="0">
+        <linearGradient
+          id={id('str-bass')}
+          gradientUnits="userSpaceOnUse"
+          x1={PAD_L}
+          y1={0}
+          x2={PAD_L + INNER_W}
+          y2={0}
+        >
           <stop offset="0%" stopColor={s.bassString[0]} />
           <stop offset="50%" stopColor={s.bassString[1]} />
           <stop offset="100%" stopColor={s.bassString[2]} />
         </linearGradient>
 
-        <linearGradient id={id('str-treble')} x1="0" y1="0" x2="1" y2="0">
+        <linearGradient
+          id={id('str-treble')}
+          gradientUnits="userSpaceOnUse"
+          x1={PAD_L}
+          y1={0}
+          x2={PAD_L + INNER_W}
+          y2={0}
+        >
           <stop offset="0%" stopColor={s.trebleString[0]} />
           <stop offset="50%" stopColor={s.trebleString[1]} />
           <stop offset="100%" stopColor={s.trebleString[2]} />

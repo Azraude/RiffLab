@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { db, type Song } from '@/lib/db';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export function Songs() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
@@ -68,15 +68,9 @@ function SongTile({ song }: { song: Song }) {
     new Set(song.sections.flatMap((sec) => sec.chords.map((c) => c.name)))
   ).slice(0, 6);
 
-  const deleteSong = async () => {
-    if (confirm(`Supprimer "${song.title}" ?`)) {
-      await db.songs.delete(song.id);
-    }
-  };
-
   return (
-    <Card hover className="relative pr-12">
-      <Link to={`/songs/${song.id}`} className="block">
+    <Link to={`/songs/${song.id}`} className="block">
+      <Card hover>
         <h3 className="display text-[22px] leading-tight">{song.title || 'Sans titre'}</h3>
         {song.artist && <p className="mt-0.5 text-sm text-text-muted">{song.artist}</p>}
         <div className="mt-4 flex flex-wrap gap-1.5">
@@ -94,22 +88,7 @@ function SongTile({ song }: { song: Song }) {
           {song.capo > 0 && <span>capo {song.capo}</span>}
           <span>● {song.status}</span>
         </div>
-      </Link>
-      {/* Trash icon top-right, toujours visible. Bouton séparé du Link
-          parent → tap dessus ≠ navigation, tap sur la card ailleurs =
-          navigation. */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void deleteSong();
-        }}
-        aria-label={`Supprimer ${song.title}`}
-        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2/70 text-text-soft backdrop-blur transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-      >
-        <Trash2 size={15} />
-      </button>
-    </Card>
+      </Card>
+    </Link>
   );
 }

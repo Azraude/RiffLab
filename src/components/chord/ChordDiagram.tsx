@@ -111,7 +111,8 @@ export function ChordDiagram({
         />
       ))}
 
-      {/* String lines */}
+      {/* String lines — stroke #9a9a9a sur fond surface bg pour contraste
+          ~4:1 (avant : #5a5a5a, 1.3:1, quasi-invisible). */}
       {Array.from({ length: STRING_COUNT }).map((_, i) => (
         <line
           key={`str-${i}`}
@@ -119,8 +120,8 @@ export function ChordDiagram({
           y1={cfg.padTop}
           x2={x(i)}
           y2={cfg.padTop + innerH}
-          stroke="#5a5a5a"
-          strokeWidth="0.8"
+          stroke="#9a9a9a"
+          strokeWidth="0.9"
         />
       ))}
 

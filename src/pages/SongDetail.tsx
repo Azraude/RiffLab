@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
@@ -7,15 +7,23 @@ import { db, saveSong } from '@/lib/db';
 import { getChord, getDefaultVoicing } from '@/lib/chordDatabase';
 import { suggestCapo, OPEN_CHORD_SHAPES } from '@/lib/capoSuggest';
 import { useAudio } from '@/hooks/useAudio';
-import { Play, Music2, Lightbulb, ArrowRight, Check, X } from 'lucide-react';
+import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
 export function SongDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const song = useLiveQuery(() => (id ? db.songs.get(id) : undefined), [id]);
   const { strum } = useAudio();
   const [activeChord, setActiveChord] = useState<string | null>(null);
   const [showCapoSuggestion, setShowCapoSuggestion] = useState(false);
+
+  const handleDelete = async () => {
+    if (!song) return;
+    if (!confirm(`Supprimer "${song.title}" ? Cette action est irréversible.`)) return;
+    await db.songs.delete(song.id);
+    navigate('/songs');
+  };
 
   const capoSuggestion = useMemo(() => {
     if (!song) return null;
@@ -212,6 +220,27 @@ export function SongDetail() {
         Clique sur un accord pour l'entendre · La lecture audio nécessite une première interaction
         (politique navigateur).
       </p>
+
+      {/* Zone dangereuse — suppression du song, isolée en bas de page
+          dans une card bordée danger pour éviter les faux-clics */}
+      <div className="mt-16 mb-6 rounded-2xl border border-danger/30 bg-danger/5 p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-danger">Zone dangereuse</div>
+            <p className="mt-0.5 text-xs text-text-muted">
+              Supprimer ce son est irréversible. Tu perdras toutes les sections,
+              accords et notes associés.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-danger/50 bg-transparent px-4 text-sm font-semibold text-danger hover:bg-danger/10 md:h-10"
+          >
+            <Trash2 size={16} /> Supprimer ce son
+          </button>
+        </div>
+      </div>
     </>
   );
 }
