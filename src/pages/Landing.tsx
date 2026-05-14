@@ -1,16 +1,11 @@
 import { Link } from 'react-router-dom';
+import { Hero3DLazy } from '@/components/three/Hero3DLazy';
 
 export function Landing() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      {/* Ambient background gradient */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(circle at 50% 30%, rgba(245,217,122,0.10) 0%, transparent 50%)',
-        }}
-      />
+      {/* Décor 3D / fallback CSS — décoratif, pointer-events-none */}
+      <Hero3DLazy />
 
       <div className="relative z-10 max-w-2xl">
         <div className="eyebrow mb-6">Le carnet du guitariste</div>
@@ -29,15 +24,15 @@ export function Landing() {
             Commencer
           </Link>
           <Link
-            to="/dashboard"
+            to="/riff-of-the-week"
             className="inline-flex h-12 items-center justify-center rounded-xl border border-border-gold px-6 text-[15px] text-text transition-all hover:border-gold-soft hover:bg-gold/5"
           >
-            Voir la démo
+            Riff de la semaine
           </Link>
         </div>
       </div>
 
-      <div className="absolute bottom-8 text-xs text-text-soft">RiffLab v0.1 · scaffold prêt</div>
+      <div className="absolute bottom-8 z-10 text-xs text-text-soft">RiffLab — v0.4</div>
     </div>
   );
 }
