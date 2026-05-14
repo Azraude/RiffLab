@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
+import { Fretboard3DLazy } from '@/components/three/Fretboard3DLazy';
 import { SCALES } from '@/lib/scaleDatabase';
-import { NOTE_NAMES, type NoteName } from '@/lib/theory';
+import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { usePrefs } from '@/stores/prefsStore';
 import { SKIN_LIST } from '@/lib/fretboardSkins';
+import { Box, Square } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Scales() {
   const [key, setKey] = useState<NoteName>('A');
   const [scaleId, setScaleId] = useState(SCALES[2].id); // penta_minor default
+  const [view, setView] = useState<'2d' | '3d'>('2d');
   const tuning = usePrefs((s) => s.tuning);
   const showNoteNames = usePrefs((s) => s.showNoteNames);
   const toggleNoteNames = usePrefs((s) => s.toggleNoteNames);
@@ -54,12 +57,41 @@ export function Scales() {
               ))}
             </select>
           </Field>
-          <button
-            onClick={toggleNoteNames}
-            className="h-11 self-end rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
-          >
-            {showNoteNames ? 'Masquer noms' : 'Afficher noms'}
-          </button>
+          <div className="flex flex-wrap gap-2 self-end">
+            {/* Toggle 2D / 3D — off par défaut, 2D = vue de travail */}
+            <div className="inline-flex rounded-xl border border-border-gold p-0.5">
+              <button
+                type="button"
+                onClick={() => setView('2d')}
+                aria-pressed={view === '2d'}
+                className={clsx(
+                  'inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm transition-colors md:h-9',
+                  view === '2d' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'
+                )}
+                title="Vue plate, idéale pour scanner les notes"
+              >
+                <Square size={14} /> 2D
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('3d')}
+                aria-pressed={view === '3d'}
+                className={clsx(
+                  'inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm transition-colors md:h-9',
+                  view === '3d' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'
+                )}
+                title="Vue 3D décorative (la 2D reste recommandée pour le travail)"
+              >
+                <Box size={14} /> 3D
+              </button>
+            </div>
+            <button
+              onClick={toggleNoteNames}
+              className="h-11 rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
+            >
+              {showNoteNames ? 'Masquer noms' : 'Afficher noms'}
+            </button>
+          </div>
         </div>
 
         {/* Live skin switcher — horizontal scroll on mobile */}
@@ -83,17 +115,31 @@ export function Scales() {
           </div>
         </div>
 
-        <div className="relative mt-4 -mx-2 overflow-x-auto pb-2">
-          <Fretboard2D
-            tuning={tuning}
-            numFrets={15}
-            scale={{ key, scaleId }}
-            showNoteNames={showNoteNames}
-            skin={fretboardSkin}
-            className="min-w-[640px]"
-          />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
-        </div>
+        {view === '2d' ? (
+          <div className="relative mt-4 -mx-2 overflow-x-auto pb-2">
+            <Fretboard2D
+              tuning={tuning}
+              numFrets={15}
+              scale={{ key, scaleId }}
+              showNoteNames={showNoteNames}
+              skin={fretboardSkin}
+              className="min-w-[640px]"
+            />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <Fretboard3DLazy
+              tuning={tuning}
+              numFrets={15}
+              scaleKey={key}
+              scaleId={scaleId as ScaleId}
+            />
+            <p className="mt-2 text-center text-xs text-text-soft">
+              Vue 3D décorative — la 2D reste recommandée pour le scan rapide en répèt.
+            </p>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap gap-5 text-xs text-text-muted">
           <Legend color="#d4b76a" label={`Tonique (${key})`} />
