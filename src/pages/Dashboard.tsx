@@ -21,6 +21,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Play, Check, Flame, Sparkles, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
 import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
+import { AmbientStringsLazy } from '@/components/three/AmbientStringsLazy';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -87,9 +88,11 @@ export function Dashboard() {
         <div
           className="relative overflow-hidden rounded-3xl border border-border-gold p-5 md:p-8"
           style={{
-            background: 'linear-gradient(135deg, #1a1812 0%, #141414 60%)',
+            background: 'linear-gradient(135deg, rgb(var(--surface)) 0%, rgb(var(--bg)) 60%)',
           }}
         >
+          {/* Cordes ambient 3D / fallback CSS — décoratif, derrière le contenu */}
+          <AmbientStringsLazy />
           <div
             className="pointer-events-none absolute -right-10 -top-40 h-[400px] w-[400px] rounded-full opacity-60"
             style={{
