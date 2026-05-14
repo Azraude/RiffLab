@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Music2, Grid3x3, Waves, Timer, Mic, Wrench } from 'lucide-react';
+import { Music2, Grid3x3, Waves, Timer, Mic, Wrench, Ear } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -17,6 +17,12 @@ const TOOLS: Array<{ to: string; label: string; description: string; icon: React
     label: 'Métronome',
     description: 'Garde le tempo, 40-220 BPM',
     icon: <Timer size={20} />,
+  },
+  {
+    to: '/ear-training',
+    label: 'Oreille',
+    description: 'Devine intervalles, accords et progressions',
+    icon: <Ear size={20} />,
   },
 ];
 

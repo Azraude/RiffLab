@@ -10,6 +10,7 @@ import {
   BarChart3,
   ListMusic,
   Workflow,
+  Ear,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -29,6 +30,7 @@ const items: NavItem[] = [
   { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
   { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
   { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
+  { to: '/ear-training', label: 'Oreille', icon: <Ear size={18} />, section: 'tools' },
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
   { to: '/progressions', label: 'Progressions', icon: <Workflow size={18} />, section: 'library' },
