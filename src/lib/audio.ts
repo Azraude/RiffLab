@@ -11,21 +11,43 @@ import { buildVoices, type StrumSoundId, type SynthVoice } from './strumSounds';
 
 let initialized = false;
 let voices: SynthVoice[] = [];
-let activeTimbre: StrumSoundId = 'karplus';
+let activeTimbre: StrumSoundId = 'electric-clean';
 let reverb: Tone.Reverb | null = null;
 let masterGain: Tone.Gain | null = null;
+let masterCompressor: Tone.Compressor | null = null;
+let masterLowpass: Tone.Filter | null = null;
 
 /**
  * Init audio. À appeler après une interaction utilisateur (politique navigateur).
+ *
+ * Chaîne de sortie (session 16 polish) :
+ *   voices → reverb → lowpass → compressor → masterGain → destination
+ * - Lowpass 8kHz : adoucit les harmoniques aigues qui font "métallique"
+ *   et fatiguent l'oreille sur les sessions longues
+ * - Compressor (-12 dB threshold, ratio 4) : maîtrise les pics quand
+ *   plusieurs strums s'empilent (chord progressions / riffs en boucle)
  */
-export async function initAudio(timbre: StrumSoundId = 'karplus'): Promise<void> {
+export async function initAudio(timbre: StrumSoundId = 'electric-clean'): Promise<void> {
   if (initialized) return;
   await Tone.start();
 
   masterGain = new Tone.Gain(0.65).toDestination();
-  reverb = new Tone.Reverb({ decay: 2.2, wet: 0.25 });
+  masterCompressor = new Tone.Compressor({
+    threshold: -12,
+    ratio: 4,
+    attack: 0.005,
+    release: 0.05,
+    knee: 8,
+  });
+  masterCompressor.connect(masterGain);
+  masterLowpass = new Tone.Filter({ type: 'lowpass', frequency: 8000, Q: 0.5 });
+  masterLowpass.connect(masterCompressor);
+  // Reverb : decay 1.6 (au lieu de 2.2) + wet 0.18 (au lieu de 0.25)
+  // pour éviter l'effet "cafouilli" quand les strums s'empilent en
+  // progression ou en riff rapide (feedback session 16).
+  reverb = new Tone.Reverb({ decay: 1.6, wet: 0.18 });
   await reverb.generate();
-  reverb.connect(masterGain);
+  reverb.connect(masterLowpass);
 
   activeTimbre = timbre;
   voices = buildVoices(timbre, reverb);

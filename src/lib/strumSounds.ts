@@ -124,7 +124,9 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
       for (let i = 0; i < num; i++) {
         const s = new Tone.Synth({
           oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.005, decay: 0.3, sustain: 0.15, release: 1.2 },
+          // release 0.6 (vs 1.2 avant) : adouci pour la lisibilité en
+          // progression / riff (le compressor master gère la dynamique)
+          envelope: { attack: 0.005, decay: 0.25, sustain: 0.12, release: 0.6 },
         });
         s.connect(lp);
         voices.push({
@@ -159,9 +161,11 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
           harmonicity: 2.5,
           modulationIndex: 8,
           oscillator: { type: 'sine' },
-          envelope: { attack: 0.003, decay: 0.5, sustain: 0.18, release: 1.6 },
+          // release 0.7 (vs 1.6 avant) : raccourci pour éviter l'empilement
+          // sur progressions / riffs en boucle (feedback session 16)
+          envelope: { attack: 0.003, decay: 0.4, sustain: 0.15, release: 0.7 },
           modulation: { type: 'triangle' },
-          modulationEnvelope: { attack: 0.002, decay: 0.4, sustain: 0.1, release: 0.5 },
+          modulationEnvelope: { attack: 0.002, decay: 0.3, sustain: 0.1, release: 0.4 },
         });
         s.connect(hp);
         voices.push({
@@ -185,7 +189,8 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
       for (let i = 0; i < num; i++) {
         const s = new Tone.Synth({
           oscillator: { type: 'triangle' },
-          envelope: { attack: 0.01, decay: 0.7, sustain: 0.12, release: 1.4 },
+          // release 0.6 (vs 1.4 avant) : éviter le wash sur les patterns rapides
+          envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.6 },
         });
         s.connect(lp);
         voices.push({
