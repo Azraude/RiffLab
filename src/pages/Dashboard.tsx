@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
+import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -99,6 +100,19 @@ export function Dashboard() {
                 'radial-gradient(circle, rgba(245,217,122,0.12) 0%, transparent 60%)',
             }}
           />
+          {/* Fender Rose 3D décoratif : à droite de la card, derrière le
+              contenu. Opacity 0.3, intensité subtle pour ne pas distraire
+              du training info. Visible desktop seulement (card étroite
+              en mobile). */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] opacity-30 md:block">
+            <FloatingGuitar3DLazy
+              model="rose"
+              intensity="subtle"
+              rotationSpeed={0.0015}
+              cameraDistance={4.2}
+              cameraY={0.1}
+            />
+          </div>
           <div className="relative">
             <div className="eyebrow">Entraînement du jour · {todayLabel}</div>
             <h2 className="display mt-3 text-display-sm md:text-display-lg">
