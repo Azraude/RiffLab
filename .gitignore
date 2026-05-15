@@ -36,3 +36,9 @@ coverage
 
 # Misc
 *.tsbuildinfo
+
+# 3D models — on whitelist explicite. Les .glb peuvent peser plusieurs
+# dizaines de MB ; GitHub bloque les fichiers > 100 MB. Whitelist
+# uniquement le modèle de prod ; les autres restent en local.
+public/models/*.glb
+!public/models/guitar-fender-classic.glb
