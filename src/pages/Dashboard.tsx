@@ -19,8 +19,10 @@ import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Play, Check, Flame, Sparkles, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
+import { SongTileSkeleton } from '@/components/ui/Skeleton';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -85,7 +87,7 @@ export function Dashboard() {
       {/* Daily hero */}
       <div className="grid gap-5 md:grid-cols-[2fr_1fr]">
         <div
-          className="relative overflow-hidden rounded-3xl border border-border-gold p-5 md:p-8"
+          className="daily-gold-sheen relative overflow-hidden rounded-3xl border border-border-gold p-5 md:p-8"
           style={{
             background: 'linear-gradient(135deg, rgb(var(--surface)) 0%, rgb(var(--bg)) 60%)',
           }}
@@ -180,24 +182,43 @@ export function Dashboard() {
             jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée
           </div>
           <div className="mt-4 flex justify-center gap-1.5">
-            {(weekDays ?? []).map((d) => {
-              const isToday = d.date === todayKey();
-              return (
-                <div
-                  key={d.date}
-                  title={d.date}
-                  className={clsx(
-                    'flex h-6 w-6 items-center justify-center rounded-full text-[10px] md:h-7 md:w-7 md:text-[11px]',
-                    d.practiced
-                      ? 'border border-gold-soft bg-gold/20 font-semibold text-gold'
-                      : 'border border-border text-text-soft',
-                    isToday && !d.practiced && 'ring-1 ring-gold-soft/50'
-                  )}
-                >
-                  {d.weekday}
-                </div>
-              );
-            })}
+            <AnimatePresence>
+              {(weekDays ?? []).map((d) => {
+                const isToday = d.date === todayKey();
+                return (
+                  <motion.div
+                    key={d.date}
+                    title={d.date}
+                    // Layout pour permettre l'animation de la cellule "aujourd'hui"
+                    // qui passe de neutre à pratiqué (scale pop + glow).
+                    layout
+                    initial={false}
+                    animate={
+                      isToday && d.practiced
+                        ? {
+                            scale: [1, 1.3, 1],
+                            boxShadow: [
+                              '0 0 0 rgb(var(--gold-glow) / 0)',
+                              '0 0 18px rgb(var(--gold-glow) / 0.55)',
+                              '0 0 0 rgb(var(--gold-glow) / 0)',
+                            ],
+                          }
+                        : { scale: 1 }
+                    }
+                    transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+                    className={clsx(
+                      'flex h-6 w-6 items-center justify-center rounded-full text-[10px] md:h-7 md:w-7 md:text-[11px]',
+                      d.practiced
+                        ? 'border border-gold-soft bg-gold/20 font-semibold text-gold'
+                        : 'border border-border text-text-soft',
+                      isToday && !d.practiced && 'ring-1 ring-gold-soft/50'
+                    )}
+                  >
+                    {d.weekday}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <Link
@@ -268,7 +289,11 @@ export function Dashboard() {
         </div>
 
         {!songs ? (
-          <div className="text-text-soft">Chargement…</div>
+          <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SongTileSkeleton key={i} />
+            ))}
+          </div>
         ) : songs.length === 0 ? (
           <Card className="text-center py-10">
             <p className="text-text-muted">Pas encore de sons. Ajoute ton premier !</p>

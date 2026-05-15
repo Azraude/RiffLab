@@ -198,3 +198,44 @@
 .text-gold-glow {
   text-shadow: 0 0 18px rgb(var(--gold-glow) / 0.35);
 }
+
+/* Animated gold sheen — passe lentement un gradient or par-dessus l'élément.
+   Utilisé sur la Daily card du Dashboard pour donner une vie subtile au
+   bandeau d'entraînement du jour. */
+@keyframes gold-sheen {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.daily-gold-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgb(var(--gold-bright) / 0.08) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: gold-sheen 8s linear infinite;
+}
+
+/* Skeleton shimmer — placeholder pour les loading states. */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--surface-2)) 0%,
+    rgb(var(--surface-2)) 40%,
+    rgb(var(--gold) / 0.10) 50%,
+    rgb(var(--surface-2)) 60%,
+    rgb(var(--surface-2)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s linear infinite;
+}

@@ -1,4 +1,5 @@
 import { useId, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import {
   NOTE_NAMES,
   TUNINGS,
@@ -318,41 +319,63 @@ export function Fretboard2D({
         );
       })}
 
-      {/* Scale notes */}
-      {scale &&
-        openTuning.flatMap((openMidi, sIdx) =>
-          Array.from({ length: numFrets + 1 }).map((_, f) => {
-            const pc = pitchClass(openMidi + f);
-            if (!noteSet.has(pc)) return null;
-            if (f === 0) return null;
-            const isTonic = pc === tonicPC;
-            const cx = x(f) - fretSpacing / 2;
-            return (
-              <g key={`note-${sIdx}-${f}`}>
-                <circle
-                  cx={cx}
-                  cy={y(sIdx)}
-                  r={isTonic ? 9.5 : 9}
-                  fill={isTonic ? `url(#${id('tonic')})` : `url(#${id('note')})`}
-                  filter={isTonic ? `url(#${id('tonic-glow')})` : `url(#${id('note-shadow')})`}
-                />
-                {showNoteNames && (
-                  <text
-                    x={cx}
-                    y={y(sIdx) + 3.5}
-                    textAnchor="middle"
-                    fontFamily="JetBrains Mono"
-                    fontSize={9}
-                    fontWeight={700}
-                    fill="#0a0a0a"
-                  >
-                    {NOTE_NAMES[pc]}
-                  </text>
-                )}
-              </g>
-            );
-          })
-        )}
+      {/* Scale notes — stagger pop-in, délai croissant selon string + fret */}
+      {scale && (
+        <motion.g
+          key={`scale-${scale.key}-${scale.scaleId}`}
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.012 } },
+          }}
+        >
+          {openTuning.flatMap((openMidi, sIdx) =>
+            Array.from({ length: numFrets + 1 }).map((_, f) => {
+              const pc = pitchClass(openMidi + f);
+              if (!noteSet.has(pc)) return null;
+              if (f === 0) return null;
+              const isTonic = pc === tonicPC;
+              const cx = x(f) - fretSpacing / 2;
+              return (
+                <motion.g
+                  key={`note-${sIdx}-${f}`}
+                  variants={{
+                    hidden: { scale: 0, opacity: 0 },
+                    visible: {
+                      scale: 1,
+                      opacity: 1,
+                      transition: { type: 'spring', stiffness: 360, damping: 24 },
+                    },
+                  }}
+                  style={{ transformOrigin: `${cx}px ${y(sIdx)}px` }}
+                >
+                  <circle
+                    cx={cx}
+                    cy={y(sIdx)}
+                    r={isTonic ? 9.5 : 9}
+                    fill={isTonic ? `url(#${id('tonic')})` : `url(#${id('note')})`}
+                    filter={isTonic ? `url(#${id('tonic-glow')})` : `url(#${id('note-shadow')})`}
+                  />
+                  {showNoteNames && (
+                    <text
+                      x={cx}
+                      y={y(sIdx) + 3.5}
+                      textAnchor="middle"
+                      fontFamily="JetBrains Mono"
+                      fontSize={9}
+                      fontWeight={700}
+                      fill="#0a0a0a"
+                    >
+                      {NOTE_NAMES[pc]}
+                    </text>
+                  )}
+                </motion.g>
+              );
+            })
+          )}
+        </motion.g>
+      )}
 
       {/* Chord overlay */}
       {chord &&

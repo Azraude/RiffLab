@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { Voicing } from '@/lib/chordDatabase';
 
 interface ChordDiagramProps {
@@ -6,6 +7,21 @@ interface ChordDiagramProps {
   size?: 'sm' | 'md' | 'lg';
   showFingers?: boolean;
 }
+
+// Variants pour l'animation au mount — les dots et la barre poppent en
+// scale 0 → 1 avec staggerChildren sur le SVG parent.
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.03, delayChildren: 0.05 } },
+};
+const dotVariants = {
+  hidden: { scale: 0, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: { type: 'spring' as const, stiffness: 380, damping: 22 },
+  },
+};
 
 // Padding asymétrique : padL > padR pour laisser la place au label "Xfr"
 // à gauche du diagramme sans qu'il soit masqué par le point de la corde Mi
@@ -47,12 +63,16 @@ export function ChordDiagram({
   const displayFret = (absFret: number) => absFret - baseFret + 1;
 
   return (
-    <svg
+    <motion.svg
       width={w}
       height={h}
       viewBox={`0 0 ${w} ${h}`}
       xmlns="http://www.w3.org/2000/svg"
       aria-label={name ? `Diagramme de l'accord ${name}` : 'Diagramme d\'accord'}
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      key={voicing.frets.join(',') + (voicing.barre?.fret ?? '')}
     >
       {/* Indicators above strings (X for muted, O for open) */}
       {voicing.frets.map((f, i) => {
@@ -147,13 +167,15 @@ export function ChordDiagram({
         const b = voicing.barre;
         const fy = y(displayFret(b.fret) - 0.5);
         return (
-          <rect
+          <motion.rect
             x={x(b.fromString) - 6}
             y={fy - 5}
             width={x(b.toString) - x(b.fromString) + 12}
             height={10}
             rx={5}
             fill="#d4b76a"
+            variants={dotVariants}
+            style={{ transformOrigin: `${(x(b.fromString) + x(b.toString)) / 2}px ${fy}px` }}
           />
         );
       })()}
@@ -192,7 +214,11 @@ export function ChordDiagram({
         const dy = y(displayFret(f) - 0.5);
         const finger = voicing.fingers?.[i];
         return (
-          <g key={`dot-${i}`}>
+          <motion.g
+            key={`dot-${i}`}
+            variants={dotVariants}
+            style={{ transformOrigin: `${x(i)}px ${dy}px` }}
+          >
             <circle cx={x(i)} cy={dy} r={size === 'sm' ? 5 : 6.5} fill="#ffffff" />
             {showFingers && finger != null && finger > 0 && (
               <text
@@ -207,9 +233,9 @@ export function ChordDiagram({
                 {finger}
               </text>
             )}
-          </g>
+          </motion.g>
         );
       })}
-    </svg>
+    </motion.svg>
   );
 }

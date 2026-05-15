@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
+import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { countRecordingsBySong, db, type Song } from '@/lib/db';
 import { Mic, Plus } from 'lucide-react';
 
@@ -30,7 +31,11 @@ export function Songs() {
       </PageHeader>
 
       {!songs ? (
-        <div className="text-text-soft">Chargement…</div>
+        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SongTileSkeleton key={i} />
+          ))}
+        </div>
       ) : songs.length === 0 ? (
         <Card className="text-center py-12">
           <p className="text-text-muted">Aucun son pour l'instant.</p>
