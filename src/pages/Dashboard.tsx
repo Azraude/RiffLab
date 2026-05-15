@@ -24,6 +24,7 @@ import clsx from 'clsx';
 import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
+import { CommunityRiffCard } from '@/components/dashboard/CommunityRiffCard';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -272,28 +273,22 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Riff de la semaine — teaser */}
+      {/* Riff du moment — widget communautaire avec tab reader + player */}
       <div className="mt-12">
+        <CommunityRiffCard />
+      </div>
+
+      {/* Compagnon : teaser vers la page Riff de la semaine (catalogue complet) */}
+      <div className="mt-4">
         <Link
           to="/riff-of-the-week"
-          className="group block rounded-2xl border border-border-gold bg-gradient-to-br from-surface to-surface-2 p-5 transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-gold"
+          className="group flex items-center justify-between gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-muted transition-colors hover:border-gold-soft hover:text-text"
         >
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
-              <Sparkles size={22} strokeWidth={1.5} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="eyebrow !text-gold-soft">Riff de la semaine</div>
-              <div className="display mt-1 text-display-sm">{weeklyRiff.title}</div>
-              <div className="mt-1 text-sm text-text-muted">
-                {weeklyRiff.source} · {weeklyRiff.genre} · {weeklyRiff.bpm} BPM
-              </div>
-            </div>
-            <ArrowRight
-              size={20}
-              className="mt-1 shrink-0 text-text-soft transition-transform group-hover:translate-x-1 group-hover:text-gold"
-            />
-          </div>
+          <span className="inline-flex items-center gap-2">
+            <Sparkles size={14} className="text-gold-soft" />
+            Catalogue complet — {weeklyRiff.title}
+          </span>
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 

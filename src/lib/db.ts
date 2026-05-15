@@ -82,6 +82,12 @@ export type PracticePathNode = {
   completedAt: number;
 };
 
+export type RiffLike = {
+  /** ID du community riff liké (ex: 'cr-smoke') */
+  id: string;
+  likedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
@@ -89,6 +95,7 @@ class RiffLabDB extends Dexie {
   setlists!: Table<Setlist, string>;
   recordings!: Table<Recording, string>;
   practiceProgress!: Table<PracticePathNode, string>;
+  riffLikes!: Table<RiffLike, string>;
 
   constructor() {
     super('rifflab');
@@ -116,6 +123,15 @@ class RiffLabDB extends Dexie {
       setlists: 'id, name, updatedAt',
       recordings: 'id, songId, createdAt',
       practiceProgress: 'id, completedAt',
+    });
+    // v5 : ajout des riffLikes (community riff hebdomadaire)
+    this.version(5).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
     });
   }
 }
@@ -149,6 +165,21 @@ export function emptySetlist(partial: Partial<Setlist> = {}): Setlist {
 
 export function newRecordingId() {
   return 'rec_' + crypto.randomUUID();
+}
+
+// ─── Riff likes (community riff) ─────────────────────────────────
+export async function isRiffLiked(id: string): Promise<boolean> {
+  return !!(await db.riffLikes.get(id));
+}
+
+export async function toggleRiffLike(id: string): Promise<boolean> {
+  const exists = await db.riffLikes.get(id);
+  if (exists) {
+    await db.riffLikes.delete(id);
+    return false;
+  }
+  await db.riffLikes.put({ id, likedAt: Date.now() });
+  return true;
 }
 
 // ─── Recording CRUD ──────────────────────────────────────────────
