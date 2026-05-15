@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
+import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
 import { countRecordingsBySong, db, type Song } from '@/lib/db';
 import { Mic, Plus } from 'lucide-react';
 
@@ -47,11 +48,13 @@ export function Songs() {
           </Link>
         </Card>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+        <StaggerGrid className="grid gap-5 sm:grid-cols-2 md:grid-cols-3" stagger={0.04}>
           {songs.map((s) => (
-            <SongTile key={s.id} song={s} recordingsCount={recCounts?.[s.id] ?? 0} />
+            <StaggerItem key={s.id}>
+              <SongTile song={s} recordingsCount={recCounts?.[s.id] ?? 0} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Mobile FAB — sits above the bottom nav + safe-area. Caché quand

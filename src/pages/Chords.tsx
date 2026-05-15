@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
+import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import {
   CHORDS,
@@ -100,14 +101,19 @@ export function Chords() {
         {filtered.length} accord{filtered.length > 1 ? 's' : ''}
       </div>
 
-      {/* Grille de cards swipeables */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+      {/* Grille de cards swipeables — stagger entrée */}
+      <StaggerGrid
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6"
+        stagger={0.025}
+      >
         {filtered.map((c) => (
-          <TiltCard key={c.name} maxTilt={6}>
-            <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
-          </TiltCard>
+          <StaggerItem key={c.name}>
+            <TiltCard maxTilt={6}>
+              <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
+            </TiltCard>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerGrid>
 
       {filtered.length === 0 && (
         <p className="mt-12 text-center text-text-soft">

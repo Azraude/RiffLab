@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Sheet } from '@/components/ui/Sheet';
+import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
 import {
   db,
   listSetlists,
@@ -58,11 +59,13 @@ export function Setlists() {
           </button>
         </Card>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+        <StaggerGrid className="grid gap-5 sm:grid-cols-2 md:grid-cols-3" stagger={0.05}>
           {setlists.map((sl) => (
-            <SetlistTile key={sl.id} setlist={sl} songsById={songsById} />
+            <StaggerItem key={sl.id}>
+              <SetlistTile setlist={sl} songsById={songsById} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Mobile FAB */}
