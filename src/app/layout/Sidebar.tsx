@@ -18,44 +18,57 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
+type Section = 'perso' | 'library' | 'tools' | 'account';
+
 type NavItem = {
   to: string;
   label: string;
   icon: React.ReactNode;
-  section?: 'main' | 'tools' | 'library' | 'account';
+  section: Section;
 };
 
 const items: NavItem[] = [
-  { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'main' },
-  { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'main' },
-  { to: '/setlists', label: 'Setlists', icon: <ListMusic size={18} />, section: 'main' },
-  { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'main' },
-  { to: '/practice-plan', label: 'Mon plan', icon: <Target size={18} />, section: 'main' },
-  { to: '/riff-of-the-week', label: 'Riff du moment', icon: <Sparkles size={18} />, section: 'main' },
-  { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'main' },
-  { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
-  { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
-  { to: '/ear-training', label: 'Oreille', icon: <Ear size={18} />, section: 'tools' },
+  // Espace perso — quotidien
+  { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'perso' },
+  { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'perso' },
+  { to: '/setlists', label: 'Setlists', icon: <ListMusic size={18} />, section: 'perso' },
+  { to: '/riff-of-the-week', label: 'Riff du moment', icon: <Sparkles size={18} />, section: 'perso' },
+  { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'perso' },
+
+  // Bibliothèques — référence
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
   { to: '/progressions', label: 'Progressions', icon: <Workflow size={18} />, section: 'library' },
   { to: '/strum-patterns', label: 'Rythmiques', icon: <Activity size={18} />, section: 'library' },
+
+  // Outils — utilitaires
+  { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
+  { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
+  { to: '/ear-training', label: 'Oreille', icon: <Ear size={18} />, section: 'tools' },
+
+  // Compte — tracking + paramètres
+  { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'account' },
+  { to: '/plan', label: 'Mon plan', icon: <Target size={18} />, section: 'account' },
   { to: '/settings', label: 'Préférences', icon: <SettingsIcon size={18} />, section: 'account' },
 ];
 
-const sectionLabels: Record<string, string> = {
-  main: 'Espace perso',
-  tools: 'Outils',
+const sectionLabels: Record<Section, string> = {
+  perso: 'Espace perso',
   library: 'Bibliothèques',
+  tools: 'Outils',
   account: 'Compte',
 };
 
+const SECTION_ORDER: Section[] = ['perso', 'library', 'tools', 'account'];
+
 export function Sidebar() {
-  const grouped = items.reduce<Record<string, NavItem[]>>((acc, it) => {
-    const k = it.section ?? 'main';
-    (acc[k] ??= []).push(it);
-    return acc;
-  }, {});
+  const grouped = items.reduce<Record<Section, NavItem[]>>(
+    (acc, it) => {
+      (acc[it.section] ??= []).push(it);
+      return acc;
+    },
+    { perso: [], library: [], tools: [], account: [] }
+  );
 
   return (
     <aside className="hidden border-r border-border bg-surface px-5 py-7 md:flex md:flex-col">
@@ -64,10 +77,10 @@ export function Sidebar() {
         <span className="display text-[28px] tracking-wide">RiffLab</span>
       </Link>
 
-      {(['main', 'tools', 'library', 'account'] as const).map((sec) => (
+      {SECTION_ORDER.map((sec) => (
         <div key={sec} className="mb-2">
           <div className="label-small mb-1 px-2 mt-3">{sectionLabels[sec]}</div>
-          {grouped[sec]?.map((it) => (
+          {grouped[sec].map((it) => (
             <NavLink
               key={it.to}
               to={it.to}

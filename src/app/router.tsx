@@ -43,7 +43,7 @@ export const router = createBrowserRouter([
       { path: 'progressions', element: <Progressions /> },
       { path: 'ear-training', element: <EarTraining /> },
       { path: 'strum-patterns', element: <StrumPatterns /> },
-      { path: 'practice-plan', element: <PracticePlan /> },
+      { path: 'plan', element: <PracticePlan /> },
       { path: 'share/:encoded', element: <SharePreview /> },
       { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
       { path: 'jam', element: <Jam /> },

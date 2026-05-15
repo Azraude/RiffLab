@@ -1,462 +1,213 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { AnimatePresence, motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Card } from '@/components/ui/Card';
-import { usePrefs } from '@/stores/prefsStore';
-import {
-  GOAL_OPTIONS,
-  generatePlan,
-  getCurrentDayNumber,
-  totalPlannedMinutes,
-  completedMinutes,
-  planProgress,
-  type PracticeGoal,
-} from '@/lib/practicePlan';
 import {
   CalendarDays,
-  Check,
-  ChevronRight,
   Flame,
-  RefreshCw,
+  Music2,
+  Target,
   Sparkles,
-  Trash2,
+  Zap,
+  X,
+  Lock,
 } from 'lucide-react';
-import clsx from 'clsx';
-
-const MINUTES_OPTIONS = [5, 10, 15] as const;
-const DAYS_PER_WEEK_OPTIONS = [3, 5, 7] as const;
 
 /**
- * /practice-plan — onboarding 3 questions ou affichage du plan actif.
+ * /plan — Mockup statique de plan 4 semaines.
  *
- * Le plan est stocké dans Zustand (persist), pas Dexie. Génération
- * déterministe par seed (goal + minutes + days/week + startDate).
+ * La génération personnalisée est mise en pause (modal "Bientôt
+ * disponible — Phase 5"). La page existe pour montrer la forme et
+ * laisser le user se projeter. Le moteur (src/lib/practicePlan.ts) et
+ * le state Zustand `practicePlan` restent en place — on les rebranchera
+ * quand la feature sera prête.
  */
 export function PracticePlan() {
-  const plan = usePrefs((s) => s.practicePlan);
-  const setPracticePlan = usePrefs((s) => s.setPracticePlan);
-
-  if (!plan) return <Onboarding onCreate={setPracticePlan} />;
-  return <PlanView />;
-}
-
-// ─── Onboarding ───────────────────────────────────────────────────────
-
-function Onboarding({
-  onCreate,
-}: {
-  onCreate: (plan: ReturnType<typeof generatePlan>) => void;
-}) {
-  const [goal, setGoal] = useState<PracticeGoal | null>(null);
-  const [minutes, setMinutes] = useState<5 | 10 | 15>(10);
-  const [daysPerWeek, setDaysPerWeek] = useState<3 | 5 | 7>(5);
-
-  const canSubmit = goal !== null;
-
-  const handleSubmit = () => {
-    if (!goal) return;
-    const plan = generatePlan({ goal, minutesPerDay: minutes, daysPerWeek });
-    onCreate(plan);
-  };
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   return (
     <>
       <PageHeader
-        title="Practice Plan"
-        subtitle="3 questions et on te génère un plan de 4 semaines, adapté à ton objectif."
+        title="Mon plan"
+        subtitle="Un plan d'entraînement de 4 semaines, calibré sur ton objectif."
       />
 
-      <div className="grid gap-6">
-        {/* Étape 1 : objectif */}
-        <section>
-          <div className="eyebrow mb-3">1. Ton objectif principal</div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {GOAL_OPTIONS.map((g) => {
-              const isActive = goal === g.id;
-              return (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => setGoal(g.id)}
-                  aria-pressed={isActive}
-                  className={clsx(
-                    'rounded-2xl border p-4 text-left transition-all',
-                    isActive
-                      ? 'border-gold bg-gold/10 shadow-gold'
-                      : 'border-border bg-surface hover:border-gold-soft hover:bg-gold/5'
-                  )}
-                >
-                  <div className={clsx('font-semibold', isActive ? 'text-gold' : 'text-text')}>
-                    {g.label}
-                  </div>
-                  <div className="mt-1 text-xs text-text-muted">{g.description}</div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+      {/* Hero : mockup des 4 semaines */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {MOCK_WEEKS.map((w, idx) => (
+          <WeekCard key={w.label} week={w} isLast={idx === MOCK_WEEKS.length - 1} />
+        ))}
+      </div>
 
-        {/* Étape 2 : minutes/jour */}
-        <section>
-          <div className="eyebrow mb-3">2. Combien de minutes par jour ?</div>
-          <div className="grid grid-cols-3 gap-2">
-            {MINUTES_OPTIONS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMinutes(m)}
-                aria-pressed={minutes === m}
-                className={clsx(
-                  'flex flex-col items-center justify-center rounded-2xl border py-4 transition-all',
-                  minutes === m
-                    ? 'border-gold bg-gold/10 text-gold shadow-gold'
-                    : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-                )}
-              >
-                <span className="display text-display-sm">{m}</span>
-                <span className="text-xs">min / jour</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Étape 3 : fréquence */}
-        <section>
-          <div className="eyebrow mb-3">3. Combien de jours par semaine ?</div>
-          <div className="grid grid-cols-3 gap-2">
-            {DAYS_PER_WEEK_OPTIONS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDaysPerWeek(d)}
-                aria-pressed={daysPerWeek === d}
-                className={clsx(
-                  'flex flex-col items-center justify-center rounded-2xl border py-4 transition-all',
-                  daysPerWeek === d
-                    ? 'border-gold bg-gold/10 text-gold shadow-gold'
-                    : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-                )}
-              >
-                <span className="display text-display-sm">{d}</span>
-                <span className="text-xs">jours / sem</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-text-soft">
-            {daysPerWeek === 3 && 'Lundi, mercredi, vendredi'}
-            {daysPerWeek === 5 && 'Lundi → vendredi, week-end OFF'}
-            {daysPerWeek === 7 && 'Tous les jours — engagement total'}
-          </p>
-        </section>
-
-        {/* CTA */}
+      {/* CTA Génère mon plan */}
+      <div className="mt-8 rounded-2xl border border-border-gold bg-surface p-6 text-center md:p-8">
+        <Target size={26} className="mx-auto mb-3 text-gold" />
+        <h2 className="display text-display-sm md:text-display-md">
+          Génère ton plan personnalisé
+        </h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-text-muted md:text-base">
+          Trois questions : ton objectif, ta durée par jour, ta fréquence par
+          semaine. On te bâtit un plan calibré tiré de toutes les bibliothèques
+          de l'app (accords, gammes, rythmiques, ear training).
+        </p>
         <button
           type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className={clsx(
-            'inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl font-semibold transition-all',
-            canSubmit
-              ? 'bg-gold text-bg shadow-gold hover:bg-gold-bright hover:-translate-y-px'
-              : 'bg-surface-2 text-text-soft opacity-50'
-          )}
+          onClick={() => setComingSoonOpen(true)}
+          className="mt-5 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gold px-6 font-semibold text-bg shadow-gold transition-all hover:-translate-y-px hover:bg-gold-bright"
         >
-          <Sparkles size={18} />
-          Générer mon plan 4 semaines
+          <Sparkles size={16} />
+          Génère mon plan personnalisé
         </button>
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-text-soft">
+          <Lock size={11} /> Disponible bientôt
+        </p>
       </div>
+
+      {/* Coming-soon modal */}
+      <Dialog.Root open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+        <AnimatePresence>
+          {comingSoonOpen && (
+            <Dialog.Portal forceMount>
+              <Dialog.Overlay asChild>
+                <motion.div
+                  className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                />
+              </Dialog.Overlay>
+              <Dialog.Content asChild aria-describedby={undefined}>
+                <motion.div
+                  className="fixed left-1/2 top-1/2 z-50 w-[min(420px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-border-gold bg-surface p-7 shadow-2xl"
+                  initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setComingSoonOpen(false)}
+                    aria-label="Fermer"
+                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-border text-text-muted hover:text-text"
+                  >
+                    <X size={16} />
+                  </button>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
+                    <Sparkles size={22} />
+                  </div>
+                  <Dialog.Title className="display mt-4 text-display-sm">
+                    Bientôt disponible — Phase 5
+                  </Dialog.Title>
+                  <p className="mt-2 text-sm text-text-muted">
+                    La génération automatique de plan personnalisé arrive en
+                    Phase 5, avec l'AI assistant. En attendant, le mockup ci-dessus
+                    donne la forme du livrable final.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setComingSoonOpen(false)}
+                    className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gold font-semibold text-bg hover:bg-gold-bright"
+                  >
+                    OK, compris
+                  </button>
+                </motion.div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          )}
+        </AnimatePresence>
+      </Dialog.Root>
     </>
   );
 }
 
-// ─── Plan view ────────────────────────────────────────────────────────
+// ─── Mockup data ──────────────────────────────────────────────────────
 
-function PlanView() {
-  const plan = usePrefs((s) => s.practicePlan)!;
-  const toggleActivityDone = usePrefs((s) => s.toggleActivityDone);
-  const setPracticePlan = usePrefs((s) => s.setPracticePlan);
+type MockActivity = { title: string; minutes: number };
+type MockWeek = {
+  label: string;
+  theme: string;
+  icon: React.ReactNode;
+  pitch: string;
+  activities: MockActivity[];
+};
 
-  const [viewWeek, setViewWeek] = useState<number>(() => {
-    const dayNum = getCurrentDayNumber(plan);
-    return dayNum ? Math.ceil(dayNum / 7) : 1;
-  });
+const MOCK_WEEKS: MockWeek[] = [
+  {
+    label: 'Semaine 1',
+    theme: 'Warm-up & fondamentaux',
+    icon: <Flame size={20} strokeWidth={1.5} />,
+    pitch: 'Remettre les bases en place — accords ouverts, transitions, métronome lent.',
+    activities: [
+      { title: 'Accordage + chromatique 1-2-3-4', minutes: 5 },
+      { title: 'Transitions Em ↔ G ↔ C ↔ D', minutes: 6 },
+      { title: 'Pattern basique tout-en-bas', minutes: 4 },
+    ],
+  },
+  {
+    label: 'Semaine 2',
+    theme: 'Gammes & oreille',
+    icon: <Music2 size={20} strokeWidth={1.5} />,
+    pitch: 'Penta mineure, gamme majeure, intervalles au son. Ouvrir le manche.',
+    activities: [
+      { title: 'Penta mineure Em, position 1', minutes: 5 },
+      { title: 'Intervalles débutant (10 questions)', minutes: 5 },
+      { title: 'Improvisation libre sur Em / G / C / D', minutes: 5 },
+    ],
+  },
+  {
+    label: 'Semaine 3',
+    theme: 'Vitesse & technique',
+    icon: <Zap size={20} strokeWidth={1.5} />,
+    pitch: 'Speed trainer sur tes phrases difficiles. Monter de 60 → 90 %.',
+    activities: [
+      { title: 'Speed trainer sur une section', minutes: 8 },
+      { title: 'Métronome : monter 10 BPM par bloc', minutes: 5 },
+      { title: 'Voicings maj7 / m7', minutes: 4 },
+    ],
+  },
+  {
+    label: 'Semaine 4',
+    theme: 'Live & setlist',
+    icon: <Sparkles size={20} strokeWidth={1.5} />,
+    pitch: 'Run de setlist enchaîné, recorder un essai, debrief.',
+    activities: [
+      { title: 'Run de la setlist (mode lecture)', minutes: 12 },
+      { title: 'Enregistrer un essai', minutes: 6 },
+      { title: 'Progressions au son', minutes: 5 },
+    ],
+  },
+];
 
-  const currentDay = getCurrentDayNumber(plan);
-  const progress = planProgress(plan);
-  const totalMin = totalPlannedMinutes(plan);
-  const doneMin = completedMinutes(plan);
+// ─── Week card ────────────────────────────────────────────────────────
 
-  const goalLabel = useMemo(
-    () => GOAL_OPTIONS.find((g) => g.id === plan.goal)?.label ?? plan.goal,
-    [plan.goal]
-  );
-
-  const weekDays = plan.days.slice((viewWeek - 1) * 7, viewWeek * 7);
-  const todayActivities =
-    currentDay !== null
-      ? plan.days.find((d) => d.dayNumber === currentDay)
-      : null;
-
-  const handleReset = () => {
-    if (confirm('Supprimer ce plan et en créer un nouveau ?')) {
-      setPracticePlan(null);
-    }
-  };
-
-  const handleRegenerate = () => {
-    if (
-      confirm(
-        'Régénérer le plan en gardant le même objectif ? Tu perdras les coches actuelles.'
-      )
-    ) {
-      const fresh = generatePlan({
-        goal: plan.goal,
-        minutesPerDay: plan.minutesPerDay,
-        daysPerWeek: plan.daysPerWeek,
-        startDate: new Date().toISOString().slice(0, 10),
-      });
-      setPracticePlan(fresh);
-    }
-  };
-
+function WeekCard({ week, isLast }: { week: MockWeek; isLast: boolean }) {
   return (
-    <>
-      <PageHeader title="Practice Plan" subtitle={`Objectif : ${goalLabel}`}>
-        <button
-          type="button"
-          onClick={handleRegenerate}
-          aria-label="Régénérer"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-muted hover:text-text"
-        >
-          <RefreshCw size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={handleReset}
-          aria-label="Supprimer"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-muted hover:text-danger"
-        >
-          <Trash2 size={16} />
-        </button>
-      </PageHeader>
-
-      {/* Stats globales */}
-      <Card className="mb-5">
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <div className="label-small">Avancement</div>
-            <div className="display mt-1 text-display-sm text-gold">{progress}%</div>
-            <div className="mt-0.5 text-xs text-text-soft">du plan terminé</div>
-          </div>
-          <div>
-            <div className="label-small">Pratiqué</div>
-            <div className="mt-1 flex items-baseline justify-center gap-1">
-              <span className="display text-display-sm text-gold">{doneMin}</span>
-              <span className="text-sm text-text-soft">/ {totalMin} min</span>
-            </div>
-            <div className="mt-0.5 text-xs text-text-soft">total prévu</div>
-          </div>
-          <div>
-            <div className="label-small">Jour</div>
-            <div className="display mt-1 text-display-sm text-gold-soft">
-              {currentDay ?? '—'}
-              <span className="text-display-sm text-text-soft">/28</span>
-            </div>
-            <div className="mt-0.5 text-xs text-text-soft">
-              {currentDay ? 'en cours' : 'pas commencé'}
-            </div>
-          </div>
-        </div>
-        {/* Progress bar */}
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-2">
+    <div className="relative rounded-2xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-gold-soft">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-border-gold bg-gold/5 text-gold">
+        {week.icon}
+      </div>
+      <div className="eyebrow !text-gold-soft">{week.label}</div>
+      <h3 className="display mt-1 text-display-sm">{week.theme}</h3>
+      <p className="mt-2 text-xs text-text-muted">{week.pitch}</p>
+      <div className="mt-4 grid gap-1.5">
+        {week.activities.map((a) => (
           <div
-            className="h-full bg-gradient-to-r from-gold-soft to-gold-bright transition-all duration-500"
-            style={{ width: `${progress}%` }}
+            key={a.title}
+            className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2"
+          >
+            <span className="truncate text-xs text-text">{a.title}</span>
+            <span className="shrink-0 font-mono text-[10px] text-text-soft">{a.minutes}min</span>
+          </div>
+        ))}
+      </div>
+      {!isLast && (
+        <div className="hidden lg:block">
+          <CalendarDays
+            size={14}
+            className="absolute -right-2.5 top-1/2 hidden -translate-y-1/2 text-text-soft lg:block"
           />
         </div>
-      </Card>
-
-      {/* Today's session (si on est dans le plan) */}
-      {todayActivities && (
-        <Card glow className="mb-5">
-          <div className="flex items-center gap-2 text-gold">
-            <Flame size={18} />
-            <span className="eyebrow !text-gold">Aujourd'hui · Jour {currentDay}</span>
-          </div>
-          {todayActivities.rest ? (
-            <div className="mt-3">
-              <h2 className="display text-display-sm">Jour de repos</h2>
-              <p className="mt-1 text-sm text-text-muted">
-                Recharge les batteries. Le travail mental compte aussi — écoute de la
-                musique active, regarde un guitariste que tu admires.
-              </p>
-            </div>
-          ) : (
-            <>
-              <h2 className="display mt-2 text-display-sm">Ta séance du jour</h2>
-              <div className="mt-3 grid gap-2">
-                {todayActivities.activities.map((a) => (
-                  <ActivityRow
-                    key={a.templateId}
-                    activity={a}
-                    onToggle={() => toggleActivityDone(currentDay!, a.templateId)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-      )}
-
-      {/* Week selector */}
-      <div className="mb-4">
-        <div className="label-small mb-2">Semaine</div>
-        <div className="grid grid-cols-4 gap-2">
-          {[1, 2, 3, 4].map((w) => (
-            <button
-              key={w}
-              type="button"
-              onClick={() => setViewWeek(w)}
-              aria-pressed={viewWeek === w}
-              className={clsx(
-                'inline-flex h-10 items-center justify-center rounded-full border text-xs font-medium uppercase tracking-wider transition-colors',
-                viewWeek === w
-                  ? 'border-gold bg-gold text-bg'
-                  : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-              )}
-            >
-              Sem. {w}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Days of the selected week */}
-      <div className="grid gap-3">
-        {weekDays.map((day) => {
-          const isToday = currentDay === day.dayNumber;
-          const allDone =
-            !day.rest &&
-            day.activities.length > 0 &&
-            day.activities.every((a) => a.done);
-          return (
-            <div
-              key={day.dayNumber}
-              className={clsx(
-                'rounded-2xl border p-4 transition-all',
-                isToday
-                  ? 'border-gold bg-gold/5 shadow-gold'
-                  : day.rest
-                    ? 'border-border bg-surface opacity-70'
-                    : 'border-border bg-surface'
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CalendarDays
-                    size={16}
-                    className={isToday ? 'text-gold' : 'text-text-soft'}
-                  />
-                  <span
-                    className={clsx(
-                      'text-sm font-semibold',
-                      isToday ? 'text-gold' : day.rest ? 'text-text-soft' : 'text-text'
-                    )}
-                  >
-                    Jour {day.dayNumber}
-                    {isToday && ' · aujourd\'hui'}
-                  </span>
-                </div>
-                {day.rest && (
-                  <span className="text-xs uppercase tracking-wider text-text-soft">
-                    Repos
-                  </span>
-                )}
-                {allDone && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                    <Check size={12} strokeWidth={3} /> Validée
-                  </span>
-                )}
-              </div>
-              {!day.rest && (
-                <div className="mt-3 grid gap-1.5">
-                  {day.activities.map((a) => (
-                    <ActivityRow
-                      key={a.templateId}
-                      activity={a}
-                      compact
-                      onToggle={() => toggleActivityDone(day.dayNumber, a.templateId)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────
-
-function ActivityRow({
-  activity,
-  compact = false,
-  onToggle,
-}: {
-  activity: ReturnType<typeof generatePlan>['days'][number]['activities'][number];
-  compact?: boolean;
-  onToggle: () => void;
-}) {
-  const done = !!activity.done;
-  return (
-    <div
-      className={clsx(
-        'flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors',
-        done
-          ? 'border-success/40 bg-success/5'
-          : 'border-border bg-surface-2'
-      )}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={done ? 'Décocher' : 'Cocher comme fait'}
-        className={clsx(
-          'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-          done
-            ? 'border-success bg-success text-bg'
-            : 'border-border-gold bg-transparent hover:bg-gold/5'
-        )}
-      >
-        {done && <Check size={14} strokeWidth={3} />}
-      </button>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span
-            className={clsx(
-              'font-semibold',
-              compact ? 'text-sm' : 'text-base',
-              done && 'text-text-soft line-through'
-            )}
-          >
-            {activity.title}
-          </span>
-          <span className="font-mono text-xs text-text-soft">{activity.minutes}min</span>
-        </div>
-        {!compact && activity.detail && (
-          <p className="mt-0.5 text-xs text-text-muted">{activity.detail}</p>
-        )}
-      </div>
-      {activity.route && (
-        <Link
-          to={activity.route}
-          aria-label="Lancer l'activité"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-text-muted hover:border-gold hover:text-gold"
-        >
-          <ChevronRight size={16} />
-        </Link>
       )}
     </div>
   );

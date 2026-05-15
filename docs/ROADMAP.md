@@ -119,10 +119,16 @@
 - [ ] Difficulty levels (beginner → expert)
 
 #### Practice plan personnalisé
-- [ ] Onboarding : "ton objectif ?" (jazzy / fluide / rapide / technique / songwriting)
-- [ ] Génération d'un plan 4 semaines (5-15 min/jour)
-- [ ] Chaque jour : warm-up gamme + accord + technique + morceau lié
-- [ ] Tracking de complétion
+> **Status (mai 2026)** : page `/plan` placeholder live (mockup statique 4 semaines).
+> Le moteur (`src/lib/practicePlan.ts`) + state Zustand restent en place,
+> dormants. Reste à faire **en Phase 3** : rebrancher l'onboarding sur
+> la vraie génération + ouvrir le modal "Bientôt disponible" en remplaçant
+> par la génération réelle.
+- [x] Page `/plan` placeholder avec mockup 4 cards + modal "Bientôt"
+- [ ] Réactiver l'onboarding 3-questions (le code existe, suspendu)
+- [ ] Décision UX : feature gratuite ou tier Pro ? (à trancher avant
+  Phase 5)
+- [ ] Tracking de complétion live (live query Dexie)
 
 #### Strum pattern editor avec lecture
 - [ ] Grille cliquable ↓↑X·
