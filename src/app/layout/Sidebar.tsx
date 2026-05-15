@@ -1,4 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
+import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import {
   LayoutDashboard,
   Music2,
@@ -72,8 +73,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden border-r border-border bg-surface px-5 py-7 md:flex md:flex-col">
-      <Link to="/" className="mb-8 flex items-center gap-3">
-        <span className="inline-block h-2 w-2 rounded-full bg-gold-bright shadow-gold" />
+      <Link to="/" className="mb-8 flex items-center gap-2.5">
+        <RiffLabLogo size={26} />
         <span className="display text-[28px] tracking-wide">RiffLab</span>
       </Link>
 

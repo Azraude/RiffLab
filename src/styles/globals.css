@@ -199,6 +199,18 @@
   text-shadow: 0 0 18px rgb(var(--gold-glow) / 0.35);
 }
 
+/* RiffLab flame logo — flicker subtil (translateY ±1px). Donne vie au
+   logo sans l'agiter. Période 2.4s ease-in-out pour une respiration
+   lente type bougie. */
+@keyframes rifflab-flame-flicker {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1px) scale(1.02); }
+}
+.rifflab-flame-flicker {
+  animation: rifflab-flame-flicker 2.4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
 /* Animated gold sheen — passe lentement un gradient or par-dessus l'élément.
    Utilisé sur la Daily card du Dashboard pour donner une vie subtile au
    bandeau d'entraînement du jour. */

@@ -12,6 +12,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { HeroScene3DLazy } from '@/components/three/HeroScene3DLazy';
+import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 
 /**
  * Landing publique de RiffLab.
@@ -44,7 +45,7 @@ export function Landing() {
       <header className="relative z-20 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8 md:py-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-gold-bright shadow-gold" />
+            <RiffLabLogo size={26} />
             <span className="display text-[22px] tracking-wide md:text-[26px]">RiffLab</span>
           </Link>
           <Link

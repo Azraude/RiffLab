@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Music2, Grid3x3, Waves, Timer, Mic, Wrench, Ear } from 'lucide-react';
+import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -47,7 +48,9 @@ export function MobileNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="grid grid-cols-5">
-          {/* Home — utilise la "marque" gold dot du logo Sidebar */}
+          {/* Home — flamme logo RiffLab. Animation flicker active toujours,
+              opacity réduite quand inactif pour rester reconnaissable
+              comme nav (le "tab actif" doit ressortir). */}
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
@@ -59,15 +62,13 @@ export function MobileNav() {
           >
             {({ isActive }) => (
               <>
-                <span className="flex h-5 w-5 items-center justify-center">
-                  <span
-                    className={clsx(
-                      'inline-block h-3 w-3 rounded-full transition-all',
-                      isActive
-                        ? 'bg-gold-bright shadow-gold-strong'
-                        : 'bg-gold-soft'
-                    )}
-                  />
+                <span
+                  className={clsx(
+                    'flex h-5 w-5 items-center justify-center transition-opacity',
+                    isActive ? 'opacity-100' : 'opacity-60'
+                  )}
+                >
+                  <RiffLabLogo size={20} />
                 </span>
                 <span>Home</span>
               </>
