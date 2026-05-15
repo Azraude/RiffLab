@@ -38,7 +38,14 @@ coverage
 *.tsbuildinfo
 
 # 3D models — on whitelist explicite. Les .glb peuvent peser plusieurs
-# dizaines de MB ; GitHub bloque les fichiers > 100 MB. Whitelist
-# uniquement le modèle de prod ; les autres restent en local.
+# dizaines de MB ; GitHub bloque les fichiers > 100 MB.
+# - classic (1 MB) : whitelisted, prod-ready
+# - rose (22 MB) : whitelisted, pushable mais lourd → à compresser
+# - amp (8.5 MB) : whitelisted, ok mais idéalement < 1.5 MB
+# - studio-scene (110 MB) : BLACKLISTED, dépasse la limite GitHub. Local
+#   uniquement tant que pas compressé via gltf.report. Le hero affichera
+#   son fallback gradient sur Vercel jusqu'à passage en prod.
 public/models/*.glb
 !public/models/guitar-fender-classic.glb
+!public/models/guitar-fender-rose.glb
+!public/models/amp.glb

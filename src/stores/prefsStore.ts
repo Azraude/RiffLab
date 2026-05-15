@@ -15,6 +15,7 @@ type PrefsState = {
   fretboardSkin: FretboardSkinId;
   theme: ThemeId;
   strumSound: StrumSoundId;
+  effects3D: boolean;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
   setCapo: (n: number) => void;
@@ -24,6 +25,7 @@ type PrefsState = {
   setFretboardSkin: (id: FretboardSkinId) => void;
   setTheme: (id: ThemeId) => void;
   setStrumSound: (id: StrumSoundId) => void;
+  toggleEffects3D: () => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
 };
@@ -39,6 +41,7 @@ export const usePrefs = create<PrefsState>()(
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
       strumSound: 'karplus',
+      effects3D: true,
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
       setCapo: (capo) => set({ capo }),
@@ -48,6 +51,7 @@ export const usePrefs = create<PrefsState>()(
       setFretboardSkin: (fretboardSkin) => set({ fretboardSkin }),
       setTheme: (theme) => set({ theme }),
       setStrumSound: (strumSound) => set({ strumSound }),
+      toggleEffects3D: () => set((s) => ({ effects3D: !s.effects3D })),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
         set((s) => {
@@ -67,7 +71,7 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 5,
+      version: 6,
       /**
        * Migration permissive : on garde tous les champs reconnus et on
        * remplit les nouveaux avec les valeurs par défaut. Comme ça,
@@ -84,6 +88,7 @@ export const usePrefs = create<PrefsState>()(
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
           strumSound: p.strumSound ?? 'karplus',
+          effects3D: p.effects3D ?? true,
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
       },
