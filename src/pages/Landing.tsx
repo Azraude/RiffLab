@@ -11,7 +11,7 @@ import {
   ArrowRight,
   LogIn,
 } from 'lucide-react';
-import { HeroGuitar3DLazy } from '@/components/three/HeroGuitar3DLazy';
+import { HeroScene3DLazy } from '@/components/three/HeroScene3DLazy';
 
 /**
  * Landing publique de RiffLab. Pas de Three.js ici (l'ancienne version
@@ -27,9 +27,11 @@ import { HeroGuitar3DLazy } from '@/components/three/HeroGuitar3DLazy';
 export function Landing() {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Décor 3D : guitare flottante via modèle GLB, lazy-loadé, fallback
-          gradient gracieux si le .glb est absent ou si on est sur mobile. */}
-      <HeroGuitar3DLazy />
+      {/* Décor 3D : scène studio complète (2 amplis + guitare posée),
+          lazy-loadée. Fallback gradient si le .glb manque, si on est sur
+          mobile, si le device est low-end, ou si l'user a coupé les effets
+          3D dans Préférences. */}
+      <HeroScene3DLazy />
 
       {/* Header */}
       <header className="relative z-10">

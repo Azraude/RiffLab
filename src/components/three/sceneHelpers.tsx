@@ -159,45 +159,11 @@ export function GoldParticles({
   );
 }
 
-// ─── Fallback gradient ───────────────────────────────────────────────
-/**
- * Affichage de secours quand un modèle 3D ne se charge pas ou que le
- * device est trop limité. Gradient noir + halo gold radial. Pas de WebGL.
- */
-export function Scene3DFallback({ className }: { className?: string }) {
-  return (
-    <div
-      className={className ?? 'absolute inset-0 overflow-hidden pointer-events-none'}
-      aria-hidden
-    >
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 45%, rgb(var(--gold-glow) / 0.16) 0%, transparent 55%)',
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Skeleton shimmer pour Suspense fallback ─────────────────────────
-/**
- * Placeholder pendant le téléchargement du .glb. Gradient gold qui
- * balaye via la classe `.skeleton-shimmer` (globals.css).
- */
-export function Scene3DSkeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={
-        className ?? 'absolute inset-0 overflow-hidden pointer-events-none'
-      }
-      aria-hidden
-    >
-      <div className="skeleton-shimmer absolute inset-0 opacity-40" />
-    </div>
-  );
-}
+// Re-export les fallbacks depuis sceneFallbacks pour rester compat avec
+// les imports `from './sceneHelpers'` côté composants R3F (qui paient déjà
+// le coût three). Les wrappers Lazy *ne doivent pas* importer depuis ce
+// fichier — ils importent directement depuis sceneFallbacks.
+export { Scene3DFallback, Scene3DSkeleton } from './sceneFallbacks';
 
 // ─── GLBErrorBoundary ────────────────────────────────────────────────
 import { Component } from 'react';
