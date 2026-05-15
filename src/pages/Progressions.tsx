@@ -16,7 +16,7 @@ import {
 import { db, newSectionId, saveSong, type Song } from '@/lib/db';
 import { NOTE_NAMES, type NoteName } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
-import { Play, Pause, Plus, Sparkles } from 'lucide-react';
+import { Play, Pause, Plus, Sparkles, Volume2 } from 'lucide-react';
 import clsx from 'clsx';
 
 type RootFilter = 'all' | NoteName;
@@ -216,8 +216,15 @@ function ProgressionCard({
   }, [isPlaying, chords, strum]);
 
   return (
-    <Card hover className="flex flex-col">
-      <div className="flex items-start justify-between gap-2">
+    <Card hover className="group relative flex flex-col">
+      {/* Volume icon top-right : signale qu'on peut écouter la progression */}
+      <span
+        className="pointer-events-none absolute right-3 top-3 text-text-soft transition-all group-hover:scale-110 group-hover:text-gold"
+        aria-hidden
+      >
+        <Volume2 size={14} strokeWidth={1.8} />
+      </span>
+      <div className="flex items-start justify-between gap-2 pr-6">
         <div className="min-w-0 flex-1">
           <h3 className="display text-display-sm leading-tight">{progression.name}</h3>
           <div className="mt-0.5 font-mono text-xs text-gold">{progression.degrees}</div>

@@ -13,6 +13,7 @@ import {
 } from '@/lib/chordDatabase';
 import { NOTE_NAMES } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
+import { Volume2 } from 'lucide-react';
 import clsx from 'clsx';
 
 type RootFilter = 'all' | (typeof NOTE_NAMES)[number];
@@ -155,7 +156,15 @@ function SwipeableChordCard({ chord, onPlay }: { chord: Chord; onPlay: () => voi
   };
 
   return (
-    <Card hover className="flex flex-col p-3">
+    <Card hover className="group relative flex flex-col p-3">
+      {/* Volume icon top-right : signale que le card est cliquable et
+          qu'on l'entend. Pulse au hover. */}
+      <span
+        className="pointer-events-none absolute right-2.5 top-2.5 text-text-soft transition-all group-hover:scale-110 group-hover:text-gold"
+        aria-hidden
+      >
+        <Volume2 size={14} strokeWidth={1.8} />
+      </span>
       <button
         type="button"
         onClick={onPlay}
