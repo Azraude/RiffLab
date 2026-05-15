@@ -17,10 +17,20 @@ export type PathLevel = {
   title: string;
   /** Courte description du module */
   pitch: string;
-  /** Durée estimée pour boucler le module */
-  estimatedMinutes: number;
+  /** Durée estimée pour boucler le module (en min/jour) */
+  minutesPerDay: number;
+  /** Nb jours conseillés pour valider */
+  daysRecommended: number;
   /** Liste des objectifs concrets à valider */
   objectives: string[];
+  /** 3-5 accords précis à maîtriser */
+  chordsToLearn: string[];
+  /** 0-2 gammes liées (id de scale) */
+  scalesToLearn: string[];
+  /** 0-2 techniques (libellés) */
+  techniques: string[];
+  /** Morceau exemple de la library (titre libre, lien optionnel) */
+  exampleSong?: string;
   /** Liens vers d'autres pages de l'app pour s'exercer */
   exercises: Array<{ label: string; route: string }>;
 };
@@ -30,15 +40,20 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'bases',
     order: 1,
     title: 'Bases',
-    pitch: 'Les accords ouverts essentiels : Em, G, C, D, Am.',
-    estimatedMinutes: 30,
+    pitch: 'Les accords ouverts essentiels et les premières transitions sans accroc.',
+    minutesPerDay: 15,
+    daysRecommended: 5,
     objectives: [
       'Connaître les 5 accords ouverts de base',
       'Transitionner entre eux sans accroc',
       'Tenir un strum simple en croches',
     ],
+    chordsToLearn: ['Em', 'G', 'C', 'D', 'Am'],
+    scalesToLearn: [],
+    techniques: ['Position main gauche', 'Pression doigts'],
+    exampleSong: 'Wonderwall (Oasis)',
     exercises: [
-      { label: 'Bibliothèque d\'accords', route: '/chords' },
+      { label: "Bibliothèque d'accords", route: '/chords' },
       { label: 'Métronome 70 BPM', route: '/metronome' },
     ],
   },
@@ -46,13 +61,18 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'strumming',
     order: 2,
     title: 'Strumming',
-    pitch: 'Patterns de base : down-down-up-up-down-up. La main droite.',
-    estimatedMinutes: 25,
+    pitch: 'Le pattern folk DDUUDU et ses variations. La main droite qui groove.',
+    minutesPerDay: 15,
+    daysRecommended: 5,
     objectives: [
       'Tenir le pattern folk DDUUDU sur Em / G / C / D',
       'Varier le tempo de 70 à 100 BPM',
       'Reconnaître croches et doubles-croches',
     ],
+    chordsToLearn: ['Em', 'G', 'C', 'D'],
+    scalesToLearn: [],
+    techniques: ['Pattern DDUUDU', 'Mute palm'],
+    exampleSong: 'Horse with No Name (America)',
     exercises: [
       { label: 'Strum Patterns', route: '/strum-patterns' },
       { label: 'Métronome', route: '/metronome' },
@@ -62,13 +82,18 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'first-song',
     order: 3,
     title: 'Première chanson',
-    pitch: 'Jouer un morceau du début à la fin, sans interruption.',
-    estimatedMinutes: 40,
+    pitch: 'Du début à la fin, sans interruption. Le premier morceau qui finit le voyage.',
+    minutesPerDay: 20,
+    daysRecommended: 7,
     objectives: [
       'Choisir un morceau adapté (3-4 accords)',
       'Mémoriser la structure couplet/refrain',
       'Tenir tout le morceau du début à la fin',
     ],
+    chordsToLearn: ['Em', 'G', 'D', 'A7'],
+    scalesToLearn: [],
+    techniques: ['Mémorisation structure', 'Continuité sans pause'],
+    exampleSong: 'Three Little Birds (Bob Marley)',
     exercises: [
       { label: 'Riff de la semaine', route: '/riff-of-the-week' },
       { label: 'Mes sons', route: '/songs' },
@@ -78,28 +103,36 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'barre-chords',
     order: 4,
     title: 'Accords barrés',
-    pitch: 'L\'épreuve initiatique : le F barré, puis les autres formes.',
-    estimatedMinutes: 45,
+    pitch: "L'épreuve initiatique : le F barré, puis les autres formes E et A.",
+    minutesPerDay: 15,
+    daysRecommended: 7,
     objectives: [
       'Position correcte du F barré',
       'Tenir le barré sans douleur 30 secondes',
-      'Passer d\'un barré à un accord ouvert proprement',
+      "Passer d'un barré à un accord ouvert proprement",
     ],
-    exercises: [
-      { label: 'Bibliothèque d\'accords', route: '/chords' },
-    ],
+    chordsToLearn: ['F', 'Bm', 'B7', 'C#m', 'F#m'],
+    scalesToLearn: [],
+    techniques: ['Barré index', 'Pression équilibrée'],
+    exampleSong: 'Hotel California (Eagles)',
+    exercises: [{ label: "Bibliothèque d'accords", route: '/chords' }],
   },
   {
     id: 'penta-minor',
     order: 5,
     title: 'Pentatonique mineure',
-    pitch: 'La gamme de tous les solos. Position 1 sur le manche.',
-    estimatedMinutes: 30,
+    pitch: 'La gamme de tous les solos rock et blues. Position 1 sur le manche.',
+    minutesPerDay: 15,
+    daysRecommended: 5,
     objectives: [
       'Mémoriser la position 1 de la penta mineure',
       'Jouer les notes ascendantes puis descendantes',
       'Improviser une phrase de 4 mesures',
     ],
+    chordsToLearn: ['Em', 'Am', 'Dm'],
+    scalesToLearn: ['penta_minor'],
+    techniques: ['Alternate picking', 'Legato basics'],
+    exampleSong: 'Sunshine of Your Love (Cream)',
     exercises: [
       { label: 'Gammes', route: '/scales' },
       { label: 'Mode jam', route: '/jam' },
@@ -109,13 +142,18 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'soloing',
     order: 6,
     title: 'Soloing basics',
-    pitch: 'Bends, hammer-ons, pull-offs. Faire chanter une note.',
-    estimatedMinutes: 35,
+    pitch: 'Bends, hammer-ons, pull-offs. Les techniques qui font chanter une note.',
+    minutesPerDay: 15,
+    daysRecommended: 7,
     objectives: [
       'Bend précis sur le 7e fret de Si',
       'Enchaîner hammer-on + pull-off',
       'Improviser sur un backing track jam',
     ],
+    chordsToLearn: [],
+    scalesToLearn: ['penta_minor', 'blues'],
+    techniques: ['Bend', 'Hammer-on', 'Pull-off', 'Vibrato'],
+    exampleSong: 'Smoke on the Water — solo intro',
     exercises: [
       { label: 'Mode jam', route: '/jam' },
       { label: 'Gammes', route: '/scales' },
@@ -125,30 +163,38 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'theory-intervals',
     order: 7,
     title: 'Théorie : intervalles',
-    pitch: 'Comprendre les distances entre les notes, à l\'oreille.',
-    estimatedMinutes: 25,
+    pitch: "Comprendre les distances entre les notes, à l'oreille comme sur le papier.",
+    minutesPerDay: 10,
+    daysRecommended: 5,
     objectives: [
-      'Reconnaître quinte / quarte / octave à l\'oreille',
+      "Reconnaître quinte / quarte / octave à l'oreille",
       'Identifier majeure vs mineure',
       'Score ≥ 80 % en mode débutant ear training',
     ],
-    exercises: [
-      { label: 'Ear training', route: '/ear-training' },
-    ],
+    chordsToLearn: [],
+    scalesToLearn: ['major'],
+    techniques: ['Solfège basique'],
+    exampleSong: 'Aucun morceau spécifique — c\'est de la théorie pure',
+    exercises: [{ label: 'Ear training', route: '/ear-training' }],
   },
   {
     id: 'jazzy-chords',
     order: 8,
     title: 'Accords jazzy',
-    pitch: 'maj7, m7, sus2, sus4. Les couleurs harmoniques.',
-    estimatedMinutes: 35,
+    pitch: 'maj7, m7, sus2, sus4. Les couleurs harmoniques qui ouvrent un autre monde.',
+    minutesPerDay: 15,
+    daysRecommended: 7,
     objectives: [
-      'Cmaj7, Dm7, Gm7, F#m7b5',
+      'Maîtriser Cmaj7, Dm7, Gm7, F#m7b5',
       'Distinguer le son maj7 vs 7 vs m7',
-      'Jouer une progression ii-V-I',
+      'Jouer une progression ii-V-I en C',
     ],
+    chordsToLearn: ['Cmaj7', 'Dm7', 'Gm7', 'F#m7b5', 'A7'],
+    scalesToLearn: [],
+    techniques: ['Voicings barrés partiels', 'Comping rythmique'],
+    exampleSong: 'Autumn Leaves (Standard)',
     exercises: [
-      { label: 'Bibliothèque d\'accords', route: '/chords' },
+      { label: "Bibliothèque d'accords", route: '/chords' },
       { label: 'Progressions', route: '/progressions' },
     ],
   },
@@ -156,13 +202,18 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'modes',
     order: 9,
     title: 'Théorie des modes',
-    pitch: 'Dorien, mixolydien, lydien. Le langage du jazz et du prog.',
-    estimatedMinutes: 50,
+    pitch: 'Dorien, mixolydien, lydien. Le langage du jazz, du prog et de la fusion.',
+    minutesPerDay: 20,
+    daysRecommended: 7,
     objectives: [
       'Comprendre la formule de chaque mode',
       'Identifier dorien dans un morceau de prog',
       'Improviser en mixolydien sur un V7',
     ],
+    chordsToLearn: [],
+    scalesToLearn: ['dorian', 'mixolydian', 'lydian'],
+    techniques: ['Application modale', 'Centre tonal'],
+    exampleSong: 'So What (Miles Davis) — dorien',
     exercises: [
       { label: 'Gammes', route: '/scales' },
       { label: 'Ear training', route: '/ear-training' },
@@ -172,13 +223,18 @@ export const PATH_LEVELS: PathLevel[] = [
     id: 'composition',
     order: 10,
     title: 'Composition libre',
-    pitch: 'Écrire ton premier morceau original, du début à la fin.',
-    estimatedMinutes: 90,
+    pitch: 'Écrire ton premier morceau original, du début à la fin. La consécration.',
+    minutesPerDay: 30,
+    daysRecommended: 7,
     objectives: [
       'Choisir une progression motivante',
       'Écrire un couplet + un refrain',
       'Enregistrer une démo dans Mes Sons',
     ],
+    chordsToLearn: [],
+    scalesToLearn: [],
+    techniques: ['Structure couplet/refrain', 'Topline melody', 'Enregistrement'],
+    exampleSong: 'Ton premier morceau — tu vas l\'écrire toi-même.',
     exercises: [
       { label: 'Mes sons', route: '/songs' },
       { label: 'Progressions', route: '/progressions' },

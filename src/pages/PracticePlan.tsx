@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
+import { Confetti } from '@/components/ui/Confetti';
 import {
   PATH_LEVELS,
   listCompletedNodes,
@@ -19,9 +20,13 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
+  Clock,
+  Grid3x3,
   Lock,
   RotateCcw,
   Sparkles,
+  Waves,
+  Wrench,
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -45,6 +50,16 @@ export function PracticePlan() {
   const states = useMemo(() => computeNodeStates(completedIds), [completedIds]);
   const [openLevel, setOpenLevel] = useState<PathLevel | null>(null);
 
+  // Confetti trigger : incrémente à chaque completion pour relancer l'anim
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const prevCountRef = useRef(0);
+  useEffect(() => {
+    if (completedIds.size > prevCountRef.current && prevCountRef.current > 0) {
+      setConfettiTrigger((c) => c + 1);
+    }
+    prevCountRef.current = completedIds.size;
+  }, [completedIds.size]);
+
   const progress = completedIds.size;
   const total = PATH_LEVELS.length;
   const percent = Math.round((progress / total) * 100);
@@ -56,6 +71,24 @@ export function PracticePlan() {
 
   return (
     <>
+      {/* Sticky progress bar — sous le PageHeader, top de la page */}
+      <div className="sticky top-0 z-30 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:-mt-9 md:px-12">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            <Sparkles size={13} className="text-gold-soft" />
+            <span className="font-mono font-semibold text-gold">{progress}/{total}</span>
+            <span>niveaux complétés</span>
+          </div>
+          <span className="font-mono text-xs text-text-soft">{percent} %</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div
+            className="h-full bg-gradient-to-r from-gold-soft to-gold-bright transition-all duration-500"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+
       <PageHeader
         title="Mon plan"
         subtitle="Ton parcours d'apprentissage — débloque les niveaux un par un."
@@ -69,6 +102,9 @@ export function PracticePlan() {
           <RotateCcw size={14} /> Recommencer
         </button>
       </PageHeader>
+
+      {/* Confetti déclenché à chaque node complété */}
+      <Confetti trigger={confettiTrigger} count={50} duration={1.8} />
 
       {/* Hero 3D : Fender Rose, signifie "ton parcours" — agrandi (320px
           mobile / 380px desktop) avec caméra reculée pour bien voir la
@@ -392,7 +428,10 @@ function LevelDrawer({
                   <p className="mt-2 text-sm text-text-muted">{level.pitch}</p>
 
                   <div className="mt-3 flex items-center gap-2 text-xs text-text-soft">
-                    <span>⏱ Estimé {level.estimatedMinutes} min</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={11} />
+                      {level.minutesPerDay} min/j × {level.daysRecommended}j
+                    </span>
                     {state === 'locked' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-text-soft/15 px-2 py-0.5">
                         <Lock size={10} /> Verrouillé
@@ -424,6 +463,70 @@ function LevelDrawer({
                       ))}
                     </ul>
                   </div>
+
+                  {/* Accords à maîtriser */}
+                  {level.chordsToLearn.length > 0 && (
+                    <div className="mt-5">
+                      <div className="label-small mb-2 flex items-center gap-1.5">
+                        <Grid3x3 size={11} /> Accords à maîtriser
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {level.chordsToLearn.map((c) => (
+                          <span
+                            key={c}
+                            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-2 px-2.5 font-mono text-sm font-bold text-gold"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gammes liées */}
+                  {level.scalesToLearn.length > 0 && (
+                    <div className="mt-5">
+                      <div className="label-small mb-2 flex items-center gap-1.5">
+                        <Waves size={11} /> Gammes liées
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {level.scalesToLearn.map((s) => (
+                          <Link
+                            key={s}
+                            to="/scales"
+                            onClick={onClose}
+                            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-2 px-2.5 font-mono text-xs text-gold hover:border-gold-soft"
+                          >
+                            {s}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Techniques */}
+                  {level.techniques.length > 0 && (
+                    <div className="mt-5">
+                      <div className="label-small mb-2 flex items-center gap-1.5">
+                        <Wrench size={11} /> Techniques
+                      </div>
+                      <ul className="grid gap-1.5">
+                        {level.techniques.map((t) => (
+                          <li key={t} className="text-sm text-text-muted">
+                            · {t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Morceau exemple */}
+                  {level.exampleSong && (
+                    <div className="mt-5 rounded-xl border border-border-gold bg-gold/5 p-3">
+                      <div className="eyebrow !text-gold-soft text-[10px]">Morceau exemple</div>
+                      <div className="mt-1 text-sm text-text">{level.exampleSong}</div>
+                    </div>
+                  )}
 
                   {level.exercises.length > 0 && (
                     <div className="mt-5">
