@@ -76,7 +76,7 @@ export function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Bon retour, Melvin.">
+      <PageHeader title={<DashboardGreeting name="Melvin" />}>
         <Link
           to="/songs/new"
           className="hidden h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:inline-flex"
@@ -342,5 +342,77 @@ export function Dashboard() {
         )}
       </div>
     </>
+  );
+}
+
+// ─── Dashboard greeting ───────────────────────────────────────────────
+
+/**
+ * "Bon retour, <name>." — animation entrée word-by-word (stagger 60ms,
+ * fade + slide-up + blur résorption), nom en italic gold avec un
+ * underline SVG manuscrit qui se dessine en sweep gauche-droite.
+ */
+function DashboardGreeting({ name }: { name: string }) {
+  const words = ['Bon', 'retour,'];
+  return (
+    <span className="display text-display-md inline-block">
+      {words.map((w, i) => (
+        <motion.span
+          key={w}
+          initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{
+            duration: 0.5,
+            delay: i * 0.06,
+            ease: [0.25, 1, 0.5, 1],
+          }}
+          className="mr-2 inline-block"
+        >
+          {w}
+        </motion.span>
+      ))}
+      <motion.span
+        initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{
+          duration: 0.5,
+          delay: words.length * 0.06,
+          ease: [0.25, 1, 0.5, 1],
+        }}
+        className="relative inline-block font-serif italic text-gold text-gold-glow"
+      >
+        {name}
+        {/* Underline SVG manuscrit, pathLength animé en sweep gauche-droite */}
+        <svg
+          className="absolute -bottom-1 left-0 w-full"
+          viewBox="0 0 100 8"
+          preserveAspectRatio="none"
+          fill="none"
+          height={6}
+          aria-hidden
+        >
+          <motion.path
+            d="M 2 4 Q 25 1, 50 4 T 98 4"
+            stroke="rgb(var(--gold-bright))"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{
+              pathLength: { duration: 0.8, delay: 0.5, ease: [0.25, 1, 0.5, 1] },
+              opacity: { duration: 0.2, delay: 0.5 },
+            }}
+            style={{ filter: 'drop-shadow(0 0 4px rgb(var(--gold-glow) / 0.6))' }}
+          />
+        </svg>
+      </motion.span>
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 1.1 }}
+      >
+        .
+      </motion.span>
+    </span>
   );
 }

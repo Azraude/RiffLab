@@ -4,7 +4,7 @@ import { Settings as SettingsIcon } from 'lucide-react';
 import clsx from 'clsx';
 
 interface PageHeaderProps {
-  title: string;
+  title: string | ReactNode;
   subtitle?: string;
   /** Boutons / actions custom à afficher à droite du titre. Sur mobile, l'icône
    *  Réglages est injectée APRÈS ces actions. Sur desktop, seules les actions
