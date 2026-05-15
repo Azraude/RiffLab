@@ -220,7 +220,10 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 ### Riff de la semaine
 - [x] 20 riffs curés rotatifs basés sur le numéro ISO de la semaine
 - [x] Page `/riff-of-the-week` + Dashboard teaser + countdown lundi
+- [x] Widget Dashboard refait community-style (session 16) : tab + contributor + like + share modal
+- [x] TabReader SVG + TabPlayer Tone.js (5 tabs précodés : Smoke / Iron / Seven Nation / Sunshine / Stairway)
 - [ ] Notification push (mobile PWA) le lundi matin — Phase 5 (PWA)
+- [ ] Vrai upload communautaire — Phase 5 (auth + backend)
 
 ### Mode Jam (livré en Phase 4 session 15)
 - [x] Page `/jam` avec génération auto progression dans key/mode/mood
