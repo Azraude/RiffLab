@@ -22,12 +22,18 @@ export function Songs() {
         title="Mes sons"
         subtitle={`${songs?.length ?? 0} sons dans ta bibliothèque.`}
       >
-        {/* Header CTA — desktop only. Mobile uses the floating FAB. */}
+        {/* Header CTA — desktop only. Mobile uses the floating FAB.
+            Variant "hero" : gradient gold + sheen au hover pour distinguer
+            cette action critique du reste. */}
         <Link
           to="/songs/new"
-          className="hidden h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:inline-flex"
+          className="group relative hidden h-10 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-b from-gold-bright to-gold px-5 text-sm font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px md:inline-flex"
         >
-          + Nouveau son
+          <span className="pointer-events-none absolute inset-y-0 -left-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-all duration-700 group-hover:left-full" />
+          <span className="relative inline-flex items-center gap-2">
+            <span className="font-serif italic text-base leading-none transition-transform group-hover:rotate-90">+</span>
+            Nouveau son
+          </span>
         </Link>
       </PageHeader>
 
