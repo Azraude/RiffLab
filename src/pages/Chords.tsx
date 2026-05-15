@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { TiltCard } from '@/components/ui/TiltCard';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import {
   CHORDS,
@@ -102,7 +103,9 @@ export function Chords() {
       {/* Grille de cards swipeables */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
         {filtered.map((c) => (
-          <SwipeableChordCard key={c.name} chord={c} onPlay={() => strum(c.name)} />
+          <TiltCard key={c.name} maxTilt={6}>
+            <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
+          </TiltCard>
         ))}
       </div>
 

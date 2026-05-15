@@ -1,11 +1,12 @@
 import { forwardRef } from 'react';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import clsx from 'clsx';
 
 type Variant = 'primary' | 'ghost' | 'subtle';
 type Size = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   variant?: Variant;
   size?: Size;
   children: ReactNode;
@@ -25,10 +26,17 @@ const sizes: Record<Size, string> = {
   lg: 'h-12 px-6 text-[15px] rounded-xl',
 };
 
+/**
+ * Bouton principal. Variants : primary | ghost | subtle. Le primary
+ * applique un `whileTap` framer-motion (scale 0.97) pour un feedback
+ * tactile premium. Les autres variants restent statiques pour ne pas
+ * surcharger l'UI quand ils sont en grand nombre (filtres, tags).
+ */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', className, children, ...props }, ref) => (
-    <button
+    <motion.button
       ref={ref}
+      whileTap={variant === 'primary' ? { scale: 0.97 } : undefined}
       className={clsx(
         'inline-flex items-center justify-center gap-2 transition-all duration-200 ease-out-quart disabled:cursor-not-allowed disabled:opacity-50',
         variants[variant],
@@ -38,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       {...props}
     >
       {children}
-    </button>
+    </motion.button>
   )
 );
 Button.displayName = 'Button';

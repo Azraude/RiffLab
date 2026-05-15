@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Music2,
   Grid3x3,
@@ -54,9 +55,8 @@ export function Landing() {
       {/* Hero */}
       <section className="relative z-10 mx-auto max-w-5xl px-5 pt-10 pb-16 text-center md:px-8 md:pt-16 md:pb-24">
         <div className="eyebrow mb-5 md:mb-7">Le carnet du guitariste moderne</div>
-        <h1 className="display text-display-lg md:text-display-xl">
-          Pratique. <span className="text-gold text-gold-glow">Compose.</span> Joue.
-        </h1>
+        <HeroTitle text="Pratique. Compose. Joue." />
+
         <p className="mx-auto mt-5 max-w-xl text-[15px] text-text-muted md:mt-7 md:text-lg">
           Garde tes sons, accords et gammes en un seul endroit. Bibliothèques
           intégrées, recorder, métronome, tuner, ear training — tout ce qu'il
@@ -154,6 +154,48 @@ export function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+/**
+ * Hero title — split par lettre + stagger entrée. Letter-spacing wide
+ * initialement qui se resserre au mount = effet "le titre s'installe".
+ * Le mot "Compose" est gold + glow.
+ */
+function HeroTitle({ text }: { text: string }) {
+  const letters = text.split('');
+  const goldWordStart = text.indexOf('Compose');
+  const goldWordEnd = goldWordStart + 'Compose'.length;
+  return (
+    <motion.h1
+      className="display text-display-lg md:text-display-xl"
+      initial={{ letterSpacing: '0.18em' }}
+      animate={{ letterSpacing: '0.005em' }}
+      transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
+      aria-label={text}
+    >
+      {letters.map((char, i) => {
+        const isInGold = i >= goldWordStart && i < goldWordEnd;
+        return (
+          <motion.span
+            key={i}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.08 + i * 0.04,
+              ease: [0.25, 1, 0.5, 1],
+            }}
+            className={
+              isInGold ? 'inline-block text-gold text-gold-glow' : 'inline-block'
+            }
+            aria-hidden
+          >
+            {char === ' ' ? ' ' : char}
+          </motion.span>
+        );
+      })}
+    </motion.h1>
   );
 }
 

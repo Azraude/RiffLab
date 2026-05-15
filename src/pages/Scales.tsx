@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
 import { Fretboard3DLazy } from '@/components/three/Fretboard3DLazy';
+import { TiltCard } from '@/components/ui/TiltCard';
 import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { usePrefs } from '@/stores/prefsStore';
@@ -149,24 +150,25 @@ export function Scales() {
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {SCALES.map((s) => (
-          <Card
-            key={s.id}
-            hover
-            className="cursor-pointer"
-            onClick={() => setScaleId(s.id)}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="display text-display-sm">{s.name}</h3>
-              {scaleId === s.id && (
-                <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gold">
-                  Actif
-                </span>
-              )}
-            </div>
-            <div className="mt-1 font-mono text-sm text-gold">{s.intervals}</div>
-            <p className="mt-3 text-sm text-text-muted">{s.mood}</p>
-            <p className="mt-2 text-xs text-text-soft">{s.example}</p>
-          </Card>
+          <TiltCard key={s.id}>
+            <Card
+              hover
+              className="cursor-pointer"
+              onClick={() => setScaleId(s.id)}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="display text-display-sm">{s.name}</h3>
+                {scaleId === s.id && (
+                  <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gold">
+                    Actif
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 font-mono text-sm text-gold">{s.intervals}</div>
+              <p className="mt-3 text-sm text-text-muted">{s.mood}</p>
+              <p className="mt-2 text-xs text-text-soft">{s.example}</p>
+            </Card>
+          </TiltCard>
         ))}
       </div>
 

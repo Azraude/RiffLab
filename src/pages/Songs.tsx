@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { TiltCard } from '@/components/ui/TiltCard';
 import { countRecordingsBySong, db, type Song } from '@/lib/db';
 import { Mic, Plus } from 'lucide-react';
 
@@ -70,6 +71,7 @@ function SongTile({ song, recordingsCount }: { song: Song; recordingsCount: numb
   ).slice(0, 6);
 
   return (
+    <TiltCard>
     <Link to={`/songs/${song.id}`} className="block">
       <Card hover>
         <h3 className="display text-[22px] leading-tight">{song.title || 'Sans titre'}</h3>
@@ -96,5 +98,6 @@ function SongTile({ song, recordingsCount }: { song: Song; recordingsCount: numb
         </div>
       </Card>
     </Link>
+    </TiltCard>
   );
 }
