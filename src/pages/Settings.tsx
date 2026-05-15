@@ -149,7 +149,13 @@ export function Settings() {
                 key={skin.id}
                 skin={skin}
                 active={prefs.fretboardSkin === skin.id}
-                onSelect={() => prefs.setFretboardSkin(skin.id)}
+                onSelect={() => {
+                  if (skin.premium) {
+                    alert('Ce skin est premium — disponible Phase 5 (cosmetics shop).');
+                    return;
+                  }
+                  prefs.setFretboardSkin(skin.id);
+                }}
               />
             ))}
           </div>
@@ -329,7 +335,10 @@ function SkinOption({
       <SkinSwatch skin={skin} />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-text">{skin.name}</div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
+            {skin.name}
+            {skin.premium && <Lock size={12} className="text-text-soft" />}
+          </div>
           <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{skin.description}</div>
         </div>
         {active && (
