@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -292,6 +292,19 @@ function LevelDrawer({
   onMarkCompleted: (id: string) => void;
   onUnmark: (id: string) => void;
 }) {
+  // Détection mobile pour switcher entre bottom-sheet (mobile) et modal
+  // centré (desktop). Sans ce split, framer-motion `y` rentre en conflit
+  // avec Tailwind `-translate-y-1/2` → le modal apparaît mal positionné
+  // sur desktop (bug user feedback session 16).
+  const [isMobile, setIsMobile] = useState(true);
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   return (
     <Dialog.Root open={level !== null} onOpenChange={(o) => !o && onClose()}>
       <AnimatePresence>
@@ -307,23 +320,58 @@ function LevelDrawer({
               />
             </Dialog.Overlay>
             <Dialog.Content asChild aria-describedby={undefined}>
-              <motion.div
-                className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-surface shadow-2xl md:left-1/2 md:bottom-auto md:top-1/2 md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:border"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)' }}
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 36 }}
-                drag="y"
-                dragConstraints={{ top: 0 }}
-                dragElastic={{ top: 0, bottom: 0.5 }}
-                onDragEnd={(_, info) => {
-                  if (info.offset.y > 100 || info.velocity.y > 500) onClose();
-                }}
+              {/* Container : flex centered desktop (évite le conflit
+                  translate Tailwind + framer-motion y), positionnement
+                  bottom mobile. Inner motion.div ne fait que opacity +
+                  small y/scale offsets. */}
+              <div
+                className={
+                  isMobile
+                    ? 'fixed inset-x-0 bottom-0 z-50 flex justify-center'
+                    : 'fixed inset-0 z-50 flex items-center justify-center p-6'
+                }
               >
-                <div className="flex justify-center pb-2 pt-3 md:hidden">
-                  <span className="h-1.5 w-12 rounded-full bg-text-soft/40" />
-                </div>
+                <motion.div
+                  className={clsx(
+                    'overflow-y-auto bg-surface shadow-2xl',
+                    isMobile
+                      ? 'w-full max-h-[85vh] rounded-t-3xl border-t border-border'
+                      : 'w-[min(440px,92vw)] max-h-[88vh] rounded-3xl border border-border'
+                  )}
+                  style={
+                    isMobile
+                      ? { paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)' }
+                      : undefined
+                  }
+                  initial={
+                    isMobile
+                      ? { y: '100%', opacity: 0 }
+                      : { opacity: 0, scale: 0.94, y: 12 }
+                  }
+                  animate={
+                    isMobile
+                      ? { y: 0, opacity: 1 }
+                      : { opacity: 1, scale: 1, y: 0 }
+                  }
+                  exit={
+                    isMobile
+                      ? { y: '100%', opacity: 0 }
+                      : { opacity: 0, scale: 0.94, y: 12 }
+                  }
+                  transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                  drag={isMobile ? 'y' : false}
+                  dragConstraints={{ top: 0 }}
+                  dragElastic={{ top: 0, bottom: 0.5 }}
+                  onDragEnd={(_, info) => {
+                    if (!isMobile) return;
+                    if (info.offset.y > 100 || info.velocity.y > 500) onClose();
+                  }}
+                >
+                  {isMobile && (
+                    <div className="flex justify-center pb-2 pt-3">
+                      <span className="h-1.5 w-12 rounded-full bg-text-soft/40" />
+                    </div>
+                  )}
 
                 <button
                   type="button"
@@ -417,7 +465,8 @@ function LevelDrawer({
                     </div>
                   )}
                 </div>
-              </motion.div>
+                </motion.div>
+              </div>
             </Dialog.Content>
           </Dialog.Portal>
         )}
