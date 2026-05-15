@@ -20,6 +20,8 @@ import {
   Scene3DFallback,
   Scene3DSkeleton,
   GLBErrorBoundary,
+  ensureTransparentScene,
+  stripSkyboxes,
 } from './sceneHelpers';
 
 const MODEL_PATH = '/models/studio-scene.glb';
@@ -27,7 +29,14 @@ const MODEL_PATH = '/models/studio-scene.glb';
 // ─── Studio mesh ─────────────────────────────────────────────────────
 function StudioModel() {
   const { scene } = useGLTF(MODEL_PATH);
-  const cloned = useMemo(() => scene.clone(), [scene]);
+  const cloned = useMemo(() => {
+    const c = scene.clone();
+    // Vire les meshes "skybox/environment" baked dans le GLB Sketchfab,
+    // sinon on a un fond espace étoilé qui n'a rien à faire dans une app
+    // musique premium.
+    stripSkyboxes(c);
+    return c;
+  }, [scene]);
   return <primitive object={cloned} scale={1.2} position={[0, -0.2, 0]} />;
 }
 
@@ -92,8 +101,9 @@ export default function HeroScene3D() {
         className="absolute inset-0"
         camera={{ position: [0.6, 0.8, 5.5], fov: 38 }}
         dpr={[1, 2]}
-        gl={{ alpha: true, antialias: true }}
-        style={{ pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true, premultipliedAlpha: false }}
+        onCreated={ensureTransparentScene}
+        style={{ pointerEvents: 'none', background: 'transparent' }}
       >
         <Suspense fallback={null}>
           <Scene />

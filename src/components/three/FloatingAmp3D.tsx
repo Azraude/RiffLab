@@ -11,6 +11,8 @@ import {
   FloatingGroup,
   GoldParticles,
   GLBErrorBoundary,
+  ensureTransparentScene,
+  stripSkyboxes,
 } from './sceneHelpers';
 import { Scene3DFallback } from './sceneFallbacks';
 
@@ -18,7 +20,11 @@ const MODEL_PATH = '/models/amp.glb';
 
 function AmpMesh() {
   const { scene } = useGLTF(MODEL_PATH);
-  const cloned = useMemo(() => scene.clone(), [scene]);
+  const cloned = useMemo(() => {
+    const c = scene.clone();
+    stripSkyboxes(c);
+    return c;
+  }, [scene]);
   return <primitive object={cloned} scale={1.3} />;
 }
 
@@ -63,8 +69,9 @@ export default function FloatingAmp3D() {
         className="absolute inset-0"
         camera={{ position: [0, 0.3, 4.5], fov: 38 }}
         dpr={[1, 2]}
-        gl={{ alpha: true, antialias: true }}
-        style={{ pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true, premultipliedAlpha: false }}
+        onCreated={ensureTransparentScene}
+        style={{ pointerEvents: 'none', background: 'transparent' }}
       >
         <Suspense fallback={null}>
           <Scene />

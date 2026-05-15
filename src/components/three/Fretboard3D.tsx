@@ -54,9 +54,14 @@ export default function Fretboard3D({
     camera.position.set(0, 4.5, 8);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, premultipliedAlpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(w, h);
+    // Force la transparence : sans setClearAlpha(0), Three clear avec
+    // un fond noir opaque même en alpha:true → "fond espace" visible.
+    renderer.setClearColor(0x000000, 0);
+    renderer.setClearAlpha(0);
+    scene.background = null;
     container.appendChild(renderer.domElement);
 
     // ─── Lights ───────────────────────────────────────────────

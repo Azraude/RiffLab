@@ -15,6 +15,71 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 
+// ─── Canvas transparency callback ────────────────────────────────────
+/**
+ * onCreated handler à passer aux <Canvas> R3F pour garantir un fond
+ * totalement transparent. Trois.js par défaut clear avec un noir opaque
+ * même quand `gl: { alpha: true }` est passé — il faut explicitement
+ * setClearAlpha(0) ET scene.background = null pour qu'un GLB ne montre
+ * pas la couleur de fond Three par défaut (qui ressemble à de l'espace
+ * noir avec les lights actuelles).
+ */
+export function ensureTransparentScene({
+  gl,
+  scene,
+}: {
+  gl: THREE.WebGLRenderer;
+  scene: THREE.Scene;
+}) {
+  gl.setClearColor(0x000000, 0);
+  gl.setClearAlpha(0);
+  scene.background = null;
+}
+
+// ─── GLB cleanup : enlève les skyboxes ───────────────────────────────
+/**
+ * Traverse un GLB et masque toute mesh qui ressemble à un skybox ou
+ * une env-sphère (ces meshes sont souvent baked dans les modèles
+ * téléchargés depuis Sketchfab — résultat "fond espace" qu'on ne veut
+ * surtout pas dans une app premium musique).
+ *
+ * Heuristique : nom contenant sky/background/environment/sphere/dome,
+ * ou très grande sphère (rayon > 50), ou très grande box (size > 100).
+ * Mutate in-place.
+ */
+export function stripSkyboxes(root: THREE.Object3D) {
+  root.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh)) return;
+    const name = obj.name.toLowerCase();
+    const hits = [
+      'sky',
+      'background',
+      'environment',
+      'env_',
+      'dome',
+      'panorama',
+      'backdrop',
+    ];
+    if (hits.some((h) => name.includes(h))) {
+      obj.visible = false;
+      return;
+    }
+    // Géométrie très large = potentiel skybox
+    const geo = obj.geometry;
+    if (geo instanceof THREE.SphereGeometry) {
+      const p = geo.parameters;
+      if (p && p.radius > 50) obj.visible = false;
+      return;
+    }
+    if (geo instanceof THREE.BoxGeometry) {
+      const p = geo.parameters;
+      if (p && (p.width > 100 || p.height > 100 || p.depth > 100)) {
+        obj.visible = false;
+      }
+    }
+  });
+}
+
 // ─── CSS variables → THREE.Color ─────────────────────────────────────
 /** Lit les variables CSS du thème actif et renvoie des THREE.Color. */
 export function readGoldColors() {

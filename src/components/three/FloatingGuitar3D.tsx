@@ -19,6 +19,8 @@ import {
   FloatingGroup,
   GoldParticles,
   GLBErrorBoundary,
+  ensureTransparentScene,
+  stripSkyboxes,
 } from './sceneHelpers';
 import { Scene3DFallback } from './sceneFallbacks';
 
@@ -39,7 +41,11 @@ interface Props {
 
 function GuitarMesh({ model }: { model: GuitarModel }) {
   const { scene } = useGLTF(MODEL_PATHS[model]);
-  const cloned = useMemo(() => scene.clone(), [scene]);
+  const cloned = useMemo(() => {
+    const c = scene.clone();
+    stripSkyboxes(c);
+    return c;
+  }, [scene]);
   return <primitive object={cloned} scale={1.4} />;
 }
 
@@ -101,8 +107,9 @@ export default function FloatingGuitar3D({
         className="absolute inset-0"
         camera={{ position: [0, cameraY, cameraDistance], fov: 38 }}
         dpr={[1, 2]}
-        gl={{ alpha: true, antialias: true }}
-        style={{ pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true, premultipliedAlpha: false }}
+        onCreated={ensureTransparentScene}
+        style={{ pointerEvents: 'none', background: 'transparent' }}
       >
         <Suspense fallback={null}>
           <Scene
