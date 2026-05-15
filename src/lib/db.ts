@@ -76,12 +76,19 @@ export type Recording = {
   createdAt: number;
 };
 
+export type PracticePathNode = {
+  /** ID stable du node (ex: 'bases', 'strumming', etc.) */
+  id: string;
+  completedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
   sessions!: Table<PracticeSession, number>;
   setlists!: Table<Setlist, string>;
   recordings!: Table<Recording, string>;
+  practiceProgress!: Table<PracticePathNode, string>;
 
   constructor() {
     super('rifflab');
@@ -101,6 +108,14 @@ class RiffLabDB extends Dexie {
       sessions: '++id, date, completed',
       setlists: 'id, name, updatedAt',
       recordings: 'id, songId, createdAt',
+    });
+    // v4 : ajout du practiceProgress (path Duolingo-style)
+    this.version(4).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
     });
   }
 }
