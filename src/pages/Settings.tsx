@@ -209,6 +209,11 @@ function StrumSoundOption({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
           {sound.label}
+          {sound.recommended && (
+            <span className="inline-flex items-center rounded-full border border-gold bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold">
+              Recommandé
+            </span>
+          )}
           {sound.premium && <Lock size={12} className="text-text-soft" />}
         </div>
         <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{sound.description}</div>

@@ -40,7 +40,7 @@ export const usePrefs = create<PrefsState>()(
       showNoteNames: true,
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
-      strumSound: 'karplus',
+      strumSound: 'electric-clean',
       effects3D: true,
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
@@ -71,14 +71,18 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 6,
+      version: 7,
       /**
-       * Migration permissive : on garde tous les champs reconnus et on
-       * remplit les nouveaux avec les valeurs par défaut. Comme ça,
-       * bumper la version ne reset PAS les préférences existantes du user.
+       * Migration permissive sur la plupart des champs (préserve les
+       * choix du user). EXCEPTION : `strumSound` est force-resettée à
+       * 'electric-clean' pour toute version < 7 — les recettes audio
+       * pre-v7 sonnaient mauvais (feedback Melvin "le seul son acceptable
+       * est Électrique clean"), donc on impose la nouvelle bonne default
+       * même si l'user avait sélectionné un autre timbre.
        */
-      migrate: (persisted, _version) => {
+      migrate: (persisted, version) => {
         const p = (persisted ?? {}) as Partial<PrefsState>;
+        const audioReset = version < 7;
         return {
           tuning: p.tuning ?? 'standard',
           capo: p.capo ?? 0,
@@ -87,7 +91,7 @@ export const usePrefs = create<PrefsState>()(
           showNoteNames: p.showNoteNames ?? true,
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
-          strumSound: p.strumSound ?? 'karplus',
+          strumSound: audioReset ? 'electric-clean' : p.strumSound ?? 'electric-clean',
           effects3D: p.effects3D ?? true,
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
