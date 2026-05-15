@@ -70,22 +70,24 @@ export function PracticePlan() {
         </button>
       </PageHeader>
 
-      {/* Hero 3D : Fender Rose, signifie "ton parcours" */}
-      <div className="relative mb-6 h-[200px] overflow-hidden rounded-3xl border border-border-gold bg-gradient-to-b from-bg via-surface to-bg md:h-[240px]">
+      {/* Hero 3D : Fender Rose, signifie "ton parcours" — agrandi (320px
+          mobile / 380px desktop) avec caméra reculée pour bien voir la
+          guitare. */}
+      <div className="relative mb-6 h-[320px] overflow-hidden rounded-3xl border border-border-gold bg-gradient-to-b from-bg via-surface to-bg md:h-[380px]">
         <FloatingGuitar3DLazy
           model="rose"
-          rotationSpeed={0.0025}
-          cameraDistance={4.2}
-          cameraY={0.15}
+          rotationSpeed={0.003}
+          cameraDistance={6}
+          cameraY={0.2}
           intensity="normal"
         />
-        <div className="pointer-events-none relative z-10 flex h-full flex-col items-center justify-end px-6 pb-6 text-center">
+        <div className="pointer-events-none relative z-10 flex h-full flex-col items-center justify-end px-6 pb-7 text-center">
           <div className="eyebrow !text-gold-soft">Niveau {Math.min(progress + 1, total)} / {total}</div>
-          <h2 className="display mt-1 text-display-sm md:text-display-md">
+          <h2 className="display mt-1 text-display-md md:text-display-lg">
             {percent}% du parcours
           </h2>
           {/* Progress bar */}
-          <div className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-surface-2">
+          <div className="mt-3 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-surface-2">
             <div
               className="h-full bg-gradient-to-r from-gold-soft to-gold-bright transition-all duration-500"
               style={{ width: `${percent}%` }}

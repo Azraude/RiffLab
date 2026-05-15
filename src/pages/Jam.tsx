@@ -385,13 +385,15 @@ export function Jam() {
         </div>
       </Card>
 
-      {/* 3D ambient guitar */}
-      <div className="relative h-[200px] overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-bg via-surface to-bg">
+      {/* 3D ambient guitar — décoratif, opacity réduite pour ne pas voler
+          l'attention aux accords + fretboard au-dessus. Caméra reculée
+          (8 vs 5 défaut) pour que la guitare occupe ~30-40% du Canvas. */}
+      <div className="relative h-[180px] overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-bg via-surface to-bg opacity-70">
         <FloatingGuitar3DLazy
           model="classic"
           rotationSpeed={0.0025}
-          cameraDistance={5}
-          cameraY={0.2}
+          cameraDistance={8}
+          cameraY={0.4}
           intensity="subtle"
         />
       </div>
