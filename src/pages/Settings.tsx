@@ -90,6 +90,22 @@ export function Settings() {
           </div>
         </Card>
 
+        <Card>
+          <h3 className="display text-display-sm mb-3">Affichage</h3>
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="text-sm">Effets 3D</div>
+                <p className="mt-0.5 text-xs text-text-soft">
+                  Hero studio, ampli, guitares flottantes décoratives. Désactive si
+                  l'app rame sur ton appareil.
+                </p>
+              </div>
+              <Toggle checked={prefs.effects3D} onChange={prefs.toggleEffects3D} />
+            </div>
+          </div>
+        </Card>
+
         <Card className="md:col-span-2">
           <h3 className="display text-display-sm mb-1">Son de strum</h3>
           <p className="mb-4 text-sm text-text-muted">

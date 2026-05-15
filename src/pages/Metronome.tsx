@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
 import { useMetronome } from '@/stores/metronomeStore';
+import { FloatingAmp3DLazy } from '@/components/three/FloatingAmp3DLazy';
 import { Play, Square, Smartphone, Minus, Plus } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -22,9 +23,15 @@ export function Metronome() {
         subtitle="Garde le tempo. Tape Démarrer, ajuste le BPM en live."
       />
 
-      <Card className="mx-auto max-w-2xl">
+      <Card className="relative mx-auto max-w-2xl overflow-hidden">
+        {/* Décor 3D : ampli flottant en background subtil, opacity 0.2 pour
+            ne pas distraire du BPM display. Vibe "studio" sans envahir. */}
+        <div className="pointer-events-none absolute inset-0 opacity-20">
+          <FloatingAmp3DLazy />
+        </div>
+
         {/* BPM display */}
-        <div className="text-center">
+        <div className="relative text-center">
           <div className="label-small">Tempo</div>
           <div className="display mt-2 leading-none text-gold text-gold-glow text-[96px] md:text-[128px]">
             {bpm}
