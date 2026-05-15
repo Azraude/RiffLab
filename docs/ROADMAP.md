@@ -20,7 +20,7 @@
 
 ---
 
-## 🔴 Phase 2 — Mobile + fondations (priorité actuelle)
+## ✅ Phase 2 — Mobile + fondations (livrée)
 
 ### Mobile-first audit (BLOQUANT)
 - [ ] Audit complet 375-768px de toutes les pages
@@ -34,15 +34,15 @@
 - [ ] Mockups des 2 directions à valider avant code
 
 ### Skins de manche
-- [ ] Skin "Acoustique rosewood" (manche naturel, dots simples)
-- [ ] Skin "Électrique Strat" (érable clair, dots noirs)
-- [ ] Skin "Électrique LP" (palissandre foncé, trapèzes)
-- [ ] Skin "Classique nylon" (manche large, cordes blanches)
-- [ ] Skin "Bass" (4 cordes, frets espacées)
-- [ ] Skin "Néon arty" (premium)
-- [ ] Skin "Vintage gold" (premium)
-- [ ] Sélecteur dans Préférences + switch live sur page Gammes
-- [ ] Persistance dans prefsStore
+- [x] Skin "Acoustique rosewood" (manche naturel, dots simples)
+- [x] Skin "Électrique Strat" (érable clair, dots noirs)
+- [x] Skin "Électrique LP" (palissandre foncé, trapèzes) — session 15
+- [x] Skin "Classique nylon" (manche large, cordes blanches) — session 15
+- [ ] Skin "Bass" (4 cordes, frets espacées) — reporté
+- [x] Skin "Néon arty" (premium) — session 15
+- [x] Skin "Vintage gold" (premium) — session 15
+- [x] Sélecteur dans Préférences + switch live sur page Gammes
+- [x] Persistance dans prefsStore
 
 ### Outils essentiels (manquants vs Ultimate Guitar)
 - [ ] **Tuner intégré** : micro phone/laptop, FFT, indicateur visuel précis, choix de l'accordage (lire prefs)
@@ -119,16 +119,16 @@
 - [ ] Difficulty levels (beginner → expert)
 
 #### Practice plan personnalisé
-> **Status (mai 2026)** : page `/plan` placeholder live (mockup statique 4 semaines).
-> Le moteur (`src/lib/practicePlan.ts`) + state Zustand restent en place,
-> dormants. Reste à faire **en Phase 3** : rebrancher l'onboarding sur
-> la vraie génération + ouvrir le modal "Bientôt disponible" en remplaçant
-> par la génération réelle.
-- [x] Page `/plan` placeholder avec mockup 4 cards + modal "Bientôt"
-- [ ] Réactiver l'onboarding 3-questions (le code existe, suspendu)
-- [ ] Décision UX : feature gratuite ou tier Pro ? (à trancher avant
-  Phase 5)
-- [ ] Tracking de complétion live (live query Dexie)
+> **Status (mai 2026, session 15)** : page `/plan` migrée en Duolingo
+> zigzag path (10 niveaux). Path SVG + drawer détail + tracking Dexie
+> live. La génération auto par AI (onboarding 3 questions, plan 4
+> semaines) reste dormante (code dans `src/lib/practicePlan.ts` + state
+> Zustand `practicePlan`).
+- [x] Page `/plan` avec path Duolingo zigzag 10 niveaux
+- [x] States locked/available/current/completed + drawer détail
+- [x] Tracking complétion Dexie (`practiceProgress` table v4)
+- [ ] Décision : on garde le code de génération auto dormant ou on
+  le retire ? (le path actuel suffit pour le MVP)
 
 #### Strum pattern editor avec lecture
 - [ ] Grille cliquable ↓↑X·
@@ -182,40 +182,64 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 
 ---
 
-## 🟡 Phase 4 — Polish, partage, themes
+## ✅ Phase 4 — Polish, partage, themes (livrée session 15)
 
 ### Three.js sélectif (intégration ambient)
-- [ ] Hero 3D sur la landing : guitare flottante qui tourne
-- [ ] Cordes ambient vibrantes au top du Dashboard
-- [ ] Toggle "Vue 3D" sur la page Gammes (manche en perspective rotatable)
-- [ ] Performance : lazy-load Three.js, <200kb chunk
-- [ ] **Pas** d'usage Three.js sur mobile en vue par défaut (perf)
+- [x] Hero 3D sur la landing : scène studio GLB (studio-scene.glb, à compresser)
+- [x] FloatingGuitar3D réutilisable (rose/classic) intégré Dashboard + Jam + Plan
+- [x] FloatingAmp3D décoratif sur Métronome
+- [x] Toggle "Vue 3D" sur la page Gammes (Fretboard3D off par défaut)
+- [x] Performance : lazy-load Three.js, ~258 KB gzip total (légèrement
+  au-dessus de la cible 200 KB à cause de drei — acceptable car lazy)
+- [x] **Pas** d'usage Three.js sur mobile en vue par défaut (gate
+  matchMedia + low-end deviceMemory / hardwareConcurrency detection)
+- [x] Toggle "Effets 3D" dans Préférences (default ON, OFF auto sur low-end)
 
 ### Thèmes UI
-- [ ] Sélecteur dans Préférences
-- [ ] Thèmes inclus : Dark Gold (default), Sunset (orangé), Studio Blue (Lake Placid), Pure White (mode jour répèt), Néon Synthwave (premium)
-- [ ] Variables CSS dynamiques + Tailwind theme switching
+- [x] Sélecteur dans Préférences
+- [x] Thèmes inclus : Dark Gold (default), Sunset, Studio Blue, Pure White, Néon Synthwave (premium)
+- [x] Variables CSS dynamiques + Tailwind theme switching (RGB triplets + rgb(var(--xxx) / <alpha-value>))
 
 ### Sons de strum custom
-- [ ] Choix du timbre : Karplus standard / Acoustique cordée / Nylon douce / Électrique clean / Électrique drive
-- [ ] Lié au skin choisi (acoustique skin → son acoustique par défaut)
-- [ ] Sons premium plus tard
+- [x] Choix du timbre : Pluck clair / Acoustique steel / Nylon douce / Électrique clean (recommended) / Électrique drive
+- [x] Recettes refondues session 15 (PluckSynth pur sonnait mauvais → FMSynth pour acoustic, triangle pour nylon, filter chain pour drive)
+- [ ] Lié au skin choisi (acoustique skin → son acoustique par défaut) — reporté
+- [ ] Sons premium (Tone.Sampler avec samples réels) — Phase 5
 
 ### Shareable songs / setlists
-- [ ] URL avec encodage base64 du JSON song (no backend)
-- [ ] Page `/share/:encoded` → preview + bouton "Fork dans mon carnet"
-- [ ] OG image générée pour preview WhatsApp/Discord
+- [x] URL avec encodage base64url du JSON song (no backend)
+- [x] Page `/share/:encoded` → preview + bouton "Fork dans mon carnet"
+- [ ] OG image générée pour preview WhatsApp/Discord — reporté
 
 ### Profil public guitariste
-- [ ] Auth (Supabase magic link)
+- [ ] Auth (Supabase magic link) — Phase 5 (besoin d'auth)
 - [ ] Page `rifflab.app/u/:username` publique
 - [ ] Best-of (morceaux maîtrisés), gammes maîtrisées, badges
 - [ ] Liens vers covers audio (les essais marqués "public")
 
 ### Riff de la semaine
-- [ ] Riff sélectionné chaque semaine côté admin (ou voté)
-- [ ] Page dédiée, leaderboard "temps pour maîtriser"
-- [ ] Notification push (mobile PWA) le lundi matin
+- [x] 20 riffs curés rotatifs basés sur le numéro ISO de la semaine
+- [x] Page `/riff-of-the-week` + Dashboard teaser + countdown lundi
+- [ ] Notification push (mobile PWA) le lundi matin — Phase 5 (PWA)
+
+### Mode Jam (livré en Phase 4 session 15)
+- [x] Page `/jam` avec génération auto progression dans key/mode/mood
+- [x] Drums + bass + chord strum synchronisés via Tone.Transport
+- [x] 9 patterns rythmiques par Mood (rock, pop, chill, sad, jazzy, latin, epic, cinematic)
+- [x] Mute toggles Drums/Bass/Chords en temps réel
+- [x] Fretboard avec gamme highlight pour improviser
+- [x] BPM slider 60-180
+
+### Animations premium (session 15)
+- [x] Page transitions (AnimatePresence + fade + slide 8px)
+- [x] TiltCard 3D hover (Songs / Chords / Scales)
+- [x] Button whileTap scale 0.97
+- [x] Hero text reveal letter-stagger
+- [x] ChordDiagram stagger dots
+- [x] Fretboard2D scale notes stagger
+- [x] Daily card animated gold sheen
+- [x] Streak cell pop (scale + glow pulse)
+- [x] Skeleton shimmer pour loading states
 
 ---
 

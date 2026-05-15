@@ -188,9 +188,9 @@ src/
 |---|---|---|
 | **1** | MVP utilisable — layout, CRUD songs, accords + gammes, audio Tone.js, prefs | ✅ livrée |
 | **2** | **Mobile-first + fondations** : audit responsive, refonte Fretboard SVG, skins, tuner, métronome UI, capo intelligent | ✅ |
-| **3** | **Performance & pratique** : PracticeSession + stats/streak, setlists, audio recorder, progressions library, (puis speed trainer + ear training + practice plan + strum editor en session suivante) | 🔴 en cours |
-| **3.5** | Mode Lecture teleprompter (décalé après Phase 3 — mapping chord/syllabe à trancher) | ⏳ |
-| **4** | Polish + partage : Three.js décoratif (hero, ambient), thèmes UI, sons strum custom, shareable songs, profil public, riff de la semaine | ⏳ |
+| **3** | **Performance & pratique** : PracticeSession + stats/streak, setlists, audio recorder, progressions library, speed trainer, ear training, strum editor, Mode Jam, Practice Plan Duolingo | ✅ |
+| **3.5** | Mode Lecture teleprompter (décalé — mapping chord/syllabe à trancher) | ⏳ |
+| **4** | Polish + partage : Three.js décoratif (hero studio + ambient guitars + amp + toggle 3D Scales), 5 thèmes UI, 5 timbres strum, 7 skins manche, shareable songs, riff de la semaine, animations premium | ✅ |
 | **5** | AI & monétisation : génération de progressions, theory hints, auth Supabase, Stripe Free/Pro, cosmetics shop | ⏳ |
 | **6** | Extension Chrome (capture YouTube → RiffLab), détection d'accords mp3 | ⏳ |
 | **7+** | Moonshots : marketplace, mode AR (caméra + overlay manche), voice command, watch app, pédale Bluetooth | 🌠 |
