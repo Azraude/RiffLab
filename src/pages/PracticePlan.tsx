@@ -2,6 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import {
   CalendarDays,
   Flame,
@@ -31,6 +32,23 @@ export function PracticePlan() {
         title="Mon plan"
         subtitle="Un plan d'entraînement de 4 semaines, calibré sur ton objectif."
       />
+
+      {/* Hero 3D : Fender Rose comme signature "ton parcours d'apprentissage" */}
+      <div className="relative mb-8 h-[280px] overflow-hidden rounded-3xl border border-border-gold bg-gradient-to-b from-bg via-surface to-bg md:h-[340px]">
+        <FloatingGuitar3DLazy
+          model="rose"
+          rotationSpeed={0.0025}
+          cameraDistance={4.2}
+          cameraY={0.15}
+          intensity="normal"
+        />
+        <div className="pointer-events-none relative z-10 flex h-full flex-col items-center justify-end px-6 pb-8 text-center">
+          <div className="eyebrow !text-gold-soft">Ton parcours</div>
+          <h2 className="display mt-2 text-display-sm md:text-display-md">
+            4 semaines pour <span className="text-gold text-gold-glow">progresser</span>
+          </h2>
+        </div>
+      </div>
 
       {/* Hero : mockup des 4 semaines */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
