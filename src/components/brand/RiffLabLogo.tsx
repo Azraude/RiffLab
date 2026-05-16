@@ -1,24 +1,23 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import clsx from 'clsx';
 
 /**
- * RiffLabLogo — flamme stylisée vintage premium avec half-fill propre.
+ * RiffLabLogo — flamme stylisée vintage premium, half-fill bottom.
  *
- * Session 17 fix : la version mask SVG (session 16) ne montrait pas le
- * half-fill — sur certains navigateurs / configurations, l'attribut
- * `mask` n'était pas honoré. Refait avec `clipPath` (plus fiable cross-
- * browser) :
- * - 1er path : outline complet (haut + bas), fill none, stroke gold
- * - 2e path : même tracé, fill gradient gold, clippé sur la moitié basse
- *   uniquement via clipPath
+ * Session 18 fix : ni mask (session 16) ni clipPath (session 17) ne
+ * rendaient le half-fill correctement sur tous les navigateurs.
+ * Refait en **2 paths totalement indépendants** :
  *
- * Animation flicker subtile via la classe globals.css .rifflab-flame-flicker
- * (translateY ±1px + scale 1.02 sur 2.4s ease-in-out infinite, origin
- * 50% 90%).
+ *   1. flameTop : moitié haute de la flamme, outline only (fill="none")
+ *   2. flameBottom : moitié basse, fill gradient + même contour
  *
- * useId() pour des clipPath IDs uniques par instance — sinon collision
- * quand le logo apparaît plusieurs fois dans le DOM (sidebar + landing
- * header par exemple, ou MobileNav + page open).
+ * Les paths sont dessinés à la main pour se rejoindre exactement à la
+ * ligne médiane y=12. Plus de risque de clip/mask qui se chie sur un
+ * navigateur exotique — c'est juste deux <path> SVG natifs.
+ *
+ * Bonus session 18 : animation hover "la flamme s'enflamme" — au
+ * mouseEnter, la moitié basse devient la flamme entière (le path
+ * bottom est animé pour s'étendre vers le haut), au mouseLeave retour.
  */
 interface RiffLabLogoProps {
   size?: number;
@@ -28,12 +27,22 @@ interface RiffLabLogoProps {
 
 export function RiffLabLogo({ size = 22, className, animated = true }: RiffLabLogoProps) {
   const id = useId().replace(/:/g, '_');
-  const clipId = `flame-clip-${id}`;
   const gradId = `flame-grad-${id}`;
+  const [hover, setHover] = useState(false);
 
-  // Path commun pour outline + fill (réutilisé par les deux <path>)
-  const flamePath =
-    'M12 2 C 8 6, 6 10, 6 14 C 6 18, 9 22, 12 22 C 15 22, 18 18, 18 14 C 18 10, 16 6, 12 2 Z';
+  // Path moitié haute : démarre au sommet, descend gauche, traverse à
+  // y=12 vers la droite, remonte symétrique. Outline uniquement.
+  const flameTopPath = 'M12 2 C 8 5, 6 8, 6 12 L 18 12 C 18 8, 16 5, 12 2 Z';
+
+  // Path moitié basse : démarre à gauche y=12, descend, traverse en
+  // bas, remonte à droite y=12. Le contour latéral suit la silhouette
+  // naturelle de la flamme.
+  const flameBottomPath =
+    'M 6 12 C 6 16, 9 22, 12 22 C 15 22, 18 16, 18 12 L 6 12 Z';
+
+  // Path full pour l'hover "enflammée" — la flamme entière fillée
+  const flameFullPath =
+    'M12 2 C 8 5, 6 8, 6 12 C 6 16, 9 22, 12 22 C 15 22, 18 16, 18 12 C 18 8, 16 5, 12 2 Z';
 
   return (
     <svg
@@ -41,7 +50,9 @@ export function RiffLabLogo({ size = 22, className, animated = true }: RiffLabLo
       height={size}
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
-      className={clsx(animated && 'rifflab-flame-flicker', className)}
+      className={clsx(animated && 'rifflab-flame-flicker', 'transition-all', className)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       aria-label="RiffLab"
       role="img"
     >
@@ -50,27 +61,42 @@ export function RiffLabLogo({ size = 22, className, animated = true }: RiffLabLo
           <stop offset="0%" stopColor="rgb(var(--gold-bright))" />
           <stop offset="100%" stopColor="rgb(var(--gold))" />
         </linearGradient>
-        {/* clipPath couvre la moitié basse (y > 12) — seul le fill
-            apparaît dans cette zone, le reste reste outline only */}
-        <clipPath id={clipId}>
-          <rect x="0" y="12" width="24" height="12" />
-        </clipPath>
       </defs>
 
-      {/* Outline complet (haut + bas) — visible partout, dessine le
-          contour de toute la flamme */}
-      <path
-        d={flamePath}
-        fill="none"
-        stroke={`url(#${gradId})`}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
+      {hover && animated ? (
+        // État hover : flamme entièrement fillée + outline visible
+        <path
+          d={flameFullPath}
+          fill={`url(#${gradId})`}
+          stroke={`url(#${gradId})`}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          style={{ filter: 'drop-shadow(0 0 6px rgb(var(--gold-glow) / 0.6))' }}
+        />
+      ) : (
+        <>
+          {/* Moitié haute : outline only */}
+          <path
+            d={flameTopPath}
+            fill="none"
+            stroke={`url(#${gradId})`}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          {/* Moitié basse : fill solid + outline */}
+          <path
+            d={flameBottomPath}
+            fill={`url(#${gradId})`}
+            stroke={`url(#${gradId})`}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </>
+      )}
 
-      {/* Fill gradient gold, clippé à la moitié basse */}
-      <path d={flamePath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
-
-      {/* Petite étincelle au sommet pour donner du caractère */}
+      {/* Petite étincelle au sommet */}
       <circle cx="12" cy="3" r="0.6" fill="rgb(var(--gold-bright))" />
     </svg>
   );

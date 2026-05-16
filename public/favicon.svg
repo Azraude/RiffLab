@@ -5,23 +5,24 @@
       <stop offset="0%" stop-color="#f5d97a"/>
       <stop offset="100%" stop-color="#d4b76a"/>
     </linearGradient>
-    <clipPath id="flame-bottom">
-      <rect x="0" y="16" width="32" height="16"/>
-    </clipPath>
   </defs>
-  <!-- Outline complet (haut + bas) -->
+  <!-- Moitié haute : outline only -->
   <path
-    d="M16 4 C 11 8, 8 12, 8 17 C 8 22, 12 28, 16 28 C 20 28, 24 22, 24 17 C 24 12, 21 8, 16 4 Z"
+    d="M16 4 C 11 7, 8 11, 8 16 L 24 16 C 24 11, 21 7, 16 4 Z"
     fill="none"
     stroke="url(#flame-grad)"
     stroke-width="2"
     stroke-linejoin="round"
+    stroke-linecap="round"
   />
-  <!-- Fill gradient, clippé moitié basse uniquement -->
+  <!-- Moitié basse : fill solid + outline -->
   <path
-    d="M16 4 C 11 8, 8 12, 8 17 C 8 22, 12 28, 16 28 C 20 28, 24 22, 24 17 C 24 12, 21 8, 16 4 Z"
+    d="M 8 16 C 8 21, 12 28, 16 28 C 20 28, 24 21, 24 16 L 8 16 Z"
     fill="url(#flame-grad)"
-    clip-path="url(#flame-bottom)"
+    stroke="url(#flame-grad)"
+    stroke-width="2"
+    stroke-linejoin="round"
+    stroke-linecap="round"
   />
   <!-- Étincelle sommet -->
   <circle cx="16" cy="5.5" r="1" fill="#f5d97a"/>
