@@ -6,6 +6,7 @@ import { seedIfEmpty } from '@/lib/db';
 import { usePrefs } from '@/stores/prefsStore';
 import { applyTheme } from '@/lib/themes';
 import { rebuildVoices } from '@/lib/audio';
+import { PWAUpdateToast } from '@/components/pwa/PWAUpdateToast';
 import '@/styles/globals.css';
 
 // Seed the local DB with example songs on first run (non-blocking).
@@ -24,5 +25,6 @@ usePrefs.subscribe((state, prev) => {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <RouterProvider router={router} />
+    <PWAUpdateToast />
   </React.StrictMode>
 );
