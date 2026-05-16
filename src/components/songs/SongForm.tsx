@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   emptySong,
   newSectionId,
@@ -9,7 +11,8 @@ import {
 } from '@/lib/db';
 import { NOTE_NAMES, TUNING_LABELS, type NoteName, type TuningId } from '@/lib/theory';
 import { COMMON_CHORD_NAMES } from '@/lib/chordDatabase';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { parseTabText } from '@/lib/tabImporter';
+import { Plus, Upload, X, Trash2, Wand2 } from 'lucide-react';
 
 interface SongFormProps {
   /** Appelé après save réussi avec l'id du song créé. */
@@ -93,8 +96,36 @@ export function SongForm({ onSaved, onCancel }: SongFormProps) {
     onSaved(song.id);
   };
 
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleImport = (parsed: ReturnType<typeof parseTabText>) => {
+    setSong((s) => ({
+      ...s,
+      title: parsed.title ?? s.title,
+      artist: parsed.artist ?? s.artist,
+      sections: parsed.sections.length > 0 ? parsed.sections : s.sections,
+    }));
+    setImportOpen(false);
+  };
+
   return (
     <div className="grid gap-5">
+      {/* Import depuis tab — bouton en haut, modal au click */}
+      <button
+        type="button"
+        onClick={() => setImportOpen(true)}
+        className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-all hover:bg-gold/10"
+      >
+        <Upload size={14} className="transition-transform group-hover:-translate-y-0.5" />
+        Importer depuis une tab (copier-coller)
+      </button>
+
+      <TabImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+      />
+
       {/* Identité */}
       <section>
         <div className="eyebrow mb-3">Identité</div>
@@ -369,5 +400,183 @@ function FieldSelect({
         ))}
       </select>
     </div>
+  );
+}
+
+// ─── Tab import modal ────────────────────────────────────────────────
+
+const EXAMPLE_TAB = `Wonderwall
+Oasis
+
+[Intro]
+Em7  G  Dsus4  A7sus4
+
+[Verse 1]
+Em7              G              Dsus4         A7sus4
+Today is gonna be the day that they're gonna throw it back to you
+Em7              G              Dsus4         A7sus4
+By now you should've somehow realised what you gotta do
+
+[Chorus]
+C    D    Em7
+And all the roads we have to walk are winding`;
+
+function TabImportModal({
+  open,
+  onClose,
+  onImport,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onImport: (parsed: ReturnType<typeof parseTabText>) => void;
+}) {
+  const [text, setText] = useState('');
+  const [preview, setPreview] = useState<ReturnType<typeof parseTabText> | null>(null);
+
+  const handleParse = () => {
+    if (!text.trim()) return;
+    setPreview(parseTabText(text));
+  };
+
+  const handleConfirm = () => {
+    if (!preview) return;
+    onImport(preview);
+    setText('');
+    setPreview(null);
+  };
+
+  const handleClose = () => {
+    setText('');
+    setPreview(null);
+    onClose();
+  };
+
+  const sectionsCount = preview?.sections.length ?? 0;
+  const chordsCount = preview?.allChords.length ?? 0;
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(o) => !o && handleClose()}>
+      <AnimatePresence>
+        {open && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild>
+              <motion.div
+                className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild aria-describedby={undefined}>
+              <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
+                <motion.div
+                  className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-surface shadow-2xl md:max-w-2xl md:rounded-3xl md:border"
+                  initial={{ y: '100%', opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: '100%', opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    aria-label="Fermer"
+                    className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-text-muted hover:text-text"
+                  >
+                    <X size={16} />
+                  </button>
+                  <div className="px-5 py-6 md:px-8 md:py-8">
+                    <Dialog.Title className="display text-display-sm">
+                      Importer une tab
+                    </Dialog.Title>
+                    <p className="mt-2 text-sm text-text-muted">
+                      Colle un chord chart depuis Ultimate Guitar / Songsterr /
+                      n'importe où. On parse les sections + accords + titre/artiste.
+                    </p>
+
+                    <textarea
+                      value={text}
+                      onChange={(e) => {
+                        setText(e.target.value);
+                        setPreview(null);
+                      }}
+                      placeholder={EXAMPLE_TAB}
+                      rows={12}
+                      className="mt-4 w-full rounded-xl border border-border bg-surface-2 p-3 font-mono text-xs text-text placeholder:text-text-soft focus:border-gold-soft focus:outline-none"
+                    />
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleParse}
+                        disabled={!text.trim()}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 px-4 text-sm font-semibold text-text hover:bg-gold/10 disabled:opacity-50"
+                      >
+                        <Wand2 size={14} /> Analyser
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setText(EXAMPLE_TAB)}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-3 text-xs text-text-muted hover:text-text"
+                      >
+                        Voir un exemple
+                      </button>
+                    </div>
+
+                    {preview && (
+                      <div className="mt-5 rounded-xl border border-border-gold bg-gold/5 p-4">
+                        <div className="text-sm font-semibold text-text">
+                          Aperçu
+                        </div>
+                        <div className="mt-2 grid gap-1 text-xs text-text-muted">
+                          {preview.title && (
+                            <div>
+                              <span className="text-text-soft">Titre :</span>{' '}
+                              <span className="text-text">{preview.title}</span>
+                            </div>
+                          )}
+                          {preview.artist && (
+                            <div>
+                              <span className="text-text-soft">Artiste :</span>{' '}
+                              <span className="text-text">{preview.artist}</span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="text-text-soft">Sections :</span>{' '}
+                            <span className="text-text">{sectionsCount}</span>{' '}
+                            <span className="text-text-soft">·</span>{' '}
+                            <span className="text-text-soft">Accords uniques :</span>{' '}
+                            <span className="font-mono text-gold">{chordsCount}</span>
+                          </div>
+                          {chordsCount > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {preview.allChords.slice(0, 12).map((c) => (
+                                <span key={c} className="chip">{c}</span>
+                              ))}
+                              {preview.allChords.length > 12 && (
+                                <span className="text-text-soft">
+                                  +{preview.allChords.length - 12}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleConfirm}
+                          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold font-semibold text-bg hover:-translate-y-px"
+                        >
+                          Remplir le formulaire
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
   );
 }
