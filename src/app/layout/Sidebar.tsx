@@ -13,6 +13,7 @@ import {
   Workflow,
   Ear,
   Activity,
+  Flame,
   Target,
   Sparkles,
   Settings as SettingsIcon,
@@ -40,6 +41,7 @@ const items: NavItem[] = [
   { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
   { to: '/progressions', label: 'Progressions', icon: <Workflow size={18} />, section: 'library' },
+  { to: '/riffs', label: 'Riffs', icon: <Flame size={18} />, section: 'library' },
   { to: '/strum-patterns', label: 'Rythmiques', icon: <Activity size={18} />, section: 'library' },
 
   // Outils — utilitaires

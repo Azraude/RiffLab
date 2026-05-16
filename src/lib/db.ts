@@ -88,6 +88,18 @@ export type RiffLike = {
   likedAt: number;
 };
 
+export type RiffBookmark = {
+  id: string;
+  bookmarkedAt: number;
+};
+
+export type RiffRating = {
+  id: string;
+  /** Note 1-5 */
+  rating: number;
+  ratedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
@@ -96,6 +108,8 @@ class RiffLabDB extends Dexie {
   recordings!: Table<Recording, string>;
   practiceProgress!: Table<PracticePathNode, string>;
   riffLikes!: Table<RiffLike, string>;
+  riffBookmarks!: Table<RiffBookmark, string>;
+  riffRatings!: Table<RiffRating, string>;
 
   constructor() {
     super('rifflab');
@@ -132,6 +146,17 @@ class RiffLabDB extends Dexie {
       recordings: 'id, songId, createdAt',
       practiceProgress: 'id, completedAt',
       riffLikes: 'id, likedAt',
+    });
+    // v6 : community riffs hub — bookmarks + ratings
+    this.version(6).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
     });
   }
 }
@@ -180,6 +205,39 @@ export async function toggleRiffLike(id: string): Promise<boolean> {
   }
   await db.riffLikes.put({ id, likedAt: Date.now() });
   return true;
+}
+
+// ─── Riff bookmarks + ratings (community riff hub v6) ────────────
+export async function isRiffBookmarked(id: string): Promise<boolean> {
+  return !!(await db.riffBookmarks.get(id));
+}
+
+export async function toggleRiffBookmark(id: string): Promise<boolean> {
+  const exists = await db.riffBookmarks.get(id);
+  if (exists) {
+    await db.riffBookmarks.delete(id);
+    return false;
+  }
+  await db.riffBookmarks.put({ id, bookmarkedAt: Date.now() });
+  return true;
+}
+
+export async function listBookmarkedRiffIds(): Promise<string[]> {
+  const all = await db.riffBookmarks.toArray();
+  return all.map((b) => b.id);
+}
+
+export async function getUserRating(id: string): Promise<number | null> {
+  const r = await db.riffRatings.get(id);
+  return r?.rating ?? null;
+}
+
+export async function setUserRating(id: string, rating: number): Promise<void> {
+  await db.riffRatings.put({ id, rating, ratedAt: Date.now() });
+}
+
+export async function clearUserRating(id: string): Promise<void> {
+  await db.riffRatings.delete(id);
 }
 
 // ─── Recording CRUD ──────────────────────────────────────────────

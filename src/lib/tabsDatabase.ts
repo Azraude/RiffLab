@@ -171,12 +171,113 @@ const stairwayIntro: Tab = {
   ],
 };
 
+/** Sweet Child O' Mine — intro arpège GnR (simplifié corde par corde). */
+const sweetChildIntro: Tab = {
+  id: 'sweet-child-intro',
+  name: "Sweet Child O' Mine (intro)",
+  artist: "Guns N' Roses",
+  tempo: 125,
+  key: 'D major',
+  measures: [
+    [
+      { string: 3, fret: 12, duration: 2, startBeat: 0 },
+      { string: 2, fret: 15, duration: 2, startBeat: 2 },
+      { string: 3, fret: 14, duration: 2, startBeat: 4 },
+      { string: 2, fret: 14, duration: 2, startBeat: 6 },
+      { string: 3, fret: 12, duration: 2, startBeat: 8 },
+      { string: 2, fret: 15, duration: 2, startBeat: 10 },
+      { string: 3, fret: 14, duration: 2, startBeat: 12 },
+      { string: 2, fret: 14, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Back in Black — riff AC/DC ouvert sur E. */
+const backInBlack: Tab = {
+  id: 'back-in-black',
+  name: 'Back in Black',
+  artist: 'AC/DC',
+  tempo: 96,
+  key: 'E major',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 2, startBeat: 0 },
+      { string: 5, fret: 3, duration: 2, startBeat: 2 },
+      { string: 5, fret: 0, duration: 4, startBeat: 4 },
+      { string: 5, fret: 0, duration: 2, startBeat: 8 },
+      { string: 5, fret: 5, duration: 2, startBeat: 10 },
+      { string: 5, fret: 3, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Day Tripper — riff Beatles, signature blues/rock pop. */
+const dayTripper: Tab = {
+  id: 'day-tripper',
+  name: 'Day Tripper',
+  artist: 'The Beatles',
+  tempo: 138,
+  key: 'E major',
+  measures: [
+    [
+      { string: 4, fret: 7, duration: 2, startBeat: 0 },
+      { string: 4, fret: 9, duration: 2, startBeat: 2 },
+      { string: 3, fret: 6, duration: 2, startBeat: 4 },
+      { string: 4, fret: 7, duration: 4, startBeat: 6 },
+      { string: 5, fret: 0, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Crazy Train — riff Ozzy iconique. */
+const crazyTrain: Tab = {
+  id: 'crazy-train',
+  name: 'Crazy Train',
+  artist: 'Ozzy Osbourne',
+  tempo: 138,
+  key: 'F# minor',
+  measures: [
+    [
+      { string: 4, fret: 4, duration: 2, startBeat: 0 },
+      { string: 4, fret: 4, duration: 2, startBeat: 2 },
+      { string: 3, fret: 2, duration: 2, startBeat: 4 },
+      { string: 3, fret: 4, duration: 2, startBeat: 6 },
+      { string: 4, fret: 4, duration: 2, startBeat: 8 },
+      { string: 3, fret: 0, duration: 2, startBeat: 10 },
+      { string: 4, fret: 4, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Money for Nothing — riff Dire Straits / Mark Knopfler. */
+const moneyForNothing: Tab = {
+  id: 'money-for-nothing',
+  name: 'Money for Nothing',
+  artist: 'Dire Straits',
+  tempo: 132,
+  key: 'G minor',
+  measures: [
+    [
+      { string: 3, fret: 5, duration: 4, startBeat: 0 },
+      { string: 3, fret: 5, duration: 2, startBeat: 4 },
+      { string: 3, fret: 8, duration: 2, startBeat: 6 },
+      { string: 3, fret: 7, duration: 4, startBeat: 8 },
+      { string: 3, fret: 5, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
 export const TABS: Tab[] = [
   smokeOnTheWater,
   ironMan,
   sevenNationArmy,
   sunshineOfYourLove,
   stairwayIntro,
+  sweetChildIntro,
+  backInBlack,
+  dayTripper,
+  crazyTrain,
+  moneyForNothing,
 ];
 
 export function getTab(id: string): Tab | undefined {

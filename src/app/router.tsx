@@ -15,6 +15,7 @@ import { Setlists } from '@/pages/Setlists';
 import { SetlistDetail } from '@/pages/SetlistDetail';
 import { SetlistPlay } from '@/pages/SetlistPlay';
 import { Progressions } from '@/pages/Progressions';
+import { Riffs } from '@/pages/Riffs';
 import { EarTraining } from '@/pages/EarTraining';
 import { StrumPatterns } from '@/pages/StrumPatterns';
 import { PracticePlan } from '@/pages/PracticePlan';
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
       { path: 'progressions', element: <Progressions /> },
+      { path: 'riffs', element: <Riffs /> },
       { path: 'ear-training', element: <EarTraining /> },
       { path: 'strum-patterns', element: <StrumPatterns /> },
       { path: 'plan', element: <PracticePlan /> },
