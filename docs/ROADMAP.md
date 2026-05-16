@@ -203,8 +203,10 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 ### Sons de strum custom
 - [x] Choix du timbre : Pluck clair / Acoustique steel / Nylon douce / Électrique clean (recommended) / Électrique drive
 - [x] Recettes refondues session 15 (PluckSynth pur sonnait mauvais → FMSynth pour acoustic, triangle pour nylon, filter chain pour drive)
+- [x] Polish session 16 : Compressor master + LP 8kHz + releases courts
+- [x] Recipe Tone.Sampler "Électrique réelle 🎸" session 17 (infra prête, samples mp3 à dropper par Melvin dans `public/audio/electric-guitar/` — workflow dans le README)
 - [ ] Lié au skin choisi (acoustique skin → son acoustique par défaut) — reporté
-- [ ] Sons premium (Tone.Sampler avec samples réels) — Phase 5
+- [ ] Sons premium (autres timbres samplés) — Phase 5
 
 ### Shareable songs / setlists
 - [x] URL avec encodage base64url du JSON song (no backend)
@@ -217,13 +219,16 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 - [ ] Best-of (morceaux maîtrisés), gammes maîtrisées, badges
 - [ ] Liens vers covers audio (les essais marqués "public")
 
-### Riff de la semaine
+### Riff de la semaine + Community Hub
 - [x] 20 riffs curés rotatifs basés sur le numéro ISO de la semaine
 - [x] Page `/riff-of-the-week` + Dashboard teaser + countdown lundi
 - [x] Widget Dashboard refait community-style (session 16) : tab + contributor + like + share modal
-- [x] TabReader SVG + TabPlayer Tone.js (5 tabs précodés : Smoke / Iron / Seven Nation / Sunshine / Stairway)
+- [x] TabReader SVG + TabPlayer Tone.js
+- [x] 10 tabs précodés (Smoke / Iron / Seven Nation / Sunshine / Stairway / Sweet Child / Back in Black / Day Tripper / Crazy Train / Money for Nothing)
+- [x] Page `/riffs` community hub session 17 : filtres difficulté/tags/sort, featured banner, drawer detail, bookmarks + ratings Dexie v6
 - [ ] Notification push (mobile PWA) le lundi matin — Phase 5 (PWA)
 - [ ] Vrai upload communautaire — Phase 5 (auth + backend)
+- [ ] Modal "Ajouter mon riff" avec TabEditor cliquable — Phase 5
 
 ### Mode Jam (livré en Phase 4 session 15)
 - [x] Page `/jam` avec génération auto progression dans key/mode/mood
