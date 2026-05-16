@@ -119,16 +119,19 @@
 - [ ] Difficulty levels (beginner → expert)
 
 #### Practice plan personnalisé
-> **Status (mai 2026, session 15)** : page `/plan` migrée en Duolingo
-> zigzag path (10 niveaux). Path SVG + drawer détail + tracking Dexie
-> live. La génération auto par AI (onboarding 3 questions, plan 4
-> semaines) reste dormante (code dans `src/lib/practicePlan.ts` + state
-> Zustand `practicePlan`).
+> **Status (session 18)** : path Duolingo + auto-validation sur
+> interactions. Le node se valide tout seul quand l'user a interagi
+> avec tous les chords + scales requis (click play sur /chords ou
+> select dans /scales).
 - [x] Page `/plan` avec path Duolingo zigzag 10 niveaux
 - [x] States locked/available/current/completed + drawer détail
 - [x] Tracking complétion Dexie (`practiceProgress` table v4)
-- [ ] Décision : on garde le code de génération auto dormant ou on
-  le retire ? (le path actuel suffit pour le MVP)
+- [x] **Auto-validation sur interaction** (session 18) — Dexie v7
+  `interactions` table + hook auto-mark + toast "Niveau validé 🎉"
+- [x] **Hero 3D Fender Rose intégré sans cadre** (session 18) — pattern
+  landing post-task H : Canvas en absolute + halo radial + gradient fade
+- [ ] Mini-quiz fin de niveau (optionnel pour débloquer) — reporté
+- [ ] Décision : on garde le code de génération auto AI dormant ?
 
 #### Strum pattern editor avec lecture
 - [ ] Grille cliquable ↓↑X·
@@ -201,12 +204,12 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 - [x] Variables CSS dynamiques + Tailwind theme switching (RGB triplets + rgb(var(--xxx) / <alpha-value>))
 
 ### Sons de strum custom
-- [x] Choix du timbre : Pluck clair / Acoustique steel / Nylon douce / Électrique clean (recommended) / Électrique drive
+- [x] Choix du timbre : Pluck clair / Acoustique steel / Nylon douce / Électrique clean / Électrique drive
 - [x] Recettes refondues session 15 (PluckSynth pur sonnait mauvais → FMSynth pour acoustic, triangle pour nylon, filter chain pour drive)
 - [x] Polish session 16 : Compressor master + LP 8kHz + releases courts
-- [x] Recipe Tone.Sampler "Électrique réelle 🎸" session 17 (infra prête, samples mp3 à dropper par Melvin dans `public/audio/electric-guitar/` — workflow dans le README)
+- [x] **Sampler "Électrique réelle 🎸" via CDN public** (session 18) — pack `nbrosowsky/tonejs-instruments` hébergé GitHub Pages, 13 samples ancres A2-A5, default + recommended. Chaîne LP 5.5kHz + Chorus pour vibe ampli clean.
 - [ ] Lié au skin choisi (acoustique skin → son acoustique par défaut) — reporté
-- [ ] Sons premium (autres timbres samplés) — Phase 5
+- [ ] Sons premium (autres timbres samplés acoustique/nylon) — Phase 5
 
 ### Shareable songs / setlists
 - [x] URL avec encodage base64url du JSON song (no backend)
