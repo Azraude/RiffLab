@@ -180,7 +180,7 @@ export function Dashboard() {
                 )}
               >
                 <Check size={16} />
-                {practicedToday ? 'Fait ✓ aujourd\'hui' : "J'ai pratiqué aujourd'hui"}
+                {practicedToday ? "Fait aujourd'hui" : "J'ai pratiqué aujourd'hui"}
               </button>
             </div>
           </div>
