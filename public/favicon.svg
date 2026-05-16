@@ -2,28 +2,19 @@
   <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
   <defs>
     <linearGradient id="flame-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f5d97a"/>
-      <stop offset="100%" stop-color="#d4b76a"/>
+      <stop offset="0%" stop-color="#d4b76a" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#d4b76a" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#d4b76a" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#f5d97a" stop-opacity="1"/>
     </linearGradient>
   </defs>
-  <!-- Moitié haute : outline only -->
+  <!-- Path unique : fill gradient half-transparent + stroke outline -->
   <path
-    d="M16 4 C 11 7, 8 11, 8 16 L 24 16 C 24 11, 21 7, 16 4 Z"
-    fill="none"
-    stroke="url(#flame-grad)"
-    stroke-width="2"
-    stroke-linejoin="round"
-    stroke-linecap="round"
-  />
-  <!-- Moitié basse : fill solid + outline -->
-  <path
-    d="M 8 16 C 8 21, 12 28, 16 28 C 20 28, 24 21, 24 16 L 8 16 Z"
+    d="M16 4 C 11 7, 8 11, 8 16 C 8 21, 12 28, 16 28 C 20 28, 24 21, 24 16 C 24 11, 21 7, 16 4 Z"
     fill="url(#flame-grad)"
-    stroke="url(#flame-grad)"
+    stroke="#d4b76a"
     stroke-width="2"
     stroke-linejoin="round"
-    stroke-linecap="round"
   />
-  <!-- Étincelle sommet -->
   <circle cx="16" cy="5.5" r="1" fill="#f5d97a"/>
 </svg>
