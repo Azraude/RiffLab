@@ -203,13 +203,15 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 - [x] Thèmes inclus : Dark Gold (default), Sunset, Studio Blue, Pure White, Néon Synthwave (premium)
 - [x] Variables CSS dynamiques + Tailwind theme switching (RGB triplets + rgb(var(--xxx) / <alpha-value>))
 
-### Sons de strum custom
+### Sons de strum custom + amp presets
 - [x] Choix du timbre : Pluck clair / Acoustique steel / Nylon douce / Électrique clean / Électrique drive
 - [x] Recettes refondues session 15 (PluckSynth pur sonnait mauvais → FMSynth pour acoustic, triangle pour nylon, filter chain pour drive)
 - [x] Polish session 16 : Compressor master + LP 8kHz + releases courts
-- [x] **Sampler "Électrique réelle 🎸" via CDN public** (session 18) — pack `nbrosowsky/tonejs-instruments` hébergé GitHub Pages, 13 samples ancres A2-A5, default + recommended. Chaîne LP 5.5kHz + Chorus pour vibe ampli clean.
+- [x] Sampler "Électrique réelle 🎸" via CDN public (session 18) — pack `nbrosowsky/tonejs-instruments`
+- [x] **5 amp presets WaveShaper** (session 19) — electric-clean / electric-crunch (AC30) / electric-lead (Marshall solo Slash) / electric-blues (Fender Twin / SRV) / acoustic-warm. Helpers makeSoftClipCurve + makeHardClipCurve, chain LP/HP/Compressor/Delay/Reverb dédiée par preset.
 - [ ] Lié au skin choisi (acoustique skin → son acoustique par défaut) — reporté
 - [ ] Sons premium (autres timbres samplés acoustique/nylon) — Phase 5
+- [ ] Convolver IR cabinet (Mesa/Marshall) — Phase 5 (licences IR à clarifier)
 
 ### Shareable songs / setlists
 - [x] URL avec encodage base64url du JSON song (no backend)
@@ -251,6 +253,29 @@ amélioration Phase 5+ pour ceux qui veulent du précis.
 - [x] Daily card animated gold sheen
 - [x] Streak cell pop (scale + glow pulse)
 - [x] Skeleton shimmer pour loading states
+
+---
+
+## ✅ Phase 4.5 — Infrastructure & import (livré session 19)
+
+### PWA mode hors-ligne
+- [x] vite-plugin-pwa + Service Worker workbox auto-update
+- [x] Manifest (name, theme_color, icons, standalone display)
+- [x] Cache strategies : precache assets statics + runtime cache CDN
+  samples (30j), .glb modèles (90j), Google Fonts (365j)
+- [x] PWAUpdateToast : "Nouvelle version dispo / Recharger maintenant"
+- [x] Install on home screen (Android Chrome + iOS Safari)
+
+### Import tab parser
+- [x] tabImporter.ts — parser texte plain de chord charts (regex chord
+  + section header detection + détection titre/artiste)
+- [x] Modal TabImportModal dans SongForm avec preview + remplir formulaire
+- [x] Pas d'URL fetch (zéro risque légal) — l'user fait copier-coller
+
+### Recorder waveform
+- [x] WaveformView : decodeAudioData + downsample 100 peaks + normalize
+- [x] SVG bars interactif (click-to-seek)
+- [x] Cursor anim sur progress
 
 ---
 
