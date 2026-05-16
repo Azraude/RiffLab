@@ -16,6 +16,7 @@
 import * as Tone from 'tone';
 
 export type StrumSoundId =
+  | 'electric-real-sampled'
   | 'electric-clean'
   | 'acoustic-steel'
   | 'nylon-soft'
@@ -40,10 +41,16 @@ export type StrumSound = {
  */
 export const STRUM_SOUNDS: StrumSound[] = [
   {
+    id: 'electric-real-sampled',
+    label: 'Électrique réelle 🎸',
+    description: 'Échantillonnée depuis une vraie guitare électrique. Le plus réaliste — bascule dessus pour le rendu authentique.',
+    tags: ['samples', 'réaliste', 'studio'],
+  },
+  {
     id: 'electric-clean',
     label: 'Électrique clean',
-    description: 'Cristal et présent — le son le plus polyvalent, choisi par défaut. Marche partout.',
-    tags: ['recommandé', 'clean', 'polyvalent'],
+    description: 'Synthé cristallin — le plus polyvalent en pure synthèse, fallback si les samples ne chargent pas.',
+    tags: ['recommandé', 'clean', 'synthé'],
     recommended: true,
   },
   {
@@ -115,6 +122,60 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
   const num = 6;
 
   switch (id) {
+    // ─── Électrique réelle (Tone.Sampler) ─────────────────────────────
+    case 'electric-real-sampled': {
+      // Sampler polyphonique partagé entre les 6 voix "string". Le pitch
+      // shifting est fait par Tone.Sampler automatiquement à partir des
+      // samples ancres (E2/A2/D3/G3/B3/E4 = les 6 cordes à vide).
+      //
+      // ⚠️ Les fichiers doivent vivre dans public/audio/electric-guitar/
+      // (cf README.md à côté). Sans eux, le sampler reste muet — l'user
+      // doit basculer en electric-clean dans Préférences.
+      const chorus = new Tone.Chorus({
+        frequency: 2,
+        delayTime: 3.5,
+        depth: 0.5,
+      }).start();
+      const distortion = new Tone.Distortion({
+        distortion: 0.15,
+        oversample: '4x',
+      });
+      const sampler = new Tone.Sampler({
+        urls: {
+          E2: 'E2.mp3',
+          A2: 'A2.mp3',
+          D3: 'D3.mp3',
+          G3: 'G3.mp3',
+          B3: 'B3.mp3',
+          E4: 'E4.mp3',
+        },
+        baseUrl: '/audio/electric-guitar/',
+        release: 1.2,
+        onload: () => {
+          console.info('[strumSounds] Electric guitar samples loaded ✓');
+        },
+        onerror: (error) => {
+          console.warn(
+            '[strumSounds] Sample missing — bascule sur electric-clean dans Préférences pour récupérer du son',
+            error
+          );
+        },
+      });
+      sampler.chain(chorus, distortion, output);
+
+      for (let i = 0; i < num; i++) {
+        voices.push({
+          trigger: (f, d, t, v) =>
+            sampler.triggerAttackRelease(f, d, t, v * 0.85),
+          dispose: () => {
+            // Dispose du sampler seulement sur le premier voice (partagé)
+          },
+        });
+      }
+      chainDispose(voices, [sampler, chorus, distortion]);
+      return voices;
+    }
+
     // ─── Électrique clean (DEFAULT, validé) ──────────────────────────
     case 'electric-clean': {
       // Saw + LP filter 4kHz + envelope plucky → cristallin et chaleureux.
