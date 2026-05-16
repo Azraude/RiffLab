@@ -186,19 +186,71 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Streak card — vraies données depuis sessions Dexie */}
-        <Card className="text-center">
-          <CardTitle>Série</CardTitle>
-          <div className="mt-1 flex items-center justify-center gap-2">
-            <div className="display text-[40px] leading-none text-gold md:text-[64px]">
-              {streak ?? 0}
+        {/* Streak card — trophée doré flamboyant (TASK E session 17) */}
+        <div className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-6 text-center shadow-gold-strong streak-trophy-glow">
+          {/* Radial glow centrale + sparkles */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 35%, rgb(var(--gold-glow) / 0.18) 0%, transparent 60%)',
+            }}
+          />
+          <span
+            className="pointer-events-none absolute left-3 top-3 text-gold-bright/60 streak-sparkle-1"
+            aria-hidden
+          >
+            ✦
+          </span>
+          <span
+            className="pointer-events-none absolute right-4 top-6 text-gold-bright/50 streak-sparkle-2"
+            aria-hidden
+          >
+            ✦
+          </span>
+          <span
+            className="pointer-events-none absolute left-5 bottom-8 text-gold-bright/40 streak-sparkle-3"
+            aria-hidden
+          >
+            ✦
+          </span>
+
+          <div className="relative">
+            <CardTitle>Série</CardTitle>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <motion.div
+                key={streak ?? 0}
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+                className="display text-[40px] leading-none text-gold-bright text-gold-glow md:text-[64px]"
+              >
+                {streak ?? 0}
+              </motion.div>
+              {(streak ?? 0) > 0 && (
+                <motion.div
+                  animate={{ rotate: [-2, 2, -2] }}
+                  transition={{
+                    duration: 1.4,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <Flame
+                    size={28}
+                    className="text-gold-bright md:h-9 md:w-9"
+                    fill="currentColor"
+                    style={{ filter: 'drop-shadow(0 0 6px rgb(var(--gold-glow) / 0.6))' }}
+                  />
+                </motion.div>
+              )}
             </div>
-            {(streak ?? 0) > 0 && (
-              <Flame size={28} className="text-gold-bright md:h-9 md:w-9" />
-            )}
-          </div>
-          <div className="label-small mt-2">
-            jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée
+            <div className="label-small mt-2">
+              jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée
+            </div>
           </div>
           <div className="mt-4 flex justify-center gap-1.5">
             <AnimatePresence>
@@ -226,11 +278,12 @@ export function Dashboard() {
                     }
                     transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
                     className={clsx(
-                      'flex h-6 w-6 items-center justify-center rounded-full text-[10px] md:h-7 md:w-7 md:text-[11px]',
+                      'flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold md:h-7 md:w-7 md:text-[11px]',
                       d.practiced
-                        ? 'border border-gold-soft bg-gold/20 font-semibold text-gold'
-                        : 'border border-border text-text-soft',
-                      isToday && !d.practiced && 'ring-1 ring-gold-soft/50'
+                        ? 'border border-gold bg-gradient-to-b from-gold-bright to-gold text-bg shadow-[0_0_8px_rgb(var(--gold-glow)/0.5)]'
+                        : 'border border-border/60 text-text-soft',
+                      isToday && d.practiced && 'streak-trophy-glow',
+                      isToday && !d.practiced && 'ring-2 ring-gold-soft/50 text-gold-soft'
                     )}
                   >
                     {d.weekday}
@@ -253,7 +306,7 @@ export function Dashboard() {
               Mon plan →
             </Link>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Scale preview */}

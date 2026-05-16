@@ -199,6 +199,37 @@
   text-shadow: 0 0 18px rgb(var(--gold-glow) / 0.35);
 }
 
+/* Streak trophy — glow pulse permanent + sparkles flottants */
+@keyframes streak-trophy-pulse {
+  0%, 100% {
+    box-shadow: 0 0 24px rgb(var(--gold-glow) / 0.18),
+                0 0 0 1px rgb(var(--gold) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 36px rgb(var(--gold-glow) / 0.32),
+                0 0 0 1px rgb(var(--gold) / 0.6);
+  }
+}
+.streak-trophy-glow {
+  animation: streak-trophy-pulse 3s ease-in-out infinite;
+}
+
+@keyframes streak-sparkle-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  50% { transform: translate(2px, -3px) scale(1.15); opacity: 0.9; }
+}
+@keyframes streak-sparkle-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  50% { transform: translate(-2px, 2px) scale(1.1); opacity: 0.8; }
+}
+@keyframes streak-sparkle-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+  50% { transform: translate(1px, -2px) scale(1.2); opacity: 0.7; }
+}
+.streak-sparkle-1 { animation: streak-sparkle-float-1 3.2s ease-in-out infinite; font-size: 14px; }
+.streak-sparkle-2 { animation: streak-sparkle-float-2 4s ease-in-out 0.5s infinite; font-size: 12px; }
+.streak-sparkle-3 { animation: streak-sparkle-float-3 3.6s ease-in-out 1s infinite; font-size: 10px; }
+
 /* RiffLab flame logo — flicker subtil (translateY ±1px). Donne vie au
    logo sans l'agiter. Période 2.4s ease-in-out pour une respiration
    lente type bougie. */
