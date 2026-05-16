@@ -183,19 +183,19 @@ export function PracticePlan() {
         )}
       </AnimatePresence>
 
-      {/* Hero 3D — pattern landing (session 18 TASK 5) : plus de cadre
-          rounded, la Fender Rose vit dans le décor en background absolute.
-          Halo gold radial subtil derrière + gradient fade bottom pour
-          intégration douce avec le contenu suivant. */}
-      <div className="relative mb-6 h-[280px] md:h-[340px]">
+      {/* Hero 3D (session 19 TASK 3) : guitare ZOOMÉE + espace réduit
+          sous le hero. Camera plus proche (4 vs 6), modèle scale up via
+          props, mb-6 → mb-2 pour coller le path Duolingo. */}
+      <div className="relative mb-2 h-[320px] md:h-[380px]">
         {/* Canvas en absolute, plein conteneur */}
         <div className="pointer-events-none absolute inset-0">
           <FloatingGuitar3DLazy
             model="rose"
             rotationSpeed={0.003}
-            cameraDistance={6}
-            cameraY={0.2}
+            cameraDistance={4}
+            cameraY={0.3}
             intensity="normal"
+            modelScale={2.4}
           />
         </div>
         {/* Halo gold radial subtil au centre */}

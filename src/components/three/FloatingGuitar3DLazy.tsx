@@ -10,6 +10,7 @@ interface Props {
   cameraDistance?: number;
   cameraY?: number;
   intensity?: 'subtle' | 'normal';
+  modelScale?: number;
 }
 
 /**

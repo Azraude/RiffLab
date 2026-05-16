@@ -37,19 +37,21 @@ interface Props {
   cameraDistance?: number;
   cameraY?: number;
   intensity?: 'subtle' | 'normal';
+  /** Scale du modèle 3D. Défaut 1.4. Pousse à 2-2.5 pour effet "hero" zoomed. */
+  modelScale?: number;
 }
 
-function GuitarMesh({ model }: { model: GuitarModel }) {
+function GuitarMesh({ model, scale = 1.4 }: { model: GuitarModel; scale?: number }) {
   const { scene } = useGLTF(MODEL_PATHS[model]);
   const cloned = useMemo(() => {
     const c = scene.clone();
     stripSkyboxes(c);
     return c;
   }, [scene]);
-  return <primitive object={cloned} scale={1.4} />;
+  return <primitive object={cloned} scale={scale} />;
 }
 
-function Scene({ model, rotationSpeed, intensity }: Props) {
+function Scene({ model, rotationSpeed, intensity, modelScale }: Props) {
   const isSubtle = intensity === 'subtle';
   return (
     <>
@@ -65,7 +67,7 @@ function Scene({ model, rotationSpeed, intensity }: Props) {
           levitationAmp={0.05}
           levitationFreq={0.3}
         >
-          <GuitarMesh model={model} />
+          <GuitarMesh model={model} scale={modelScale} />
         </FloatingGroup>
       </Suspense>
       <GoldParticles
@@ -84,6 +86,7 @@ export default function FloatingGuitar3D({
   cameraDistance = 4.5,
   cameraY = 0.2,
   intensity = 'normal',
+  modelScale,
 }: Props) {
   const [showFallback, setShowFallback] = useState(false);
   const modelPath = MODEL_PATHS[model];
@@ -118,6 +121,7 @@ export default function FloatingGuitar3D({
             cameraDistance={cameraDistance}
             cameraY={cameraY}
             intensity={intensity}
+            modelScale={modelScale}
           />
         </Suspense>
       </Canvas>
