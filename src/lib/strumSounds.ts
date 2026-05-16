@@ -43,15 +43,15 @@ export const STRUM_SOUNDS: StrumSound[] = [
   {
     id: 'electric-real-sampled',
     label: 'Électrique réelle 🎸',
-    description: 'Échantillonnée depuis une vraie guitare électrique. Le plus réaliste — bascule dessus pour le rendu authentique.',
+    description: 'Échantillonnée depuis une vraie guitare électrique (CDN public). Le plus réaliste — choisi par défaut.',
     tags: ['samples', 'réaliste', 'studio'],
+    recommended: true,
   },
   {
     id: 'electric-clean',
     label: 'Électrique clean',
-    description: 'Synthé cristallin — le plus polyvalent en pure synthèse, fallback si les samples ne chargent pas.',
-    tags: ['recommandé', 'clean', 'synthé'],
-    recommended: true,
+    description: 'Synthé cristallin — fallback si les samples ne chargent pas. Présent sans réseau.',
+    tags: ['synthé', 'fallback', 'offline'],
   },
   {
     id: 'acoustic-steel',
@@ -122,57 +122,79 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
   const num = 6;
 
   switch (id) {
-    // ─── Électrique réelle (Tone.Sampler) ─────────────────────────────
+    // ─── Électrique réelle (Tone.Sampler via CDN public) ──────────────
     case 'electric-real-sampled': {
-      // Sampler polyphonique partagé entre les 6 voix "string". Le pitch
-      // shifting est fait par Tone.Sampler automatiquement à partir des
-      // samples ancres (E2/A2/D3/G3/B3/E4 = les 6 cordes à vide).
+      // Sampler polyphonique partagé entre les 6 voix "string", pitch
+      // shifting auto Tone.Sampler.
       //
-      // ⚠️ Les fichiers doivent vivre dans public/audio/electric-guitar/
-      // (cf README.md à côté). Sans eux, le sampler reste muet — l'user
-      // doit basculer en electric-clean dans Préférences.
-      const chorus = new Tone.Chorus({
-        frequency: 2,
-        delayTime: 3.5,
-        depth: 0.5,
-      }).start();
-      const distortion = new Tone.Distortion({
-        distortion: 0.15,
-        oversample: '4x',
+      // Samples hébergés sur le pack open-source nbrosowsky/tonejs-instruments
+      // (GitHub Pages CDN public). Pas besoin de fichiers locaux : on
+      // pointe directement sur le CDN.
+      // → https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/
+      //
+      // Si le CDN tombe ou un sample manque, Tone.Sampler interpole
+      // depuis l'ancre la plus proche → toujours du son, pas de blocage.
+      const baseUrl =
+        'https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/';
+
+      // Chaîne ampli clean : LP filter + Chorus pour le mouvement
+      // (pas de distortion par défaut, le son est déjà chaud)
+      const filter = new Tone.Filter({
+        frequency: 5500,
+        type: 'lowpass',
+        Q: 0.6,
       });
+      const chorus = new Tone.Chorus({
+        frequency: 1.8,
+        delayTime: 3.5,
+        depth: 0.45,
+        wet: 0.35,
+      }).start();
+
       const sampler = new Tone.Sampler({
         urls: {
-          E2: 'E2.mp3',
           A2: 'A2.mp3',
-          D3: 'D3.mp3',
-          G3: 'G3.mp3',
-          B3: 'B3.mp3',
-          E4: 'E4.mp3',
+          C3: 'C3.mp3',
+          'D#3': 'Ds3.mp3',
+          'F#3': 'Fs3.mp3',
+          A3: 'A3.mp3',
+          C4: 'C4.mp3',
+          'D#4': 'Ds4.mp3',
+          'F#4': 'Fs4.mp3',
+          A4: 'A4.mp3',
+          C5: 'C5.mp3',
+          'D#5': 'Ds5.mp3',
+          'F#5': 'Fs5.mp3',
+          A5: 'A5.mp3',
         },
-        baseUrl: '/audio/electric-guitar/',
+        baseUrl,
         release: 1.2,
         onload: () => {
-          console.info('[strumSounds] Electric guitar samples loaded ✓');
+          console.info('[audio] Electric guitar samples loaded ✓ (CDN nbrosowsky)');
         },
         onerror: (error) => {
           console.warn(
-            '[strumSounds] Sample missing — bascule sur electric-clean dans Préférences pour récupérer du son',
+            '[audio] Sampler load fail — Tone interpolate from closest anchor (fallback OK)',
             error
           );
         },
       });
-      sampler.chain(chorus, distortion, output);
+      sampler.chain(filter, chorus, output);
 
       for (let i = 0; i < num; i++) {
         voices.push({
-          trigger: (f, d, t, v) =>
-            sampler.triggerAttackRelease(f, d, t, v * 0.85),
+          // Skip silencieux si pas encore chargé (évite bruit blanc / clip
+          // au cold start). Une fois loaded, sonne pour de bon.
+          trigger: (f, d, t, v) => {
+            if (!sampler.loaded) return;
+            sampler.triggerAttackRelease(f, d, t, v * 0.9);
+          },
           dispose: () => {
-            // Dispose du sampler seulement sur le premier voice (partagé)
+            // Dispose du sampler partagé sur le 1er voice via chainDispose
           },
         });
       }
-      chainDispose(voices, [sampler, chorus, distortion]);
+      chainDispose(voices, [sampler, filter, chorus]);
       return voices;
     }
 

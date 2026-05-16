@@ -1,63 +1,49 @@
-# Electric guitar samples — TODO Melvin
+# Electric guitar samples — session 18 : passé en CDN
 
-## Status : à uploader
+## Status : 🌐 hébergé sur CDN public, plus besoin de drop local
 
-Le timbre `electric-real-sampled` (Préférences → Son de strum →
-"Électrique réelle 🎸") attend 6 fichiers `.mp3` ici. Tant qu'ils ne
-sont pas en place, le sampler ne produit aucun son — `console.warn`
-explicite + le fallback est de rebasculer sur `electric-clean` dans
-Préférences.
+Depuis la session 18, le timbre `electric-real-sampled` (Préférences →
+Son de strum → "Électrique réelle 🎸") charge les samples depuis le
+pack open-source **`nbrosowsky/tonejs-instruments`** via GitHub Pages.
 
-## Fichiers requis
+- Code : `src/lib/strumSounds.ts` (case `electric-real-sampled`)
+- baseUrl : `https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/`
+- Pack : https://github.com/nbrosowsky/tonejs-instruments
+- 13 samples ancres (A2 → A5 par tierces), Tone.Sampler interpole
+  pour toutes les notes intermédiaires
 
-```
-public/audio/electric-guitar/
-├── E2.mp3   (low E, ~82 Hz)
-├── A2.mp3   (A, ~110 Hz)
-├── D3.mp3   (D, ~147 Hz)
-├── G3.mp3   (G, ~196 Hz)
-├── B3.mp3   (B, ~247 Hz)
-└── E4.mp3   (high E, ~330 Hz)
-```
+## Pourquoi le CDN
 
-Format : `.mp3` mono ou stereo, 44.1 kHz, taille idéale 50-200 KB par
-fichier. Tone.Sampler pitch-shift automatiquement pour les notes
-intermédiaires à partir de l'ancre la plus proche.
+- ✅ Zéro fichier dans le repo (gain de poids)
+- ✅ Zéro étape manuelle pour Melvin
+- ✅ Le pack est éprouvé, samples bien normalisés
+- ✅ Si une note manque, Tone.Sampler interpole depuis l'ancre la plus
+  proche → toujours du son, jamais de blocage
 
-## Sources libres recommandées
+## Si le CDN tombe
 
-Par ordre de priorité :
+Le `onerror` du Sampler log un warn explicite mais Tone continue de
+fonctionner avec ce qui est déjà en cache. Si la situation persiste,
+on peut soit :
+1. Bascule explicite vers `electric-clean` dans Préférences
+2. Mirror les samples dans ce dossier et changer le `baseUrl` pour
+   `/audio/electric-guitar/`
 
-1. **Philharmonia Orchestra Samples** — https://samples.philharmonia.co.uk/instruments-2/
-   → filtre "Electric Guitar", individual notes long sustain
-2. **freepats** — https://freepats.zenvoid.org/Guitar/index.html
-3. **VSCO-2 Community Edition** — https://github.com/sgossner/VSCO-2-CE
-4. **Spitfire LABS** (free, registration required)
-5. **Plogue Sforzando** + free sfz banks
+## Si tu veux drop des samples locaux quand même
 
-## Workflow
+(par exemple pour le offline-first ou parce que tu n'aimes pas le
+pack actuel)
 
-1. Télécharge 6 notes ancres E2/A2/D3/G3/B3/E4 jouées en clean
-   (pas d'effet, pas de palm mute). Durée ~2-3s avec release naturel.
-2. Convertis en `.mp3` 128-192 kbps (taille raisonnable pour le web)
-3. Normalise les volumes (Audacity → Effects → Normalize -3dB)
-4. Renomme exactement `E2.mp3`, `A2.mp3`, etc.
-5. Drop dans ce dossier
-6. Recharge le dev server → le `onload` du Sampler log
-   "Electric guitar samples loaded ✓" dans la console
+Format requis : `.mp3` mono ou stereo, 44.1 kHz, 50-200 KB.
+Notes ancres recommandées :
+- `A2.mp3` `C3.mp3` `Ds3.mp3` `Fs3.mp3` `A3.mp3`
+- `C4.mp3` `Ds4.mp3` `Fs4.mp3` `A4.mp3`
+- `C5.mp3` `Ds5.mp3` `Fs5.mp3` `A5.mp3`
 
-## Optionnel : autres timbres futurs
+Sources libres :
+- Philharmonia : https://samples.philharmonia.co.uk/instruments-2/
+- freepats : https://freepats.zenvoid.org/Guitar/index.html
+- VSCO-2 CE : https://github.com/sgossner/VSCO-2-CE
 
-L'archi `electric-real-sampled` peut être dupliquée pour d'autres
-timbres samplés :
-- `acoustic-real-sampled` → `public/audio/acoustic-guitar/`
-- `nylon-real-sampled` → `public/audio/nylon-guitar/`
-- etc.
-
-Chacun se branche dans `src/lib/strumSounds.ts` via une nouvelle case
-dans `buildVoices()`.
-
-## Licence
-
-Si les samples sont en CC BY (attribution requise), ajoute la mention
-dans `docs/CREDITS.md` (à créer) et linke dans le footer de la landing.
+Drop ici puis change `baseUrl` dans strumSounds.ts vers
+`/audio/electric-guitar/`.

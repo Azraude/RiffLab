@@ -11,7 +11,7 @@ import { buildVoices, type StrumSoundId, type SynthVoice } from './strumSounds';
 
 let initialized = false;
 let voices: SynthVoice[] = [];
-let activeTimbre: StrumSoundId = 'electric-clean';
+let activeTimbre: StrumSoundId = 'electric-real-sampled';
 let reverb: Tone.Reverb | null = null;
 let masterGain: Tone.Gain | null = null;
 let masterCompressor: Tone.Compressor | null = null;
@@ -27,7 +27,7 @@ let masterLowpass: Tone.Filter | null = null;
  * - Compressor (-12 dB threshold, ratio 4) : maîtrise les pics quand
  *   plusieurs strums s'empilent (chord progressions / riffs en boucle)
  */
-export async function initAudio(timbre: StrumSoundId = 'electric-clean'): Promise<void> {
+export async function initAudio(timbre: StrumSoundId = 'electric-real-sampled'): Promise<void> {
   if (initialized) return;
   await Tone.start();
 

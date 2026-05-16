@@ -40,7 +40,7 @@ export const usePrefs = create<PrefsState>()(
       showNoteNames: true,
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
-      strumSound: 'electric-clean',
+      strumSound: 'electric-real-sampled',
       effects3D: true,
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
@@ -71,18 +71,19 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 7,
+      version: 8,
       /**
        * Migration permissive sur la plupart des champs (préserve les
        * choix du user). EXCEPTION : `strumSound` est force-resettée à
-       * 'electric-clean' pour toute version < 7 — les recettes audio
-       * pre-v7 sonnaient mauvais (feedback Melvin "le seul son acceptable
-       * est Électrique clean"), donc on impose la nouvelle bonne default
-       * même si l'user avait sélectionné un autre timbre.
+       * 'electric-real-sampled' pour toute version < 8 — c'est le
+       * nouveau default audio (sampler réel CDN session 18). On force
+       * le reset car les recettes synthétiques pre-v8 sonnaient
+       * synthétique et les users méritent d'expérimenter la vraie
+       * guitare par défaut.
        */
       migrate: (persisted, version) => {
         const p = (persisted ?? {}) as Partial<PrefsState>;
-        const audioReset = version < 7;
+        const audioReset = version < 8;
         return {
           tuning: p.tuning ?? 'standard',
           capo: p.capo ?? 0,
@@ -91,7 +92,9 @@ export const usePrefs = create<PrefsState>()(
           showNoteNames: p.showNoteNames ?? true,
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
-          strumSound: audioReset ? 'electric-clean' : p.strumSound ?? 'electric-clean',
+          strumSound: audioReset
+            ? 'electric-real-sampled'
+            : p.strumSound ?? 'electric-real-sampled',
           effects3D: p.effects3D ?? true,
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
