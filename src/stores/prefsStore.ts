@@ -6,6 +6,8 @@ import type { PracticePlanData } from '@/lib/practicePlan';
 import type { ThemeId } from '@/lib/themes';
 import type { StrumSoundId } from '@/lib/strumSounds';
 
+export type PlayerLevel = 'beginner' | 'intermediate' | 'advanced';
+
 type PrefsState = {
   tuning: TuningId;
   capo: number;
@@ -16,6 +18,8 @@ type PrefsState = {
   theme: ThemeId;
   strumSound: StrumSoundId;
   effects3D: boolean;
+  onboardingCompleted: boolean;
+  level: PlayerLevel;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
   setCapo: (n: number) => void;
@@ -26,6 +30,8 @@ type PrefsState = {
   setTheme: (id: ThemeId) => void;
   setStrumSound: (id: StrumSoundId) => void;
   toggleEffects3D: () => void;
+  setOnboardingCompleted: (done: boolean) => void;
+  setLevel: (level: PlayerLevel) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
 };
@@ -42,6 +48,8 @@ export const usePrefs = create<PrefsState>()(
       theme: 'dark-gold',
       strumSound: 'electric-real-sampled',
       effects3D: true,
+      onboardingCompleted: false,
+      level: 'beginner',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
       setCapo: (capo) => set({ capo }),
@@ -52,6 +60,8 @@ export const usePrefs = create<PrefsState>()(
       setTheme: (theme) => set({ theme }),
       setStrumSound: (strumSound) => set({ strumSound }),
       toggleEffects3D: () => set((s) => ({ effects3D: !s.effects3D })),
+      setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
+      setLevel: (level) => set({ level }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
         set((s) => {
@@ -96,6 +106,8 @@ export const usePrefs = create<PrefsState>()(
             ? 'electric-real-sampled'
             : p.strumSound ?? 'electric-real-sampled',
           effects3D: p.effects3D ?? true,
+          onboardingCompleted: p.onboardingCompleted ?? true, // users existants : skip onboarding
+          level: p.level ?? 'beginner',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
       },

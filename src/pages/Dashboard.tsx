@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card, CardTitle } from '@/components/ui/Card';
@@ -25,6 +25,7 @@ import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import { CommunityRiffCard } from '@/components/dashboard/CommunityRiffCard';
+import { Onboarding } from '@/components/onboarding/Onboarding';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -48,6 +49,9 @@ export function Dashboard() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().limit(3).toArray(), []);
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
   const weeklyRiff = useMemo(() => getRiffOfTheWeek(), []);
+  const onboardingCompleted = usePrefs((s) => s.onboardingCompleted);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const showOnboarding = !onboardingCompleted && !onboardingDismissed;
   const { strum } = useAudio();
   const fretboardSkin = usePrefs((s) => s.fretboardSkin);
 
@@ -77,6 +81,9 @@ export function Dashboard() {
 
   return (
     <>
+      {showOnboarding && (
+        <Onboarding onDone={() => setOnboardingDismissed(true)} />
+      )}
       <PageHeader title={<DashboardGreeting name="Melvin" />} />
 
       {/* Daily hero */}
