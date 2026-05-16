@@ -183,24 +183,39 @@ export function PracticePlan() {
         )}
       </AnimatePresence>
 
-      {/* Hero 3D : Fender Rose, signifie "ton parcours" — agrandi (320px
-          mobile / 380px desktop) avec caméra reculée pour bien voir la
-          guitare. */}
-      <div className="relative mb-6 h-[320px] overflow-hidden rounded-3xl border border-border-gold bg-gradient-to-b from-bg via-surface to-bg md:h-[380px]">
-        <FloatingGuitar3DLazy
-          model="rose"
-          rotationSpeed={0.003}
-          cameraDistance={6}
-          cameraY={0.2}
-          intensity="normal"
+      {/* Hero 3D — pattern landing (session 18 TASK 5) : plus de cadre
+          rounded, la Fender Rose vit dans le décor en background absolute.
+          Halo gold radial subtil derrière + gradient fade bottom pour
+          intégration douce avec le contenu suivant. */}
+      <div className="relative mb-6 h-[280px] md:h-[340px]">
+        {/* Canvas en absolute, plein conteneur */}
+        <div className="pointer-events-none absolute inset-0">
+          <FloatingGuitar3DLazy
+            model="rose"
+            rotationSpeed={0.003}
+            cameraDistance={6}
+            cameraY={0.2}
+            intensity="normal"
+          />
+        </div>
+        {/* Halo gold radial subtil au centre */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-full"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 60%, rgb(var(--gold-glow) / 0.10) 0%, transparent 60%)',
+          }}
         />
-        <div className="pointer-events-none relative z-10 flex h-full flex-col items-center justify-end px-6 pb-7 text-center">
+        {/* Gradient bottom fade pour transition avec le path */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-bg to-transparent" />
+        {/* Contenu texte au-dessus (z-10) */}
+        <div className="pointer-events-none relative z-10 flex h-full flex-col items-center justify-end px-6 pb-8 text-center">
           <div className="eyebrow !text-gold-soft">Niveau {Math.min(progress + 1, total)} / {total}</div>
           <h2 className="display mt-1 text-display-md md:text-display-lg">
             {percent}% du parcours
           </h2>
           {/* Progress bar */}
-          <div className="mt-3 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-surface-2">
+          <div className="mt-3 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-surface-2/80 backdrop-blur-sm">
             <div
               className="h-full bg-gradient-to-r from-gold-soft to-gold-bright transition-all duration-500"
               style={{ width: `${percent}%` }}
