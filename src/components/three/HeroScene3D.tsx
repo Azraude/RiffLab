@@ -37,7 +37,11 @@ function StudioModel() {
     stripSkyboxes(c);
     return c;
   }, [scene]);
-  return <primitive object={cloned} scale={1.2} position={[0, -0.2, 0]} />;
+  // Scale augmentée 1.2 → 2.6 session 17 : le modèle apparaissait minuscule
+  // au centre d'une grande zone vide. Maintenant il occupe 60-70% de la
+  // largeur du Canvas, centré + légèrement en bas pour que le dessus de
+  // l'ampli arrive sous les CTAs du hero.
+  return <primitive object={cloned} scale={2.6} position={[0, -0.6, 0]} />;
 }
 
 // ─── Camera helper : auto-zoom léger sur breakpoint ──────────────────
@@ -60,9 +64,29 @@ function Scene() {
   return (
     <>
       <HeroCamera />
-      <StudioLights keyIntensity={1.5} fillIntensity={0.8} extraGoldFill />
+      {/* Lighting session 17 : ampli trop sombre sur screenshot Melvin.
+          Ambient intensity x3, KeyLight intensity 2.5, extras spot + rim. */}
+      <StudioLights
+        keyIntensity={2.5}
+        fillIntensity={0.8}
+        ambientIntensity={0.6}
+        extraGoldFill
+      />
+      {/* SpotLight gold au-dessus, pointe vers le centre — donne le
+          "spot studio" qui éclaire l'ampli */}
+      <spotLight
+        position={[0, 5, 3]}
+        angle={0.6}
+        penumbra={0.4}
+        intensity={1.8}
+        color="#f5d97a"
+        target-position={[0, 0, 0]}
+      />
+      {/* RimLight bleu nuit par derrière pour décrocher l'ampli du fond
+          noir — sans ça il se fond complètement avec le bg */}
+      <pointLight position={[-2, 0.5, -4]} intensity={0.5} color="#4a8aff" />
       <Suspense fallback={null}>
-        <FloatingGroup rotationSpeed={0.001} levitationAmp={0.05} levitationFreq={0.3}>
+        <FloatingGroup rotationSpeed={0.0008} levitationAmp={0.04} levitationFreq={0.25}>
           <StudioModel />
         </FloatingGroup>
       </Suspense>

@@ -58,7 +58,26 @@ export function Landing() {
         </div>
       </header>
 
-      {/* Hero text */}
+      {/* 3D scene en BACKGROUND absolu de la moitié basse du hero —
+          plus de cadre rounded, plus de "carte vignette". Le contenu
+          texte est posé COMME UN POSTER sur un mur de studio avec
+          l'ampli derrière. */}
+      <div className="pointer-events-none absolute inset-x-0 top-[55%] bottom-0 z-0">
+        <HeroScene3DLazy />
+      </div>
+      {/* Halo gold radial sous l'ampli pour le faire "exister"
+          visuellement sans cadre */}
+      <div
+        className="pointer-events-none absolute left-1/2 bottom-0 z-[1] h-[60vh] w-[80%] -translate-x-1/2"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgb(var(--gold-glow) / 0.08) 0%, transparent 60%)',
+        }}
+      />
+      {/* Gradient bottom fade pour empêcher la 3D de manger le footer */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-32 bg-gradient-to-t from-bg to-transparent" />
+
+      {/* Hero text — z-10 au-dessus de la 3D */}
       <section className="relative z-10 mx-auto max-w-5xl px-5 pt-8 text-center md:px-8 md:pt-14">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -110,28 +129,8 @@ export function Landing() {
         </motion.p>
       </section>
 
-      {/* Studio 3D showcase — encadré, centré, sous le hero text */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.7, ease: [0.25, 1, 0.5, 1] }}
-        className="relative z-10 mx-auto mt-12 max-w-5xl px-5 md:mt-16 md:px-8"
-      >
-        <div className="relative overflow-hidden rounded-3xl border border-border-gold bg-gradient-to-b from-surface to-bg shadow-[inset_0_1px_0_rgb(var(--gold)/0.12)]">
-          <div className="relative h-[320px] md:h-[440px]">
-            <HeroScene3DLazy />
-          </div>
-          {/* Subtle bottom gradient pour fade le bas du showcase */}
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
-            style={{
-              background:
-                'linear-gradient(to top, rgb(var(--bg)) 0%, transparent 100%)',
-            }}
-          />
-        </div>
-      </motion.section>
+      {/* Spacer pour laisser respirer le hero 3D avant les features */}
+      <div className="h-[40vh] md:h-[50vh]" />
 
       {/* Features */}
       <section className="relative z-10 mx-auto max-w-6xl px-5 pt-20 pb-20 md:px-8 md:pt-28 md:pb-28">
