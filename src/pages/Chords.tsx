@@ -12,6 +12,7 @@ import {
 } from '@/lib/chordDatabase';
 import { NOTE_NAMES } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
+import { markInteraction } from '@/lib/db';
 import { Volume2 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -108,7 +109,14 @@ export function Chords() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
         {filtered.map((c) => (
           <TiltCard key={c.name} maxTilt={6}>
-            <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
+            <SwipeableChordCard
+              chord={c}
+              onPlay={() => {
+                void strum(c.name);
+                // Log l'interaction pour l'auto-validation Practice Plan
+                void markInteraction('chord', c.name);
+              }}
+            />
           </TiltCard>
         ))}
       </div>

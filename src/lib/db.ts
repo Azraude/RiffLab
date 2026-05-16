@@ -100,6 +100,15 @@ export type RiffRating = {
   ratedAt: number;
 };
 
+export type InteractionType = 'chord' | 'scale' | 'technique' | 'song';
+export type Interaction = {
+  /** Clé composite : `${type}:${itemId}` (ex: "chord:Em", "scale:penta_minor") */
+  key: string;
+  type: InteractionType;
+  itemId: string;
+  interactedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
@@ -110,6 +119,7 @@ class RiffLabDB extends Dexie {
   riffLikes!: Table<RiffLike, string>;
   riffBookmarks!: Table<RiffBookmark, string>;
   riffRatings!: Table<RiffRating, string>;
+  interactions!: Table<Interaction, string>;
 
   constructor() {
     super('rifflab');
@@ -157,6 +167,18 @@ class RiffLabDB extends Dexie {
       riffLikes: 'id, likedAt',
       riffBookmarks: 'id, bookmarkedAt',
       riffRatings: 'id, ratedAt',
+    });
+    // v7 : interactions log pour auto-validation Practice Plan
+    this.version(7).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
     });
   }
 }
@@ -238,6 +260,27 @@ export async function setUserRating(id: string, rating: number): Promise<void> {
 
 export async function clearUserRating(id: string): Promise<void> {
   await db.riffRatings.delete(id);
+}
+
+// ─── Interactions log (auto-validation Practice Plan v7) ─────────
+export async function markInteraction(
+  type: InteractionType,
+  itemId: string
+): Promise<void> {
+  const key = `${type}:${itemId}`;
+  await db.interactions.put({ key, type, itemId, interactedAt: Date.now() });
+}
+
+export async function hasInteracted(
+  type: InteractionType,
+  itemId: string
+): Promise<boolean> {
+  const key = `${type}:${itemId}`;
+  return !!(await db.interactions.get(key));
+}
+
+export async function listInteractions(): Promise<Interaction[]> {
+  return db.interactions.toArray();
 }
 
 // ─── Recording CRUD ──────────────────────────────────────────────

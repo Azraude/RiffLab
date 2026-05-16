@@ -5,6 +5,7 @@ import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
 import { Fretboard3DLazy } from '@/components/three/Fretboard3DLazy';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { SCALES } from '@/lib/scaleDatabase';
+import { markInteraction } from '@/lib/db';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { usePrefs } from '@/stores/prefsStore';
 import { SKIN_LIST } from '@/lib/fretboardSkins';
@@ -154,7 +155,10 @@ export function Scales() {
             <Card
               hover
               className="cursor-pointer"
-              onClick={() => setScaleId(s.id)}
+              onClick={() => {
+                setScaleId(s.id);
+                void markInteraction('scale', s.id);
+              }}
             >
               <div className="flex items-center justify-between">
                 <h3 className="display text-display-sm">{s.name}</h3>

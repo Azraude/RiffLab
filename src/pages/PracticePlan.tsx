@@ -16,6 +16,7 @@ import {
   type PathLevel,
   type NodeState,
 } from '@/lib/practicePath';
+import { listInteractions } from '@/lib/db';
 import {
   ArrowRight,
   Check,
@@ -50,9 +51,69 @@ export function PracticePlan() {
   const states = useMemo(() => computeNodeStates(completedIds), [completedIds]);
   const [openLevel, setOpenLevel] = useState<PathLevel | null>(null);
 
+  // Auto-validation : live query sur toutes les interactions du user
+  const interactions = useLiveQuery(() => listInteractions(), []) ?? [];
+  const interactionsSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of interactions) s.add(`${i.type}:${i.itemId}`);
+    return s;
+  }, [interactions]);
+
+  // Helpers pour la progression par node
+  function getNodeProgress(level: PathLevel) {
+    const chords = level.chordsToLearn.map((c) => ({
+      type: 'chord' as const,
+      id: c,
+      done: interactionsSet.has(`chord:${c}`),
+    }));
+    const scales = level.scalesToLearn.map((s) => ({
+      type: 'scale' as const,
+      id: s,
+      done: interactionsSet.has(`scale:${s}`),
+    }));
+    const all = [...chords, ...scales];
+    const required = all.length;
+    const done = all.filter((x) => x.done).length;
+    return { all, chords, scales, required, done, ratio: required === 0 ? 0 : done / required };
+  }
+
   // Confetti trigger : incrémente à chaque completion pour relancer l'anim
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const prevCountRef = useRef(0);
+
+  // Auto-mark : si tous les chords + scales d'un node available/current
+  // sont interagis, marque-le completed. Anti-spam : autoMarkedRef garde
+  // la liste des nodes déjà auto-validés pour ne pas re-déclencher.
+  const autoMarkedRef = useRef(new Set<string>());
+  useEffect(() => {
+    let cancelled = false;
+    async function check() {
+      for (const level of PATH_LEVELS) {
+        const state = states[level.id];
+        if (state !== 'current' && state !== 'available') continue;
+        if (completedIds.has(level.id)) continue;
+        if (autoMarkedRef.current.has(level.id)) continue;
+        const { required, done } = getNodeProgress(level);
+        if (required === 0) continue; // techniques only → garder validation manuelle
+        if (done >= required) {
+          autoMarkedRef.current.add(level.id);
+          await markNodeCompleted(level.id);
+          if (cancelled) return;
+          setToastMessage(`Niveau ${level.title} validé ! 🎉`);
+          setTimeout(() => {
+            if (!cancelled) setToastMessage(null);
+          }, 3000);
+        }
+      }
+    }
+    void check();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interactionsSet, states, completedIds]);
+
   useEffect(() => {
     if (completedIds.size > prevCountRef.current && prevCountRef.current > 0) {
       setConfettiTrigger((c) => c + 1);
@@ -106,6 +167,22 @@ export function PracticePlan() {
       {/* Confetti déclenché à chaque node complété */}
       <Confetti trigger={confettiTrigger} count={50} duration={1.8} />
 
+      {/* Toast auto-validation */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.95 }}
+            className="fixed inset-x-0 top-4 z-[70] mx-auto w-fit max-w-[92vw] rounded-2xl border border-gold bg-gradient-to-b from-surface to-bg px-5 py-3 shadow-gold-strong"
+          >
+            <div className="display text-base text-gold-bright">
+              {toastMessage}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero 3D : Fender Rose, signifie "ton parcours" — agrandi (320px
           mobile / 380px desktop) avec caméra reculée pour bien voir la
           guitare. */}
@@ -141,6 +218,7 @@ export function PracticePlan() {
       <LevelDrawer
         level={openLevel}
         state={openLevel ? states[openLevel.id] : 'locked'}
+        progress={openLevel ? getNodeProgress(openLevel) : null}
         onClose={() => setOpenLevel(null)}
         onMarkCompleted={async (id) => {
           await markNodeCompleted(id);
@@ -317,15 +395,25 @@ function PathNode({
 
 // ─── Level drawer ─────────────────────────────────────────────────────
 
+type NodeProgress = {
+  chords: Array<{ type: 'chord'; id: string; done: boolean }>;
+  scales: Array<{ type: 'scale'; id: string; done: boolean }>;
+  required: number;
+  done: number;
+  ratio: number;
+};
+
 function LevelDrawer({
   level,
   state,
+  progress,
   onClose,
   onMarkCompleted,
   onUnmark,
 }: {
   level: PathLevel | null;
   state: NodeState;
+  progress: NodeProgress | null;
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
   onUnmark: (id: string) => void;
@@ -464,6 +552,27 @@ function LevelDrawer({
                     </ul>
                   </div>
 
+                  {/* Progression auto-validation */}
+                  {progress && progress.required > 0 && (
+                    <div className="mt-5 rounded-xl border border-border-gold bg-gold/5 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="label-small">Auto-validation</span>
+                        <span className="font-mono text-xs font-bold text-gold">
+                          {progress.done}/{progress.required}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                        <div
+                          className="h-full bg-gradient-to-r from-gold-soft to-gold-bright transition-all duration-500"
+                          style={{ width: `${progress.ratio * 100}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-text-soft">
+                        Le niveau se valide tout seul quand tu as exploré tous les accords + gammes ci-dessous.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Accords à maîtriser */}
                   {level.chordsToLearn.length > 0 && (
                     <div className="mt-5">
@@ -471,14 +580,25 @@ function LevelDrawer({
                         <Grid3x3 size={11} /> Accords à maîtriser
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {level.chordsToLearn.map((c) => (
-                          <span
-                            key={c}
-                            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-2 px-2.5 font-mono text-sm font-bold text-gold"
-                          >
-                            {c}
-                          </span>
-                        ))}
+                        {level.chordsToLearn.map((c) => {
+                          const isDone = progress?.chords.find((x) => x.id === c)?.done;
+                          return (
+                            <Link
+                              key={c}
+                              to="/chords"
+                              onClick={onClose}
+                              className={clsx(
+                                'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-sm font-bold transition-colors',
+                                isDone
+                                  ? 'border-success bg-success/15 text-success'
+                                  : 'border-border bg-surface-2 text-gold hover:border-gold-soft'
+                              )}
+                            >
+                              {c}
+                              {isDone && <Check size={11} strokeWidth={3} />}
+                            </Link>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -490,16 +610,25 @@ function LevelDrawer({
                         <Waves size={11} /> Gammes liées
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {level.scalesToLearn.map((s) => (
-                          <Link
-                            key={s}
-                            to="/scales"
-                            onClick={onClose}
-                            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-2 px-2.5 font-mono text-xs text-gold hover:border-gold-soft"
-                          >
-                            {s}
-                          </Link>
-                        ))}
+                        {level.scalesToLearn.map((s) => {
+                          const isDone = progress?.scales.find((x) => x.id === s)?.done;
+                          return (
+                            <Link
+                              key={s}
+                              to="/scales"
+                              onClick={onClose}
+                              className={clsx(
+                                'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-xs transition-colors',
+                                isDone
+                                  ? 'border-success bg-success/15 text-success'
+                                  : 'border-border bg-surface-2 text-gold hover:border-gold-soft'
+                              )}
+                            >
+                              {s}
+                              {isDone && <Check size={11} strokeWidth={3} />}
+                            </Link>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
