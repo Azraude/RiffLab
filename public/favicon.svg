@@ -1,24 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="6" fill="#0a0a0a"/>
   <defs>
-    <mask id="flame-half">
-      <rect x="0" y="15.5" width="32" height="17" fill="white"/>
-    </mask>
+    <linearGradient id="flame-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5d97a"/>
+      <stop offset="100%" stop-color="#d4b76a"/>
+    </linearGradient>
+    <clipPath id="flame-bottom">
+      <rect x="0" y="16" width="32" height="16"/>
+    </clipPath>
   </defs>
-  <!-- Flame outline (uniformément or sur toute la silhouette) -->
+  <!-- Outline complet (haut + bas) -->
   <path
-    d="M16 4 C 12 8, 10 12, 11 17 C 11 22, 13.5 28, 16 28 C 18.5 28, 21 22, 21 17 C 22 12, 20 8, 16 4 Z"
+    d="M16 4 C 11 8, 8 12, 8 17 C 8 22, 12 28, 16 28 C 20 28, 24 22, 24 17 C 24 12, 21 8, 16 4 Z"
     fill="none"
-    stroke="#d4b76a"
+    stroke="url(#flame-grad)"
     stroke-width="2"
     stroke-linejoin="round"
   />
-  <!-- Bottom half filled gold -->
+  <!-- Fill gradient, clippé moitié basse uniquement -->
   <path
-    d="M16 4 C 12 8, 10 12, 11 17 C 11 22, 13.5 28, 16 28 C 18.5 28, 21 22, 21 17 C 22 12, 20 8, 16 4 Z"
-    fill="#d4b76a"
-    mask="url(#flame-half)"
+    d="M16 4 C 11 8, 8 12, 8 17 C 8 22, 12 28, 16 28 C 20 28, 24 22, 24 17 C 24 12, 21 8, 16 4 Z"
+    fill="url(#flame-grad)"
+    clip-path="url(#flame-bottom)"
   />
-  <!-- Top spark -->
+  <!-- Étincelle sommet -->
   <circle cx="16" cy="5.5" r="1" fill="#f5d97a"/>
 </svg>
