@@ -16,7 +16,13 @@
 import * as Tone from 'tone';
 
 export type StrumSoundId =
-  | 'electric-real-sampled'
+  // Sampler CDN nbrosowsky + chaîne d'effets dédiée par preset
+  | 'electric-real-sampled' // alias historique = clean sampled (session 18)
+  | 'electric-crunch'       // AC30 crunch / blues solo
+  | 'electric-lead'         // Marshall lead / Slash solo
+  | 'electric-blues'        // Fender Twin / BB King
+  | 'acoustic-warm'         // Sampler avec chaîne acoustique (LP + reverb)
+  // Synthés legacy (fallback hors-ligne / différents timbres)
   | 'electric-clean'
   | 'acoustic-steel'
   | 'nylon-soft'
@@ -42,10 +48,34 @@ export type StrumSound = {
 export const STRUM_SOUNDS: StrumSound[] = [
   {
     id: 'electric-real-sampled',
-    label: 'Électrique réelle 🎸',
-    description: 'Échantillonnée depuis une vraie guitare électrique (CDN public). Le plus réaliste — choisi par défaut.',
-    tags: ['samples', 'réaliste', 'studio'],
+    label: 'Électrique clean 🎸',
+    description: 'Sampler réel Fender clean — Compressor + LP + Chorus + reverb hall. Le default polyvalent.',
+    tags: ['samples', 'clean', 'fender'],
     recommended: true,
+  },
+  {
+    id: 'electric-crunch',
+    label: 'Électrique crunch 🤘',
+    description: 'AC30 crunch — WaveShaper soft + HP/LP + compressor. Pour les solos blues et la rythmique rock.',
+    tags: ['samples', 'crunch', 'ac30'],
+  },
+  {
+    id: 'electric-lead',
+    label: 'Électrique Lead 🔥',
+    description: 'Marshall stack lead — distortion hard + delay 1/4 + plate reverb. Solo "Slash".',
+    tags: ['samples', 'distortion', 'marshall', 'solo'],
+  },
+  {
+    id: 'electric-blues',
+    label: 'Électrique blues 🎷',
+    description: 'Fender Twin overdrive doux — tube sat + plate reverb longue. Vibe BB King / SRV.',
+    tags: ['samples', 'blues', 'tube', 'twin'],
+  },
+  {
+    id: 'acoustic-warm',
+    label: 'Acoustique chaude 🪵',
+    description: 'Sampler avec LP 7kHz + reverb hall — vibe studio acoustique. Pour ballades et arpèges.',
+    tags: ['samples', 'acoustique', 'studio'],
   },
   {
     id: 'electric-clean',
@@ -98,6 +128,55 @@ export type SynthVoice = {
 };
 
 /**
+ * WaveShaper curves pour les amp simulators.
+ *
+ * - soft : saturation tube douce via tanh — vibe AC30 / Twin
+ * - hard : clipping plus agressif type Marshall lead — Slash solo
+ */
+function makeSoftClipCurve(amount: number, samples = 4096): Float32Array {
+  const curve = new Float32Array(samples);
+  const k = amount;
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1;
+    curve[i] = Math.tanh(k * x) / Math.tanh(k);
+  }
+  return curve;
+}
+
+function makeHardClipCurve(amount: number, samples = 4096): Float32Array {
+  const curve = new Float32Array(samples);
+  const deg = Math.PI / 180;
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1;
+    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+/**
+ * Crée un sampler partagé (samples nbrosowsky/tonejs-instruments CDN
+ * public). Utilisé par les 5 presets sampler-based : electric clean,
+ * crunch, lead, blues, acoustic-warm.
+ *
+ * release plus ou moins long selon le preset (lead = 1.8s pour le
+ * sustain solo, clean = 1.2s, acoustic = 1.5s).
+ */
+function makeElectricSampler(release = 1.2): Tone.Sampler {
+  const baseUrl =
+    'https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/';
+  return new Tone.Sampler({
+    urls: {
+      A2: 'A2.mp3', C3: 'C3.mp3', 'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3',
+      A3: 'A3.mp3', C4: 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
+      A4: 'A4.mp3', C5: 'C5.mp3', 'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3',
+      A5: 'A5.mp3',
+    },
+    baseUrl,
+    release,
+  });
+}
+
+/**
  * Helper pour attacher un dispose() chain au premier voice — la convention
  * dans audio.ts c'est d'appeler voice.dispose() qui doit nettoyer le synth
  * ET les effets de la chaîne.
@@ -122,79 +201,145 @@ export function buildVoices(id: StrumSoundId, output: Tone.ToneAudioNode): Synth
   const num = 6;
 
   switch (id) {
-    // ─── Électrique réelle (Tone.Sampler via CDN public) ──────────────
+    // ─── Électrique CLEAN (sampler CDN + Compressor + LP + Chorus + Reverb) ─
     case 'electric-real-sampled': {
-      // Sampler polyphonique partagé entre les 6 voix "string", pitch
-      // shifting auto Tone.Sampler.
-      //
-      // Samples hébergés sur le pack open-source nbrosowsky/tonejs-instruments
-      // (GitHub Pages CDN public). Pas besoin de fichiers locaux : on
-      // pointe directement sur le CDN.
-      // → https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/
-      //
-      // Si le CDN tombe ou un sample manque, Tone.Sampler interpole
-      // depuis l'ancre la plus proche → toujours du son, pas de blocage.
-      const baseUrl =
-        'https://nbrosowsky.github.io/tonejs-instruments/samples/guitar-electric/';
+      // ID historique conservé pour backward compat — c'est le preset
+      // "clean" du sampler. Compressor doux + LP 6kHz + chorus subtil
+      // + reverb hall = vibe Fender Strat clean amp.
+      const sampler = makeElectricSampler(1.3);
+      const compressor = new Tone.Compressor({ ratio: 2, threshold: -18, attack: 0.005, release: 0.1 });
+      const lp = new Tone.Filter({ frequency: 6000, type: 'lowpass', Q: 0.5 });
+      const chorus = new Tone.Chorus({ frequency: 1.5, delayTime: 3.5, depth: 0.4, wet: 0.25 }).start();
+      const reverb = new Tone.Reverb({ decay: 1.8, wet: 0.20 });
+      void reverb.generate();
 
-      // Chaîne ampli clean : LP filter + Chorus pour le mouvement
-      // (pas de distortion par défaut, le son est déjà chaud)
-      const filter = new Tone.Filter({
-        frequency: 5500,
-        type: 'lowpass',
-        Q: 0.6,
-      });
-      const chorus = new Tone.Chorus({
-        frequency: 1.8,
-        delayTime: 3.5,
-        depth: 0.45,
-        wet: 0.35,
-      }).start();
-
-      const sampler = new Tone.Sampler({
-        urls: {
-          A2: 'A2.mp3',
-          C3: 'C3.mp3',
-          'D#3': 'Ds3.mp3',
-          'F#3': 'Fs3.mp3',
-          A3: 'A3.mp3',
-          C4: 'C4.mp3',
-          'D#4': 'Ds4.mp3',
-          'F#4': 'Fs4.mp3',
-          A4: 'A4.mp3',
-          C5: 'C5.mp3',
-          'D#5': 'Ds5.mp3',
-          'F#5': 'Fs5.mp3',
-          A5: 'A5.mp3',
-        },
-        baseUrl,
-        release: 1.2,
-        onload: () => {
-          console.info('[audio] Electric guitar samples loaded ✓ (CDN nbrosowsky)');
-        },
-        onerror: (error) => {
-          console.warn(
-            '[audio] Sampler load fail — Tone interpolate from closest anchor (fallback OK)',
-            error
-          );
-        },
-      });
-      sampler.chain(filter, chorus, output);
+      sampler.chain(compressor, lp, chorus, reverb, output);
 
       for (let i = 0; i < num; i++) {
         voices.push({
-          // Skip silencieux si pas encore chargé (évite bruit blanc / clip
-          // au cold start). Une fois loaded, sonne pour de bon.
           trigger: (f, d, t, v) => {
             if (!sampler.loaded) return;
             sampler.triggerAttackRelease(f, d, t, v * 0.9);
           },
-          dispose: () => {
-            // Dispose du sampler partagé sur le 1er voice via chainDispose
-          },
+          dispose: () => {},
         });
       }
-      chainDispose(voices, [sampler, filter, chorus]);
+      chainDispose(voices, [sampler, compressor, lp, chorus, reverb]);
+      return voices;
+    }
+
+    // ─── Électrique CRUNCH (AC30 blues solo) ──────────────────────────
+    case 'electric-crunch': {
+      // Sampler → preGain → HP 100Hz → WaveShaper soft (tanh 8) →
+      // LP 5kHz cab → compressor ratio 4 → small room reverb
+      const sampler = makeElectricSampler(1.4);
+      const preGain = new Tone.Gain(1.6);
+      const hp = new Tone.Filter({ frequency: 100, type: 'highpass', Q: 0.3 });
+      const shaper = new Tone.WaveShaper(makeSoftClipCurve(8));
+      shaper.oversample = '4x';
+      const lp = new Tone.Filter({ frequency: 5000, type: 'lowpass', Q: 0.7 });
+      const compressor = new Tone.Compressor({ ratio: 4, threshold: -14, attack: 0.004, release: 0.08 });
+      const reverb = new Tone.Reverb({ decay: 1.4, wet: 0.15 });
+      void reverb.generate();
+
+      sampler.chain(preGain, hp, shaper, lp, compressor, reverb, output);
+
+      for (let i = 0; i < num; i++) {
+        voices.push({
+          trigger: (f, d, t, v) => {
+            if (!sampler.loaded) return;
+            sampler.triggerAttackRelease(f, d, t, v * 0.75);
+          },
+          dispose: () => {},
+        });
+      }
+      chainDispose(voices, [sampler, preGain, hp, shaper, lp, compressor, reverb]);
+      return voices;
+    }
+
+    // ─── Électrique LEAD (Marshall stack — solo Slash) ────────────────
+    case 'electric-lead': {
+      // Sampler → preGain 2.5 → HP 120Hz → WaveShaper hard (15) →
+      // LP 4.5kHz mid-focused → compressor agressif → FeedbackDelay 1/4
+      // → plate reverb decay 2.5
+      const sampler = makeElectricSampler(1.8);
+      const preGain = new Tone.Gain(2.5);
+      const hp = new Tone.Filter({ frequency: 120, type: 'highpass', Q: 0.5 });
+      const shaper = new Tone.WaveShaper(makeHardClipCurve(15));
+      shaper.oversample = '4x';
+      const lp = new Tone.Filter({ frequency: 4500, type: 'lowpass', Q: 1.0 });
+      const compressor = new Tone.Compressor({ ratio: 6, threshold: -10, attack: 0.003, release: 0.1 });
+      const delay = new Tone.FeedbackDelay({ delayTime: '8n', feedback: 0.25, wet: 0.18 });
+      const reverb = new Tone.Reverb({ decay: 2.5, wet: 0.25 });
+      void reverb.generate();
+
+      sampler.chain(preGain, hp, shaper, lp, compressor, delay, reverb, output);
+
+      for (let i = 0; i < num; i++) {
+        voices.push({
+          trigger: (f, d, t, v) => {
+            if (!sampler.loaded) return;
+            sampler.triggerAttackRelease(f, d, t, v * 0.55);
+          },
+          dispose: () => {},
+        });
+      }
+      chainDispose(voices, [sampler, preGain, hp, shaper, lp, compressor, delay, reverb]);
+      return voices;
+    }
+
+    // ─── Électrique BLUES (Fender Twin / BB King / SRV) ───────────────
+    case 'electric-blues': {
+      // Sampler → preGain modéré → HP 80Hz → WaveShaper soft asymétrique
+      // (tube character) → LP 5.5kHz → léger chorus → plate reverb longue
+      const sampler = makeElectricSampler(1.6);
+      const preGain = new Tone.Gain(1.4);
+      const hp = new Tone.Filter({ frequency: 80, type: 'highpass', Q: 0.3 });
+      const shaper = new Tone.WaveShaper(makeSoftClipCurve(5));
+      shaper.oversample = '4x';
+      const lp = new Tone.Filter({ frequency: 5500, type: 'lowpass', Q: 0.6 });
+      const chorus = new Tone.Chorus({ frequency: 1, delayTime: 3, depth: 0.3, wet: 0.15 }).start();
+      const reverb = new Tone.Reverb({ decay: 3.0, wet: 0.30 });
+      void reverb.generate();
+
+      sampler.chain(preGain, hp, shaper, lp, chorus, reverb, output);
+
+      for (let i = 0; i < num; i++) {
+        voices.push({
+          trigger: (f, d, t, v) => {
+            if (!sampler.loaded) return;
+            sampler.triggerAttackRelease(f, d, t, v * 0.8);
+          },
+          dispose: () => {},
+        });
+      }
+      chainDispose(voices, [sampler, preGain, hp, shaper, lp, chorus, reverb]);
+      return voices;
+    }
+
+    // ─── Acoustique chaude (sampler avec chaîne acoustique) ────────────
+    case 'acoustic-warm': {
+      // Sampler "électrique" filtré pour faire passer en acoustique :
+      // LP 7kHz (élimine le brillant trop électrique) + reverb hall
+      // décente. Pas de distortion. Petit boost médium.
+      const sampler = makeElectricSampler(1.5);
+      const lp = new Tone.Filter({ frequency: 7000, type: 'lowpass', Q: 0.5 });
+      const eq = new Tone.EQ3({ low: 0, mid: 2, high: -3 });
+      const reverb = new Tone.Reverb({ decay: 2.2, wet: 0.25 });
+      void reverb.generate();
+
+      sampler.chain(lp, eq, reverb, output);
+
+      for (let i = 0; i < num; i++) {
+        voices.push({
+          trigger: (f, d, t, v) => {
+            if (!sampler.loaded) return;
+            sampler.triggerAttackRelease(f, d, t, v * 0.9);
+          },
+          dispose: () => {},
+        });
+      }
+      chainDispose(voices, [sampler, lp, eq, reverb]);
       return voices;
     }
 
