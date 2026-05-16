@@ -434,28 +434,81 @@ function DashboardGreeting({ name }: { name: string }) {
         className="relative inline-block font-serif italic text-gold text-gold-glow"
       >
         {name}
-        {/* Underline SVG manuscrit, pathLength animé en sweep gauche-droite */}
+        {/* Underline thème guitare : 6 cordes horizontales empilées sous le
+            mot. Épaisseurs décroissantes top → bottom (mimant cordes wound
+            graves → plain aigus). Stroke-dashoffset CSS pour dessin
+            gauche→droite avec stagger 50ms. Les 3 cordes basses ont une
+            micro vibration verticale ±0.5px infinite. */}
         <svg
-          className="absolute -bottom-1 left-0 w-full"
-          viewBox="0 0 100 8"
+          className="absolute -bottom-1.5 left-0 w-full"
+          viewBox="0 0 100 14"
           preserveAspectRatio="none"
           fill="none"
-          height={6}
+          height={12}
           aria-hidden
         >
-          <motion.path
-            d="M 2 4 Q 25 1, 50 4 T 98 4"
-            stroke="rgb(var(--gold-bright))"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{
-              pathLength: { duration: 0.8, delay: 0.5, ease: [0.25, 1, 0.5, 1] },
-              opacity: { duration: 0.2, delay: 0.5 },
-            }}
-            style={{ filter: 'drop-shadow(0 0 4px rgb(var(--gold-glow) / 0.6))' }}
-          />
+          <defs>
+            <linearGradient id="guitar-string-grad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
+              <stop offset="20%" stopColor="rgb(var(--gold-bright))" />
+              <stop offset="80%" stopColor="rgb(var(--gold-bright))" />
+              <stop offset="100%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
+            </linearGradient>
+          </defs>
+          {/* 6 cordes : épaisseurs 2 / 1.8 / 1.6 / 1.3 / 1 / 0.8 (top = bass) */}
+          {[
+            { y: 1, w: 2, vibrate: true, delay: 0 }, // E bass
+            { y: 3.4, w: 1.8, vibrate: true, delay: 0.05 }, // A
+            { y: 5.8, w: 1.6, vibrate: true, delay: 0.1 }, // D
+            { y: 8.2, w: 1.3, vibrate: false, delay: 0.15 }, // G
+            { y: 10.4, w: 1, vibrate: false, delay: 0.2 }, // B
+            { y: 12.2, w: 0.8, vibrate: false, delay: 0.25 }, // E aigu
+          ].map((str, i) => (
+            <motion.line
+              key={i}
+              x1="0"
+              y1={str.y}
+              x2="100"
+              y2={str.y}
+              stroke="url(#guitar-string-grad)"
+              strokeWidth={str.w}
+              strokeLinecap="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{
+                pathLength: 1,
+                opacity: 1,
+                ...(str.vibrate && {
+                  y1: [str.y, str.y + 0.4, str.y - 0.4, str.y],
+                  y2: [str.y, str.y + 0.4, str.y - 0.4, str.y],
+                }),
+              }}
+              transition={{
+                pathLength: {
+                  duration: 0.6,
+                  delay: 0.4 + str.delay,
+                  ease: [0.25, 1, 0.5, 1],
+                },
+                opacity: { duration: 0.2, delay: 0.4 + str.delay },
+                ...(str.vibrate && {
+                  y1: {
+                    duration: 0.18,
+                    delay: 1.2 + i * 0.4,
+                    repeat: Infinity,
+                    repeatType: 'reverse' as const,
+                    repeatDelay: 2.5,
+                  },
+                  y2: {
+                    duration: 0.18,
+                    delay: 1.2 + i * 0.4,
+                    repeat: Infinity,
+                    repeatType: 'reverse' as const,
+                    repeatDelay: 2.5,
+                  },
+                }),
+              }}
+              style={{ filter: 'drop-shadow(0 0 2px rgb(var(--gold-glow) / 0.5))' }}
+            />
+          ))}
         </svg>
       </motion.span>
       <motion.span
