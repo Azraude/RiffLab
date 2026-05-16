@@ -74,12 +74,14 @@ export function AnimatedSection({
 interface StaggerGridProps extends Omit<ComponentProps<typeof motion.div>, 'variants'> {
   children: ReactNode;
   stagger?: number;
+  /** Pourcentage de la grille visible avant trigger. 0 = dès qu'un pixel
+   *  apparaît (sûr pour les grilles longues sous des filtres). Défaut 0. */
   amount?: number;
 }
 export function StaggerGrid({
   children,
   stagger = 0.06,
-  amount = 0.15,
+  amount = 0,
   className,
   ...rest
 }: StaggerGridProps) {

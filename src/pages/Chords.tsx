@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
-import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
 import {
   CHORDS,
@@ -102,19 +101,17 @@ export function Chords() {
         {filtered.length} accord{filtered.length > 1 ? 's' : ''}
       </div>
 
-      {/* Grille de cards swipeables — stagger entrée */}
-      <StaggerGrid
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6"
-        stagger={0.025}
-      >
+      {/* Grille de cards swipeables — pas de StaggerGrid ici car la grille
+          est sous 2 filtres + recherche, donc < 15% visible au mount →
+          whileInView ne trigger pas et toutes les cards restent
+          opacity:0 (régression bug session 16 fix session 17). */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
         {filtered.map((c) => (
-          <StaggerItem key={c.name}>
-            <TiltCard maxTilt={6}>
-              <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
-            </TiltCard>
-          </StaggerItem>
+          <TiltCard key={c.name} maxTilt={6}>
+            <SwipeableChordCard chord={c} onPlay={() => strum(c.name)} />
+          </TiltCard>
         ))}
-      </StaggerGrid>
+      </div>
 
       {filtered.length === 0 && (
         <p className="mt-12 text-center text-text-soft">
