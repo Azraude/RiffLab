@@ -8,6 +8,7 @@ import {
   type Recording,
 } from '@/lib/db';
 import { useRecorder } from '@/hooks/useRecorder';
+import { WaveformView } from './WaveformView';
 import { Mic, MicOff, Play, Pause, Trash2, Square, Share2 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -234,11 +235,18 @@ function RecordingRow({ recording }: { recording: Recording }) {
           <span className="text-text-muted">{dateLabel}</span>
           <span className="font-mono text-text-soft">{formatTime(recording.durationMs)}</span>
         </div>
-        {/* Progress bar */}
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-border">
-          <div
-            className="h-full bg-gold transition-[width] duration-100"
-            style={{ width: `${progress * 100}%` }}
+        {/* Waveform interactive (click pour seek) */}
+        <div className="mt-1.5">
+          <WaveformView
+            blob={recording.blob}
+            progress={progress}
+            onSeek={(ratio) => {
+              if (!audio) return;
+              audio.currentTime = ratio * audio.duration;
+              setProgress(ratio);
+            }}
+            height={28}
+            bars={100}
           />
         </div>
       </div>
