@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { ChordDiagram } from '@/components/chord/ChordDiagram';
@@ -48,6 +49,7 @@ function pickOfTheDay() {
 }
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().limit(3).toArray(), []);
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
   const weeklyRiff = useMemo(() => getRiffOfTheWeek(), []);
@@ -126,13 +128,17 @@ export function Dashboard() {
             />
           </div>
           <div className="relative">
-            <div className="eyebrow">Entraînement du jour · {todayLabel}</div>
+            <div className="eyebrow">{t('dashboard.dailyTraining')} · {todayLabel}</div>
             <h2 className="display mt-3 text-display-sm md:text-display-lg">
-              Travaille l'accord <span className="text-gold">{chord.name}</span>
+              {t('dashboard.workChordPrefix')}{' '}
+              <span className="text-gold">{chord.name}</span>
             </h2>
             <p className="mt-3 max-w-xl text-sm text-text-muted md:text-base">
-              Combine-le avec la gamme <strong className="text-text">{scale.name}</strong> en{' '}
-              <strong className="text-text">{key}</strong> pour {scale.mood.toLowerCase()}.
+              {t('dashboard.combineWithScale', {
+                scale: scale.name,
+                key,
+                mood: scale.mood.toLowerCase(),
+              })}
             </p>
 
             {/* Mobile : ChordDiagram dominant in lg, centered under the title */}
@@ -142,17 +148,17 @@ export function Dashboard() {
 
             <div className="mt-5 grid grid-cols-2 gap-4 md:flex md:flex-wrap md:items-center md:gap-7">
               <div>
-                <div className="label-small">Accord</div>
+                <div className="label-small">{t('dashboard.chord')}</div>
                 <div className="mt-1 font-mono text-lg font-semibold">{chord.name}</div>
               </div>
               <div>
-                <div className="label-small">Gamme</div>
+                <div className="label-small">{t('dashboard.scale')}</div>
                 <div className="mt-1 font-mono text-lg font-semibold">
                   {key} {scale.shortName}
                 </div>
               </div>
               <div>
-                <div className="label-small">Catégorie</div>
+                <div className="label-small">{t('dashboard.category')}</div>
                 <div className="mt-1 font-mono text-lg font-semibold">{scale.category}</div>
               </div>
 
@@ -167,13 +173,13 @@ export function Dashboard() {
                 onClick={() => strum(chord.name)}
                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
               >
-                <Play size={14} /> Entendre l'accord
+                <Play size={14} /> {t('dashboard.hearChord')}
               </button>
               <Link
                 to="/scales"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
               >
-                Voir la gamme sur le manche
+                {t('dashboard.viewScale')}
               </Link>
               <button
                 type="button"
@@ -188,7 +194,7 @@ export function Dashboard() {
                 )}
               >
                 <Check size={16} />
-                {practicedToday ? "Fait aujourd'hui" : "J'ai pratiqué aujourd'hui"}
+                {practicedToday ? t('dashboard.practicedToday') : t('dashboard.practicePrompt')}
               </button>
             </div>
           </div>
@@ -227,7 +233,7 @@ export function Dashboard() {
           </span>
 
           <div className="relative">
-            <CardTitle>Série</CardTitle>
+            <CardTitle>{t('dashboard.streak')}</CardTitle>
             <div className="mt-1 flex items-center justify-center gap-2">
               <motion.div
                 key={streak ?? 0}
@@ -260,7 +266,7 @@ export function Dashboard() {
               )}
             </div>
             <div className="label-small mt-2">
-              jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée
+              {(streak ?? 0) > 1 ? t('dashboard.streakDaysOther') : t('dashboard.streakDaysOne')}
             </div>
           </div>
           <div className="mt-4 flex justify-center gap-1.5">
@@ -308,13 +314,13 @@ export function Dashboard() {
               to="/stats"
               className="inline-block text-xs text-gold hover:text-gold-bright"
             >
-              Voir mes stats →
+              {t('dashboard.viewStats')}
             </Link>
             <Link
               to="/plan"
               className="inline-block text-xs text-gold hover:text-gold-bright"
             >
-              Mon plan →
+              {t('dashboard.viewPlan')}
             </Link>
           </div>
         </div>
