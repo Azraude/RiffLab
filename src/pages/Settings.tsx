@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
@@ -8,11 +9,23 @@ import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { Check, Lock, Volume2 } from 'lucide-react';
+import { Check, Lock, Volume2, GraduationCap, Compass } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
   const prefs = usePrefs();
+  const navigate = useNavigate();
+
+  const replayTutorial = () => {
+    prefs.setOnboardingCompleted(false);
+    prefs.setTutorialCompleted(false);
+    navigate('/dashboard');
+  };
+
+  const replayTutorialOnly = () => {
+    prefs.setTutorialCompleted(false);
+    navigate('/dashboard');
+  };
   const { strum } = useAudio();
 
   const exportLib = async () => {
@@ -174,6 +187,34 @@ export function Settings() {
                 }}
               />
             ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="mb-3 flex items-center gap-2">
+            <GraduationCap size={16} className="text-gold" />
+            <h3 className="display text-display-sm">Tutoriel</h3>
+          </div>
+          <p className="mb-4 text-sm text-text-muted">
+            Revoir la visite guidée de l'app (4 étapes spotlightées + outro).
+            Pratique si tu veux montrer RiffLab à quelqu'un ou que tu as zappé
+            au premier lancement.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={replayTutorialOnly}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
+            >
+              <Compass size={14} /> Refaire le tuto
+            </button>
+            <button
+              type="button"
+              onClick={replayTutorial}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
+            >
+              <GraduationCap size={14} /> Refaire onboarding + tuto
+            </button>
           </div>
         </Card>
 
