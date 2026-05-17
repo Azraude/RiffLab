@@ -8,6 +8,7 @@
 import * as Tone from 'tone';
 import { TUNINGS, midiToFreq, midiToNoteWithOctave, type TuningId } from './theory';
 import { buildVoices, type StrumSoundId, type SynthVoice } from './strumSounds';
+import { prewarmCabinets } from './ampChain';
 
 let initialized = false;
 let voices: SynthVoice[] = [];
@@ -48,6 +49,12 @@ export async function initAudio(timbre: StrumSoundId = 'electric-real-sampled'):
   reverb = new Tone.Reverb({ decay: 1.6, wet: 0.18 });
   await reverb.generate();
   reverb.connect(masterLowpass);
+
+  // Pre-warm les IRs cabinet en parallèle — évite le pluck silencieux
+  // au premier strum quand l'utilisateur sélectionne un preset ampChain.
+  // Fire-and-forget : si ça échoue (browser ancien sans OfflineAudioContext),
+  // le Convolver tombe en silence inoffensif.
+  void prewarmCabinets();
 
   activeTimbre = timbre;
   voices = buildVoices(timbre, reverb);
