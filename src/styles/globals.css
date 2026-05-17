@@ -282,3 +282,84 @@
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.6s linear infinite;
 }
+
+/* ─── A11y enhancements (TASK I) ────────────────────────────────── */
+
+/* Focus visible — ring or sur tous les éléments interactifs au clavier.
+   :focus-visible déclenche uniquement sur navigation clavier (Tab),
+   pas au clic souris. Style cohérent partout au lieu du native bleu. */
+:focus-visible {
+  outline: 2px solid rgb(var(--gold-bright));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible {
+  outline-offset: 3px;
+}
+/* Inputs : ring gold inset au lieu d'outline pour rester dans le layout */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgb(var(--bg)),
+    0 0 0 4px rgb(var(--gold-bright));
+}
+
+/* Skip-link visible au focus seulement — Tab depuis le haut du document
+   atteint un lien "Aller au contenu" qui saute la sidebar. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 16px;
+  background: rgb(var(--gold));
+  color: rgb(var(--bg));
+  font-weight: 600;
+  border-radius: 8px;
+  transform: translateY(-200%);
+  transition: transform 150ms ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* prefers-reduced-motion — désactive les animations gourmandes pour les
+   users qui ont demandé le motion réduit dans leur OS. On garde les
+   micro-transitions (≤200ms) qui aident l'UX, on coupe les anims
+   permanentes (sheen, flicker, sparkles, trophy pulse). */
+@media (prefers-reduced-motion: reduce) {
+  .daily-gold-sheen::before,
+  .skeleton-shimmer,
+  .streak-trophy-glow,
+  .streak-sparkle-1,
+  .streak-sparkle-2,
+  .streak-sparkle-3,
+  .rifflab-flame-flicker {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen-reader only — pour les labels invisibles */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -45,6 +45,8 @@ export function PWAUpdateToast() {
       {needRefresh && (
         <motion.div
           key="refresh"
+          role="status"
+          aria-live="polite"
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 60 }}
@@ -84,6 +86,8 @@ export function PWAUpdateToast() {
       {offlineReady && !needRefresh && (
         <motion.div
           key="offline"
+          role="status"
+          aria-live="polite"
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 60 }}

@@ -16,6 +16,9 @@ export function Layout() {
   return (
     <KeyboardShortcutsProvider>
     <div className="min-h-screen bg-bg">
+      <a href="#main-content" className="skip-link">
+        Aller au contenu principal
+      </a>
       {/*
         IMPORTANT : grid-cols-[minmax(0,1fr)] explicite en mobile (pas
         seulement md:). Sans ça, en CSS Grid sans template, les items
@@ -28,7 +31,11 @@ export function Layout() {
       */}
       <div className="grid min-h-screen grid-cols-[minmax(0,1fr)] md:grid-cols-[240px_minmax(0,1fr)]">
         <Sidebar />
-        <main className="relative min-w-0 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="relative min-w-0 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0"
+        >
           <div className="mx-auto min-w-0 max-w-[1400px] px-5 py-7 md:px-12 md:py-9">
             <AnimatePresence mode="wait">
               <motion.div
