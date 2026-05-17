@@ -74,6 +74,8 @@ export type Recording = {
   durationMs: number;
   name?: string;            // titre custom optionnel
   createdAt: number;
+  /** Si true, l'audio est destiné à un playback en boucle (looper pedal) */
+  isLoop?: boolean;
 };
 
 export type PracticePathNode = {

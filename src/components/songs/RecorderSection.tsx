@@ -9,7 +9,16 @@ import {
 } from '@/lib/db';
 import { useRecorder } from '@/hooks/useRecorder';
 import { WaveformView } from './WaveformView';
-import { Mic, MicOff, Play, Pause, Trash2, Square, Share2 } from 'lucide-react';
+import {
+  Mic,
+  MicOff,
+  Play,
+  Pause,
+  Trash2,
+  Square,
+  Share2,
+  Repeat,
+} from 'lucide-react';
 import clsx from 'clsx';
 
 /**
@@ -23,6 +32,9 @@ import clsx from 'clsx';
 export function RecorderSection({ songId }: { songId: string }) {
   const recordings = useLiveQuery(() => listRecordings(songId), [songId]);
   const recorder = useRecorder();
+  // Loop mode : si true, la prochaine prise sera sauvée avec isLoop=true et
+  // l'audio jouera en boucle infinie à la lecture (looper pedal MVP).
+  const [loopMode, setLoopMode] = useState(false);
 
   // À l'arrêt du recorder, persister le blob
   useEffect(() => {
@@ -34,6 +46,7 @@ export function RecorderSection({ songId }: { songId: string }) {
         mimeType: recorder.mimeType,
         durationMs: Math.round(recorder.durationMs),
         createdAt: Date.now(),
+        isLoop: loopMode,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,16 +71,39 @@ export function RecorderSection({ songId }: { songId: string }) {
             className={clsx(
               'flex h-16 w-16 shrink-0 items-center justify-center rounded-full transition-all',
               isRecording
-                ? 'bg-danger text-white animate-pulse shadow-[0_0_24px_rgba(212,104,94,0.6)]'
-                : 'bg-danger/15 text-danger hover:bg-danger/25 hover:scale-105',
+                ? loopMode
+                  ? 'bg-gold text-bg animate-pulse shadow-[0_0_24px_rgba(245,217,122,0.6)]'
+                  : 'bg-danger text-white animate-pulse shadow-[0_0_24px_rgba(212,104,94,0.6)]'
+                : loopMode
+                  ? 'bg-gold/15 text-gold hover:bg-gold/25 hover:scale-105'
+                  : 'bg-danger/15 text-danger hover:bg-danger/25 hover:scale-105',
               isRequesting && 'opacity-60'
             )}
           >
             {isRecording ? (
               <Square size={22} fill="currentColor" />
+            ) : loopMode ? (
+              <Repeat size={26} strokeWidth={2} />
             ) : (
               <Mic size={26} strokeWidth={2} />
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLoopMode((m) => !m)}
+            disabled={isRecording || isRequesting}
+            aria-pressed={loopMode}
+            aria-label="Mode loop"
+            className={clsx(
+              'inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors',
+              loopMode
+                ? 'border-gold bg-gold/15 text-gold-bright'
+                : 'border-border bg-surface text-text-soft hover:border-gold-soft hover:text-gold'
+            )}
+          >
+            <Repeat size={12} />
+            {loopMode ? 'Loop ON' : 'Loop'}
           </button>
 
           <div className="min-w-0 flex-1">
@@ -146,12 +182,13 @@ function RecordingRow({ recording }: { recording: Recording }) {
     const url = URL.createObjectURL(recording.blob);
     const a = new Audio(url);
     a.preload = 'metadata';
+    a.loop = recording.isLoop === true;
     setAudio(a);
     return () => {
       a.pause();
       URL.revokeObjectURL(url);
     };
-  }, [recording.blob]);
+  }, [recording.blob, recording.isLoop]);
 
   useEffect(() => {
     if (!audio) return;
@@ -159,8 +196,12 @@ function RecordingRow({ recording }: { recording: Recording }) {
       if (audio.duration) setProgress(audio.currentTime / audio.duration);
     };
     const onEnd = () => {
-      setPlaying(false);
-      setProgress(0);
+      // En mode loop, l'audio ne déclenche pas 'ended' (loop=true) — on
+      // ne réinitialise le state que si ce n'est PAS un loop.
+      if (!recording.isLoop) {
+        setPlaying(false);
+        setProgress(0);
+      }
     };
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('ended', onEnd);
@@ -168,7 +209,7 @@ function RecordingRow({ recording }: { recording: Recording }) {
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('ended', onEnd);
     };
-  }, [audio]);
+  }, [audio, recording.isLoop]);
 
   const toggle = () => {
     if (!audio) return;
@@ -232,7 +273,17 @@ function RecordingRow({ recording }: { recording: Recording }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2 text-xs">
-          <span className="text-text-muted">{dateLabel}</span>
+          <span className="flex items-center gap-1.5 text-text-muted">
+            {recording.isLoop && (
+              <span
+                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold"
+                title="Audio en lecture loop infinie"
+              >
+                <Repeat size={9} /> Loop
+              </span>
+            )}
+            <span>{dateLabel}</span>
+          </span>
           <span className="font-mono text-text-soft">{formatTime(recording.durationMs)}</span>
         </div>
         {/* Waveform interactive (click pour seek) */}
