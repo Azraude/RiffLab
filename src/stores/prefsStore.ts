@@ -19,6 +19,7 @@ type PrefsState = {
   strumSound: StrumSoundId;
   effects3D: boolean;
   onboardingCompleted: boolean;
+  tutorialCompleted: boolean;
   level: PlayerLevel;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
@@ -31,6 +32,7 @@ type PrefsState = {
   setStrumSound: (id: StrumSoundId) => void;
   toggleEffects3D: () => void;
   setOnboardingCompleted: (done: boolean) => void;
+  setTutorialCompleted: (done: boolean) => void;
   setLevel: (level: PlayerLevel) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
@@ -49,6 +51,7 @@ export const usePrefs = create<PrefsState>()(
       strumSound: 'electric-real-sampled',
       effects3D: true,
       onboardingCompleted: false,
+      tutorialCompleted: false,
       level: 'beginner',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
@@ -61,6 +64,7 @@ export const usePrefs = create<PrefsState>()(
       setStrumSound: (strumSound) => set({ strumSound }),
       toggleEffects3D: () => set((s) => ({ effects3D: !s.effects3D })),
       setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
+      setTutorialCompleted: (tutorialCompleted) => set({ tutorialCompleted }),
       setLevel: (level) => set({ level }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
@@ -107,6 +111,7 @@ export const usePrefs = create<PrefsState>()(
             : p.strumSound ?? 'electric-real-sampled',
           effects3D: p.effects3D ?? true,
           onboardingCompleted: p.onboardingCompleted ?? true, // users existants : skip onboarding
+          tutorialCompleted: p.tutorialCompleted ?? true, // users existants : skip tutorial
           level: p.level ?? 'beginner',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;

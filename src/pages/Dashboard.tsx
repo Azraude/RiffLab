@@ -27,6 +27,7 @@ import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import { CommunityRiffCard } from '@/components/dashboard/CommunityRiffCard';
 import { DailyChallengeCard } from '@/components/dashboard/DailyChallengeCard';
 import { Onboarding } from '@/components/onboarding/Onboarding';
+import { Tutorial } from '@/components/onboarding/Tutorial';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -51,8 +52,16 @@ export function Dashboard() {
   const { chord, scale, key } = useMemo(pickOfTheDay, []);
   const weeklyRiff = useMemo(() => getRiffOfTheWeek(), []);
   const onboardingCompleted = usePrefs((s) => s.onboardingCompleted);
+  const tutorialCompleted = usePrefs((s) => s.tutorialCompleted);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
   const showOnboarding = !onboardingCompleted && !onboardingDismissed;
+  // Tutorial s'affiche uniquement après onboarding terminé, sur Dashboard
+  const showTutorial =
+    onboardingCompleted &&
+    !tutorialCompleted &&
+    !tutorialDismissed &&
+    !showOnboarding;
   const { strum } = useAudio();
   const fretboardSkin = usePrefs((s) => s.fretboardSkin);
 
@@ -85,6 +94,7 @@ export function Dashboard() {
       {showOnboarding && (
         <Onboarding onDone={() => setOnboardingDismissed(true)} />
       )}
+      {showTutorial && <Tutorial onDone={() => setTutorialDismissed(true)} />}
       <PageHeader title={<DashboardGreeting name="Melvin" />} />
 
       {/* Daily hero */}
@@ -167,6 +177,7 @@ export function Dashboard() {
               </Link>
               <button
                 type="button"
+                data-tutorial-id="practice-button"
                 onClick={markPracticed}
                 disabled={practicedToday}
                 className={clsx(
@@ -184,7 +195,10 @@ export function Dashboard() {
         </div>
 
         {/* Streak card — trophée doré flamboyant (TASK E session 17) */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-6 text-center shadow-gold-strong streak-trophy-glow">
+        <div
+          data-tutorial-id="streak-card"
+          className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-6 text-center shadow-gold-strong streak-trophy-glow"
+        >
           {/* Radial glow centrale + sparkles */}
           <div
             className="pointer-events-none absolute inset-0"
@@ -307,7 +321,9 @@ export function Dashboard() {
       </div>
 
       {/* Daily Challenge — tab du jour pickée déterministe (TASK E) */}
-      <DailyChallengeCard />
+      <div data-tutorial-id="daily-challenge">
+        <DailyChallengeCard />
+      </div>
 
       {/* Scale preview */}
       <div className="mt-10">

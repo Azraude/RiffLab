@@ -74,7 +74,10 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="hidden border-r border-border bg-surface px-5 py-7 md:flex md:flex-col">
+    <aside
+      data-tutorial-id="sidebar-nav"
+      className="hidden border-r border-border bg-surface px-5 py-7 md:flex md:flex-col"
+    >
       <Link to="/" className="mb-8 flex items-center gap-2.5">
         <RiffLabLogo size={26} />
         <span className="display text-[28px] tracking-wide">RiffLab</span>
