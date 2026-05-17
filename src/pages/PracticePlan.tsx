@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import { Confetti } from '@/components/ui/Confetti';
+import { PlanTutorial } from '@/components/onboarding/PlanTutorial';
+import { usePrefs } from '@/stores/prefsStore';
 import {
   PATH_LEVELS,
   listCompletedNodes,
@@ -50,6 +52,17 @@ export function PracticePlan() {
   );
   const states = useMemo(() => computeNodeStates(completedIds), [completedIds]);
   const [openLevel, setOpenLevel] = useState<PathLevel | null>(null);
+
+  // Plan tutorial — déclenché au PREMIER click sur n'importe quel node
+  const planTutorialSeen = usePrefs((s) => s.planTutorialSeen);
+  const [planTutorialOpen, setPlanTutorialOpen] = useState(false);
+  const handleNodeClickWithTutorial = (level: PathLevel) => {
+    setOpenLevel(level);
+    if (!planTutorialSeen && !planTutorialOpen) {
+      // Léger délai pour laisser le drawer s'ouvrir (cible plan-drawer-chips)
+      window.setTimeout(() => setPlanTutorialOpen(true), 400);
+    }
+  };
 
   // Auto-validation : live query sur toutes les interactions du user
   const interactions = useLiveQuery(() => listInteractions(), []) ?? [];
@@ -133,7 +146,10 @@ export function PracticePlan() {
   return (
     <>
       {/* Sticky progress bar — sous le PageHeader, top de la page */}
-      <div className="sticky top-0 z-30 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:-mt-9 md:px-12">
+      <div
+        data-tutorial-id="plan-progress-bar"
+        className="sticky top-0 z-30 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:-mt-9 md:px-12"
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-text-muted">
             <Sparkles size={13} className="text-gold-soft" />
@@ -225,9 +241,14 @@ export function PracticePlan() {
       </div>
 
       {/* Zigzag path */}
-      <div className="mx-auto max-w-md px-4 py-6">
-        <PathDisplay states={states} onLevelClick={setOpenLevel} />
+      <div data-tutorial-id="plan-path" className="mx-auto max-w-md px-4 py-6">
+        <PathDisplay states={states} onLevelClick={handleNodeClickWithTutorial} />
       </div>
+
+      {/* Plan tutorial — first time only, triggered au click sur un node */}
+      {planTutorialOpen && (
+        <PlanTutorial onDone={() => setPlanTutorialOpen(false)} />
+      )}
 
       {/* Level drawer */}
       <LevelDrawer
@@ -350,6 +371,7 @@ function PathNode({
         type="button"
         onClick={onClick}
         disabled={isLocked}
+        data-tutorial-id={isCurrent || state === 'available' ? 'plan-node-active' : undefined}
         aria-label={`Niveau ${level.order} : ${level.title}`}
         whileTap={!isLocked ? { scale: 0.94 } : undefined}
         animate={
@@ -590,7 +612,7 @@ function LevelDrawer({
 
                   {/* Accords à maîtriser */}
                   {level.chordsToLearn.length > 0 && (
-                    <div className="mt-5">
+                    <div className="mt-5" data-tutorial-id="plan-drawer-chips">
                       <div className="label-small mb-2 flex items-center gap-1.5">
                         <Grid3x3 size={11} /> Accords à maîtriser
                       </div>

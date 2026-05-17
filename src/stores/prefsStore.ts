@@ -20,6 +20,7 @@ type PrefsState = {
   effects3D: boolean;
   onboardingCompleted: boolean;
   tutorialCompleted: boolean;
+  planTutorialSeen: boolean;
   level: PlayerLevel;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
@@ -33,6 +34,7 @@ type PrefsState = {
   toggleEffects3D: () => void;
   setOnboardingCompleted: (done: boolean) => void;
   setTutorialCompleted: (done: boolean) => void;
+  setPlanTutorialSeen: (seen: boolean) => void;
   setLevel: (level: PlayerLevel) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
@@ -52,6 +54,7 @@ export const usePrefs = create<PrefsState>()(
       effects3D: true,
       onboardingCompleted: false,
       tutorialCompleted: false,
+      planTutorialSeen: false,
       level: 'beginner',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
@@ -65,6 +68,7 @@ export const usePrefs = create<PrefsState>()(
       toggleEffects3D: () => set((s) => ({ effects3D: !s.effects3D })),
       setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
       setTutorialCompleted: (tutorialCompleted) => set({ tutorialCompleted }),
+      setPlanTutorialSeen: (planTutorialSeen) => set({ planTutorialSeen }),
       setLevel: (level) => set({ level }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
@@ -110,6 +114,7 @@ export const usePrefs = create<PrefsState>()(
           effects3D: p.effects3D ?? true,
           onboardingCompleted: p.onboardingCompleted ?? true,
           tutorialCompleted: p.tutorialCompleted ?? true,
+          planTutorialSeen: p.planTutorialSeen ?? true, // users existants : skip
           level: p.level ?? 'beginner',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;

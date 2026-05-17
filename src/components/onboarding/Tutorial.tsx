@@ -1,16 +1,17 @@
 /**
- * Tutorial overlay — tour guidé Notion/Linear-style après l'onboarding.
+ * Tutorial overlay — tour guidé Notion/Linear-style.
  *
- * Affiché sur Dashboard quand `tutorialCompleted` est false. Spotlight
- * sur des éléments-clés via leur data-tutorial-id, avec tooltip à côté.
- * 5-6 steps, skip visible partout, stocke la complétion dans prefsStore.
+ * Composant générique réutilisable :
+ * - `Tutorial` = wrapper Dashboard avec les 5 steps onboarding stockés
+ *   dans prefs.tutorialCompleted (TASK J session 20)
+ * - `TutorialOverlay` = primitive réutilisable qui prend `steps` + `onDone`,
+ *   utilisée aussi par PlanTutorial (TASK 3 session 21)
  *
  * Approche :
- * - Backdrop noir 75% opacité full-screen
- * - Hole spotlight = box-shadow inset géant qui laisse une zone claire
- *   autour de l'élément cible (via getBoundingClientRect)
- * - Tooltip positionné au-dessus ou en-dessous du target selon l'espace
- * - "Suivant" → step++, "Skip" → close, dernier step = "Terminé"
+ * - Backdrop SVG mask spotlight via getBoundingClientRect du target
+ * - Tooltip positionné au-dessus ou en-dessous selon l'espace
+ * - Step "outro" possible (targetId = null → backdrop plein + modal centré)
+ * - Confetti gold optionnel sur le dernier step
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -18,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight } from 'lucide-react';
 import { usePrefs } from '@/stores/prefsStore';
 
-type Step = {
+export type TutorialStep = {
   /** Si null, c'est un step "outro" centré sans spotlight */
   targetId: string | null;
   title: string;
@@ -31,7 +32,10 @@ type Step = {
   confetti?: boolean;
 };
 
-const STEPS: Step[] = [
+const HOLE_PADDING = 8;
+const TOOLTIP_GAP = 16;
+
+const DASHBOARD_STEPS: TutorialStep[] = [
   {
     targetId: 'practice-button',
     title: "Marque ta session quotidienne",
@@ -65,20 +69,63 @@ const STEPS: Step[] = [
   },
 ];
 
-const HOLE_PADDING = 8;
-const TOOLTIP_GAP = 16;
-
+/**
+ * Tutorial Dashboard — appelé depuis Dashboard.tsx avec onDone qui
+ * marque tutorialDismissed en local state. Persiste tutorialCompleted
+ * dans prefsStore.
+ */
 export function Tutorial({ onDone }: { onDone: () => void }) {
   const setTutorialCompleted = usePrefs((s) => s.setTutorialCompleted);
+  return (
+    <TutorialOverlay
+      steps={DASHBOARD_STEPS}
+      label="Tour guidé"
+      onDone={() => {
+        setTutorialCompleted(true);
+        onDone();
+      }}
+    />
+  );
+}
+
+/**
+ * TutorialOverlay — primitive réutilisable.
+ * Pas de prefs hook ici : c'est le wrapper qui gère la persistance via
+ * son `onDone`.
+ */
+export function TutorialOverlay({
+  steps,
+  label = 'Tour guidé',
+  onDone,
+}: {
+  steps: TutorialStep[];
+  label?: string;
+  onDone: () => void;
+}) {
   const [stepIdx, setStepIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [confettiOn, setConfettiOn] = useState(false);
   const observerRef = useRef<ResizeObserver | null>(null);
 
-  const step = STEPS[stepIdx];
+  const step = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
+
+  const finish = () => {
+    if (step?.confetti) {
+      setConfettiOn(true);
+      window.setTimeout(() => onDone(), 700);
+    } else {
+      onDone();
+    }
+  };
+
+  const goNext = () => {
+    if (isLast) return finish();
+    setStepIdx((s) => s + 1);
+  };
 
   useEffect(() => {
     if (!step) return;
-    // Step "outro" sans cible : rien à scroll/observer, juste un modal centré
     if (step.targetId === null) {
       setRect(null);
       return;
@@ -87,7 +134,6 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
       `[data-tutorial-id="${step.targetId}"]`,
     );
     if (!target) {
-      // Cible absente : skip ce step
       const t = window.setTimeout(() => goNext(), 250);
       return () => window.clearTimeout(t);
     }
@@ -106,37 +152,12 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
       ro.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIdx]);
-
-  const isLast = stepIdx === STEPS.length - 1;
-  const [confettiOn, setConfettiOn] = useState(false);
-
-  const goNext = () => {
-    if (isLast) return finish();
-    setStepIdx((s) => s + 1);
-  };
-
-  const finish = () => {
-    // Si le dernier step demande des confettis, on attend 700ms que
-    // l'animation joue avant de fermer.
-    if (step?.confetti) {
-      setConfettiOn(true);
-      window.setTimeout(() => {
-        setTutorialCompleted(true);
-        onDone();
-      }, 700);
-    } else {
-      setTutorialCompleted(true);
-      onDone();
-    }
-  };
+  }, [stepIdx, steps]);
 
   if (!step) return null;
-
   const portalRoot = typeof document !== 'undefined' ? document.body : null;
   if (!portalRoot) return null;
 
-  // Calcul positions
   const hole = rect
     ? {
         x: rect.left - HOLE_PADDING,
@@ -159,7 +180,6 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
         className="fixed inset-0 z-[90]"
         aria-live="polite"
       >
-        {/* Backdrop avec hole spotlight via SVG mask (plus propre que box-shadow) */}
         {hole ? (
           <svg
             className="absolute inset-0 h-full w-full"
@@ -187,7 +207,6 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
               fill="rgba(0,0,0,0.78)"
               mask="url(#tutorial-hole)"
             />
-            {/* Outline gold autour du hole */}
             <rect
               x={hole.x}
               y={hole.y}
@@ -206,26 +225,22 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
           <div className="absolute inset-0 bg-black/78" />
         )}
 
-        {/* Tooltip */}
         <motion.div
           key={`tip-${stepIdx}`}
           initial={{ opacity: 0, y: tooltipPos.placement === 'top' ? 8 : -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.1 }}
           className="absolute z-10 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-gold bg-gradient-to-b from-surface to-bg p-4 shadow-gold-strong"
-          style={{
-            left: tooltipPos.x,
-            top: tooltipPos.y,
-          }}
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
           role="dialog"
-          aria-label={`Tutoriel — étape ${stepIdx + 1}/${STEPS.length}`}
+          aria-label={`${label} — étape ${stepIdx + 1}/${steps.length}`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="eyebrow flex items-center gap-1.5">
               <span className="rounded-full bg-gold/15 px-2 py-0.5 font-mono text-[10px] text-gold-bright">
-                {stepIdx + 1}/{STEPS.length}
+                {stepIdx + 1}/{steps.length}
               </span>
-              <span>Tour guidé</span>
+              <span>{label}</span>
             </div>
             <button
               type="button"
@@ -257,7 +272,6 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
           </div>
         </motion.div>
 
-        {/* Confetti gold subtle au click sur le CTA de l'outro step */}
         {confettiOn && <GoldConfetti />}
       </motion.div>
     </AnimatePresence>,
@@ -265,11 +279,6 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
   );
 }
 
-/**
- * GoldConfetti — volée de particules gold qui tombent du centre vers le bas.
- * Subtile : 24 particules, 700ms, gold-bright + opacity decay.
- * Pas de lib — juste CSS via framer-motion.
- */
 function GoldConfetti() {
   const particles = Array.from({ length: 24 }, (_, i) => i);
   return (
@@ -278,25 +287,17 @@ function GoldConfetti() {
         const angle = (i / 24) * Math.PI * 2;
         const distance = 120 + Math.random() * 200;
         const dx = Math.cos(angle) * distance;
-        const dy = Math.sin(angle) * distance + 100; // bias vers le bas
+        const dy = Math.sin(angle) * distance + 100;
         const rotate = (Math.random() - 0.5) * 360;
         const delay = Math.random() * 0.1;
         return (
           <motion.span
             key={i}
             initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 0.6 }}
-            animate={{
-              x: dx,
-              y: dy,
-              opacity: 0,
-              rotate,
-              scale: 1,
-            }}
+            animate={{ x: dx, y: dy, opacity: 0, rotate, scale: 1 }}
             transition={{ duration: 0.7, delay, ease: 'easeOut' }}
             className="absolute left-1/2 top-1/2 h-2 w-2 rounded-sm bg-gold-bright"
-            style={{
-              boxShadow: '0 0 8px rgb(var(--gold-glow) / 0.7)',
-            }}
+            style={{ boxShadow: '0 0 8px rgb(var(--gold-glow) / 0.7)' }}
           />
         );
       })}
@@ -309,20 +310,16 @@ function computeTooltipPosition(
   prefer: 'top' | 'bottom' = 'bottom',
 ): { x: number; y: number; placement: 'top' | 'bottom' } {
   const TIP_W = 360;
-  const TIP_H = 200; // estimation conservative
+  const TIP_H = 200;
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const viewportH = typeof window !== 'undefined' ? window.innerHeight : 768;
-
   if (!rect) {
-    // Centre écran si pas de cible
     return {
       x: Math.max(16, (viewportW - TIP_W) / 2),
       y: Math.max(80, (viewportH - TIP_H) / 2),
       placement: 'bottom',
     };
   }
-
-  // Choisit le côté selon l'espace disponible
   const spaceTop = rect.top;
   const spaceBottom = viewportH - rect.bottom;
   const placement: 'top' | 'bottom' =
@@ -333,15 +330,11 @@ function computeTooltipPosition(
         : spaceTop >= TIP_H + TOOLTIP_GAP
           ? 'top'
           : 'bottom';
-
   const y =
     placement === 'top'
       ? Math.max(16, rect.top - TIP_H - TOOLTIP_GAP)
       : Math.min(viewportH - TIP_H - 16, rect.bottom + TOOLTIP_GAP);
-
-  // Centre horizontalement sur la cible, clampé aux bords
   const idealX = rect.left + rect.width / 2 - TIP_W / 2;
   const x = Math.max(16, Math.min(viewportW - TIP_W - 16, idealX));
-
   return { x, y, placement };
 }
