@@ -29,7 +29,14 @@ export function Stats() {
           <div className="label-small">Série actuelle</div>
           <div className="mt-2 flex items-baseline gap-2">
             <div className="display text-display-lg text-gold">{streak ?? 0}</div>
-            {(streak ?? 0) > 0 && <Flame size={22} className="text-gold-bright" />}
+            {(streak ?? 0) > 0 && (
+              <Flame
+                size={22}
+                className="text-gold-bright"
+                fill="currentColor"
+                style={{ filter: 'drop-shadow(0 0 4px rgb(var(--gold-glow) / 0.5))' }}
+              />
+            )}
           </div>
           <div className="mt-1 text-xs text-text-soft">
             jour{(streak ?? 0) > 1 ? 's' : ''} d'affilée

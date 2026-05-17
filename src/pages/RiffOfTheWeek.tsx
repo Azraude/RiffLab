@@ -153,7 +153,13 @@ export function RiffOfTheWeek() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <DifficultyBars difficulty={r.difficulty} compact />
-                  {isCurrent && <Flame size={14} className="text-gold-bright" />}
+                  {isCurrent && (
+                    <Flame
+                      size={14}
+                      className="text-gold-bright"
+                      fill="currentColor"
+                    />
+                  )}
                 </div>
               </div>
             );

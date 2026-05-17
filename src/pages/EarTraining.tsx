@@ -316,7 +316,13 @@ function Game({
             <div className="label-small">Série</div>
             <div className="mt-1 flex items-baseline justify-center gap-1">
               <span className="display text-display-sm text-gold">{streak}</span>
-              {streak > 0 && <Flame size={16} className="text-gold-bright" />}
+              {streak > 0 && (
+                <Flame
+                  size={16}
+                  className="text-gold-bright"
+                  fill="currentColor"
+                />
+              )}
             </div>
             <div className="mt-0.5 text-xs text-text-soft">d'affilée</div>
           </div>
