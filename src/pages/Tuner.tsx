@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { usePitchDetector, midiToFreq } from '@/hooks/usePitchDetector';
@@ -7,7 +8,9 @@ import { TUNINGS, NOTE_NAMES, pitchClass } from '@/lib/theory';
 import { Mic, MicOff, Play, X, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
-const IN_TUNE_CENTS = 5;
+// Trois zones de tolérance : perfect (±3 = vert) / close (±10 = orange) / loin
+const PERFECT_CENTS = 3;
+const CLOSE_CENTS = 10;
 
 // Tolérance large pour le snap auto-string (±300 cents = ±3 semitones)
 const AUTO_SNAP_RANGE = 300;
@@ -47,19 +50,19 @@ export function Tuner() {
     return { targetIdx, targetMidi, targetFreq, cents };
   }, [targetIdx, pitch.smoothedFrequency, openMidis]);
 
-  // Vibration mobile une seule fois quand on entre dans la zone in-tune
+  // Vibration mobile une seule fois quand on entre dans la zone perfect
   useEffect(() => {
     if (!targetData) {
       lastInTuneRef.current = false;
       return;
     }
-    const isInTune = Math.abs(targetData.cents) <= IN_TUNE_CENTS;
-    if (isInTune && !lastInTuneRef.current) {
+    const isPerfect = Math.abs(targetData.cents) <= PERFECT_CENTS;
+    if (isPerfect && !lastInTuneRef.current) {
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         navigator.vibrate(50);
       }
     }
-    lastInTuneRef.current = isInTune;
+    lastInTuneRef.current = isPerfect;
   }, [targetData]);
 
   // Référence tone — 2 sec sine wave au pitch cible
@@ -149,8 +152,9 @@ export function Tuner() {
   // ─── Granted : live tuner UI ─────────────────────────────────
 
   const noteName = targetData ? noteWithOctave(targetData.targetMidi) : null;
-  const isInTune = targetData ? Math.abs(targetData.cents) <= IN_TUNE_CENTS : false;
-  const isClose = targetData ? Math.abs(targetData.cents) <= 15 : false;
+  const absCents = targetData ? Math.abs(targetData.cents) : 0;
+  const isPerfect = targetData ? absCents <= PERFECT_CENTS : false;
+  const isClose = targetData ? absCents <= CLOSE_CENTS : false;
   // Clamp cents pour l'aiguille (visuel -50 à +50)
   const needleCents = targetData ? Math.max(-50, Math.min(50, targetData.cents)) : 0;
   const needlePct = ((needleCents + 50) / 100) * 100;
@@ -174,21 +178,33 @@ export function Tuner() {
           <div className="label-small">
             {targetData ? `Cible : corde ${targetData.targetIdx + 1} · ${noteWithOctave(targetData.targetMidi)}` : 'En attente…'}
           </div>
-          <div
+          <motion.div
+            key={noteName ?? 'silent'}
+            initial={{ scale: 0.92, opacity: 0.6 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
             className={clsx(
               'display mt-3 leading-none transition-colors',
-              'text-[72px] md:text-[112px]',
-              isInTune ? 'text-success text-gold-glow' : 'text-gold'
+              'text-[88px] md:text-[128px]',
+              isPerfect
+                ? 'text-success text-gold-glow'
+                : isClose
+                  ? 'text-gold-bright'
+                  : 'text-gold'
             )}
           >
             {noteName ?? '—'}
-          </div>
+          </motion.div>
           <div className="mt-2 font-mono text-sm">
             {targetData ? (
               <span
                 className={clsx(
                   'font-bold',
-                  isInTune ? 'text-success' : isClose ? 'text-gold' : 'text-text-muted'
+                  isPerfect
+                    ? 'text-success'
+                    : isClose
+                      ? 'text-[#e8a45e]'
+                      : 'text-text-muted'
                 )}
               >
                 {targetData.cents > 0 ? '+' : ''}
@@ -205,37 +221,45 @@ export function Tuner() {
           </div>
         </div>
 
-        {/* Aiguille horizontale -50 → +50 cents */}
+        {/* Aiguille horizontale -50 → +50 cents avec 3 zones colorées */}
         <div className="mt-7">
-          <div className="relative h-12 rounded-full border border-border bg-surface-2">
-            {/* Gradations de fond */}
-            <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-text-soft/30" />
+          <div className="relative h-12 overflow-hidden rounded-full border border-border bg-surface-2">
+            {/* Zone "close" (±10) — orange subtil */}
+            <div className="absolute inset-y-1 left-[40%] right-[40%] rounded-full bg-[#e8a45e]/15" />
+            {/* Zone "perfect" (±3) — vert qui glow quand atteinte */}
+            <div
+              className={clsx(
+                'absolute inset-y-1 left-[47%] right-[47%] rounded-full transition-all duration-200',
+                isPerfect
+                  ? 'bg-success/40 shadow-[inset_0_0_16px_rgba(76,175,133,0.6)]'
+                  : 'bg-success/15'
+              )}
+            />
+            {/* Gradations */}
+            <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-text-soft/40" />
             <div className="absolute inset-y-2 left-[5%] w-px bg-text-soft/15" />
             <div className="absolute inset-y-2 left-[25%] w-px bg-text-soft/15" />
             <div className="absolute inset-y-2 left-[75%] w-px bg-text-soft/15" />
             <div className="absolute inset-y-2 right-[5%] w-px bg-text-soft/15" />
-            {/* Zone in-tune au centre (±5 cents) */}
-            <div
-              className={clsx(
-                'absolute inset-y-1 left-[45%] right-[45%] rounded-full transition-colors',
-                isInTune ? 'bg-success/30' : 'bg-gold/10'
-              )}
-            />
-            {/* Aiguille */}
+            {/* Aiguille (spring physics) */}
             {targetData && (
-              <div
-                className="absolute top-0 bottom-0 w-1 -translate-x-1/2 transition-[left] duration-100 ease-out"
+              <motion.div
+                className="absolute top-0 bottom-0 w-1 -translate-x-1/2"
+                animate={{ left: `${needlePct}%` }}
+                transition={{ type: 'spring', stiffness: 220, damping: 18, mass: 0.5 }}
                 style={{ left: `${needlePct}%` }}
               >
                 <div
                   className={clsx(
-                    'h-full w-full rounded-full',
-                    isInTune
-                      ? 'bg-success shadow-[0_0_12px_rgba(76,175,133,0.7)]'
-                      : 'bg-gold-bright shadow-gold'
+                    'h-full w-full rounded-full transition-colors duration-150',
+                    isPerfect
+                      ? 'bg-success shadow-[0_0_16px_rgba(76,175,133,0.9)]'
+                      : isClose
+                        ? 'bg-[#e8a45e] shadow-[0_0_14px_rgba(232,164,94,0.7)]'
+                        : 'bg-gold-bright shadow-gold'
                   )}
                 />
-              </div>
+              </motion.div>
             )}
           </div>
           <div className="mt-1 flex justify-between text-[10px] text-text-soft">
@@ -245,6 +269,21 @@ export function Tuner() {
             <span>+25</span>
             <span>+50</span>
           </div>
+          {targetData && (
+            <div className="mt-2 text-center text-[10px] text-text-soft">
+              {isPerfect ? (
+                <span className="font-mono font-bold text-success">★ JUSTE</span>
+              ) : isClose ? (
+                <span className="font-mono text-[#e8a45e]">
+                  {targetData.cents < 0 ? '↑ Monter un peu' : '↓ Descendre un peu'}
+                </span>
+              ) : (
+                <span className="font-mono text-text-soft">
+                  {targetData.cents < 0 ? '↑ Trop grave' : '↓ Trop aigu'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Indication tune up/down si très loin */}
