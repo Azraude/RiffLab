@@ -13,6 +13,7 @@ import { NOTE_NAMES, TUNING_LABELS, type NoteName, type TuningId } from '@/lib/t
 import { COMMON_CHORD_NAMES } from '@/lib/chordDatabase';
 import { parseTabText } from '@/lib/tabImporter';
 import { Plus, Upload, X, Trash2, Wand2 } from 'lucide-react';
+import { SectionStrumEditor } from './SectionStrumEditor';
 
 interface SongFormProps {
   /** Appelé après save réussi avec l'id du song créé. */
@@ -286,6 +287,11 @@ export function SongForm({ onSaved, onCancel }: SongFormProps) {
                   ))}
                 </div>
               </div>
+
+              <SectionStrumEditor
+                value={sec.strumPattern}
+                onChange={(strumPattern) => updateSection(sec.id, { strumPattern })}
+              />
             </div>
           ))}
         </div>
