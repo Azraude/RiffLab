@@ -4,7 +4,7 @@ import type { TuningId } from '@/lib/theory';
 import type { FretboardSkinId } from '@/lib/fretboardSkins';
 import type { PracticePlanData } from '@/lib/practicePlan';
 import type { ThemeId } from '@/lib/themes';
-import type { StrumSoundId } from '@/lib/strumSounds';
+import { migrateLegacyStrumId, type StrumSoundId } from '@/lib/strumSounds';
 
 export type PlayerLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -48,7 +48,7 @@ export const usePrefs = create<PrefsState>()(
       showNoteNames: true,
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
-      strumSound: 'electric-real-sampled',
+      strumSound: 'electric-clean',
       effects3D: true,
       onboardingCompleted: false,
       tutorialCompleted: false,
@@ -85,19 +85,19 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 8,
+      version: 9,
       /**
-       * Migration permissive sur la plupart des champs (préserve les
-       * choix du user). EXCEPTION : `strumSound` est force-resettée à
-       * 'electric-real-sampled' pour toute version < 8 — c'est le
-       * nouveau default audio (sampler réel CDN session 18). On force
-       * le reset car les recettes synthétiques pre-v8 sonnaient
-       * synthétique et les users méritent d'expérimenter la vraie
-       * guitare par défaut.
+       * Migration v9 (session 21) : passage à WebAudioFont GM presets.
+       * Les anciens IDs ('electric-real-sampled', 'electric-crunch',
+       * 'electric-lead', 'electric-metal', 'electric-blues', 'acoustic-warm',
+       * + les fallbacks synthés) sont mappés vers les nouveaux GM via
+       * `migrateLegacyStrumId`. Tout autre champ est préservé.
        */
       migrate: (persisted, version) => {
-        const p = (persisted ?? {}) as Partial<PrefsState>;
-        const audioReset = version < 8;
+        const p = (persisted ?? {}) as Partial<PrefsState> & { strumSound?: string };
+        const rawStrum = p.strumSound ?? 'electric-clean';
+        const strumSound: StrumSoundId =
+          version < 9 ? migrateLegacyStrumId(rawStrum) : (rawStrum as StrumSoundId);
         return {
           tuning: p.tuning ?? 'standard',
           capo: p.capo ?? 0,
@@ -106,12 +106,10 @@ export const usePrefs = create<PrefsState>()(
           showNoteNames: p.showNoteNames ?? true,
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
-          strumSound: audioReset
-            ? 'electric-real-sampled'
-            : p.strumSound ?? 'electric-real-sampled',
+          strumSound,
           effects3D: p.effects3D ?? true,
-          onboardingCompleted: p.onboardingCompleted ?? true, // users existants : skip onboarding
-          tutorialCompleted: p.tutorialCompleted ?? true, // users existants : skip tutorial
+          onboardingCompleted: p.onboardingCompleted ?? true,
+          tutorialCompleted: p.tutorialCompleted ?? true,
           level: p.level ?? 'beginner',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;

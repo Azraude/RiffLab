@@ -6,7 +6,7 @@ import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
 import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
-import { STRUM_SOUNDS, getAmpStages, type StrumSound } from '@/lib/strumSounds';
+import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
 import { Check, Lock, Volume2 } from 'lucide-react';
 import clsx from 'clsx';
@@ -244,7 +244,6 @@ function StrumSoundOption({
             <span key={t} className="chip text-[10px]">{t}</span>
           ))}
         </div>
-        <AmpFlow soundId={sound.id} />
       </div>
       {active && (
         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
@@ -252,32 +251,6 @@ function StrumSoundOption({
         </span>
       )}
     </button>
-  );
-}
-
-/**
- * Mini-schéma signal-flow pour les presets ampChain.
- * Affiche les étapes de la chaîne d'ampli (DI → Preamp → EQ → Power → Cab → Room).
- * Null si le preset n'utilise pas ampChain (acoustique, synthés legacy).
- */
-function AmpFlow({ soundId }: { soundId: StrumSound['id'] }) {
-  const stages = getAmpStages(soundId);
-  if (!stages) return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px] text-text-soft">
-      {stages.map((stage, i) => (
-        <span key={`${stage.label}-${i}`} className="flex items-center gap-1">
-          {i > 0 && <span className="text-text-soft/40">›</span>}
-          <span className="flex items-center gap-0.5 rounded-md border border-border/60 bg-surface/50 px-1.5 py-0.5">
-            <span aria-hidden="true">{stage.icon}</span>
-            <span className="font-mono font-medium text-text-muted">{stage.label}</span>
-            {stage.detail && (
-              <span className="font-mono text-text-soft/80">·{stage.detail}</span>
-            )}
-          </span>
-        </span>
-      ))}
-    </div>
   );
 }
 
