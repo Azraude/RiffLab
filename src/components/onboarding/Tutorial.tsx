@@ -19,11 +19,16 @@ import { X, ArrowRight } from 'lucide-react';
 import { usePrefs } from '@/stores/prefsStore';
 
 type Step = {
-  targetId: string;
+  /** Si null, c'est un step "outro" centré sans spotlight */
+  targetId: string | null;
   title: string;
   body: string;
   /** Position préférée du tooltip si l'espace le permet */
   prefer?: 'top' | 'bottom';
+  /** Texte du bouton suivant (default = "Suivant" / "Terminé" sur le dernier) */
+  cta?: string;
+  /** Si true, lance une volée de confetti gold au click sur le CTA */
+  confetti?: boolean;
 };
 
 const STEPS: Step[] = [
@@ -51,6 +56,13 @@ const STEPS: Step[] = [
     body: 'Sidebar = ton hub : sons, accords, gammes, tuner, métronome. Sur mobile, c\'est en bas.',
     prefer: 'bottom',
   },
+  {
+    targetId: null,
+    title: "C'est parti !",
+    body: 'T\'as toutes les clés. Joue, explore, kiffe — RiffLab est un terrain de jeu, pas un cours.',
+    cta: 'Allez régale-toi 🎸',
+    confetti: true,
+  },
 ];
 
 const HOLE_PADDING = 8;
@@ -66,6 +78,11 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (!step) return;
+    // Step "outro" sans cible : rien à scroll/observer, juste un modal centré
+    if (step.targetId === null) {
+      setRect(null);
+      return;
+    }
     const target = document.querySelector<HTMLElement>(
       `[data-tutorial-id="${step.targetId}"]`,
     );
@@ -92,6 +109,7 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
   }, [stepIdx]);
 
   const isLast = stepIdx === STEPS.length - 1;
+  const [confettiOn, setConfettiOn] = useState(false);
 
   const goNext = () => {
     if (isLast) return finish();
@@ -99,8 +117,18 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
   };
 
   const finish = () => {
-    setTutorialCompleted(true);
-    onDone();
+    // Si le dernier step demande des confettis, on attend 700ms que
+    // l'animation joue avant de fermer.
+    if (step?.confetti) {
+      setConfettiOn(true);
+      window.setTimeout(() => {
+        setTutorialCompleted(true);
+        onDone();
+      }, 700);
+    } else {
+      setTutorialCompleted(true);
+      onDone();
+    }
   };
 
   if (!step) return null;
@@ -223,14 +251,56 @@ export function Tutorial({ onDone }: { onDone: () => void }) {
               onClick={goNext}
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright"
             >
-              {isLast ? 'Terminé' : 'Suivant'}
+              {step.cta ?? (isLast ? 'Terminé' : 'Suivant')}
               {!isLast && <ArrowRight size={14} />}
             </button>
           </div>
         </motion.div>
+
+        {/* Confetti gold subtle au click sur le CTA de l'outro step */}
+        {confettiOn && <GoldConfetti />}
       </motion.div>
     </AnimatePresence>,
     portalRoot,
+  );
+}
+
+/**
+ * GoldConfetti — volée de particules gold qui tombent du centre vers le bas.
+ * Subtile : 24 particules, 700ms, gold-bright + opacity decay.
+ * Pas de lib — juste CSS via framer-motion.
+ */
+function GoldConfetti() {
+  const particles = Array.from({ length: 24 }, (_, i) => i);
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+      {particles.map((i) => {
+        const angle = (i / 24) * Math.PI * 2;
+        const distance = 120 + Math.random() * 200;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance + 100; // bias vers le bas
+        const rotate = (Math.random() - 0.5) * 360;
+        const delay = Math.random() * 0.1;
+        return (
+          <motion.span
+            key={i}
+            initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 0.6 }}
+            animate={{
+              x: dx,
+              y: dy,
+              opacity: 0,
+              rotate,
+              scale: 1,
+            }}
+            transition={{ duration: 0.7, delay, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-2 w-2 rounded-sm bg-gold-bright"
+            style={{
+              boxShadow: '0 0 8px rgb(var(--gold-glow) / 0.7)',
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 

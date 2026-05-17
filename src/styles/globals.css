@@ -285,17 +285,15 @@
 
 /* ─── A11y enhancements (TASK I) ────────────────────────────────── */
 
-/* Focus visible — ring or sur tous les éléments interactifs au clavier.
+/* Focus visible — ring or sur les éléments interactifs au clavier.
    :focus-visible déclenche uniquement sur navigation clavier (Tab),
-   pas au clic souris. Style cohérent partout au lieu du native bleu. */
-:focus-visible {
-  outline: 2px solid rgb(var(--gold-bright));
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+   pas au clic souris. On NE met PAS de border-radius explicite ici :
+   les navigateurs modernes font suivre l'outline au border-radius
+   de l'élément, donc un bouton arrondi a un focus ring arrondi. */
 button:focus-visible,
 a:focus-visible,
 [role='button']:focus-visible {
+  outline: 2px solid rgb(var(--gold-bright));
   outline-offset: 3px;
 }
 /* Inputs : ring gold inset au lieu d'outline pour rester dans le layout */
@@ -327,10 +325,12 @@ select:focus-visible {
   transform: translateY(0);
 }
 
-/* prefers-reduced-motion — désactive les animations gourmandes pour les
-   users qui ont demandé le motion réduit dans leur OS. On garde les
-   micro-transitions (≤200ms) qui aident l'UX, on coupe les anims
-   permanentes (sheen, flicker, sparkles, trophy pulse). */
+/* prefers-reduced-motion — coupe SEULEMENT les anims permanentes qui
+   bouclent à l'infini (gold sheen, sparkles, flicker, trophy pulse,
+   skeleton shimmer). On préserve toutes les transitions hover/focus
+   et les framer-motion entrances (≤300ms ponctuels) qui guident l'UX.
+   Le `*` rule global précédent était trop agressif et faisait disparaître
+   les fade/slide d'entrée des cards — vu comme une régression visuelle. */
 @media (prefers-reduced-motion: reduce) {
   .daily-gold-sheen::before,
   .skeleton-shimmer,
@@ -340,14 +340,6 @@ select:focus-visible {
   .streak-sparkle-3,
   .rifflab-flame-flicker {
     animation: none !important;
-  }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 }
 

@@ -113,6 +113,11 @@ const irPending = new Map<CabinetName, Promise<AudioBuffer>>();
  * pour donner le caractère tonal du cabinet.
  *
  * Cache global — un cab n'est généré qu'une fois par session.
+ *
+ * ⚠️ Sample rate : on génère à la MÊME fréquence que l'AudioContext de
+ * destination (typiquement 48000 Hz, mais 44100 sur d'autres setups).
+ * Sinon ConvolverNode lance "buffer sample rate does not match context rate"
+ * → buildVoices() crash → silence partout (bug session 20 nuit).
  */
 export function getCabIR(cabName: CabinetName): Promise<AudioBuffer> {
   const cached = irCache.get(cabName);
@@ -121,7 +126,7 @@ export function getCabIR(cabName: CabinetName): Promise<AudioBuffer> {
   if (pending) return pending;
 
   const profile = CABINETS[cabName];
-  const sr = 44100;
+  const sr = Tone.getContext().sampleRate;
   const length = Math.max(2048, Math.floor((sr * profile.decayMs) / 1000));
 
   // OfflineAudioContext supports Web Audio in a non-realtime render.
@@ -204,11 +209,20 @@ export function getCabIR(cabName: CabinetName): Promise<AudioBuffer> {
 }
 
 /**
- * Synchrone : renvoie l'IR si déjà cached, sinon `null`.
- * Permet à `buildAmpChain` d'être sync quand l'IR est warm.
+ * Synchrone : renvoie l'IR si déjà cached ET à la bonne sample rate,
+ * sinon `null` (déclenche fallback fakecab dans buildAmpChain).
  */
 export function getCabIRSync(cabName: CabinetName): AudioBuffer | null {
-  return irCache.get(cabName) ?? null;
+  const cached = irCache.get(cabName);
+  if (!cached) return null;
+  // Vérif sample rate match — si AudioContext a changé de SR (rare mais
+  // possible si user change de device output mid-session), on invalide.
+  const ctxSr = Tone.getContext().sampleRate;
+  if (cached.sampleRate !== ctxSr) {
+    irCache.delete(cabName);
+    return null;
+  }
+  return cached;
 }
 
 /**
@@ -330,19 +344,44 @@ export function buildAmpChain(
   const powerAmp = new Tone.WaveShaper(makePowerAmpCurve(config.powerAmpSat));
   powerAmp.oversample = '4x';
 
-  // Convolver — IR chargé sync si cached, sinon async (legère latence)
-  const convolver = new Tone.Convolver({ normalize: true });
+  // Convolver IR cabinet — sync si cached (prewarmCabinets a déjà résolu),
+  // sinon BYPASS le convolver pour ne pas sortir en silence pendant le
+  // chargement async. Fallback : LP filter à highCut pour simuler grossièrement
+  // la coupure haute fréquence du cabinet (sonne moins "convolvé" mais audible).
+  // Le set buffer peut throw si le sample rate ne match pas (cf bug nuit 20 :
+  // IR à 44100 / AudioContext à 48000) — on fallback gracieux dans ce cas.
   const cached = getCabIRSync(config.cabName);
-  if (cached) {
-    convolver.buffer = new Tone.ToneAudioBuffer(cached);
-  } else {
-    void getCabIR(config.cabName).then((ir) => {
-      try {
-        convolver.buffer = new Tone.ToneAudioBuffer(ir);
-      } catch {
-        // chain disposed avant que l'IR arrive — ignorer
-      }
+  let cabNode: Tone.ToneAudioNode;
+  let cabDispose: () => void;
+  const buildFakeCab = (): { node: Tone.ToneAudioNode; dispose: () => void } => {
+    const cabProfile = CABINETS[config.cabName];
+    const fakeCab = new Tone.Filter({
+      frequency: cabProfile.highCut,
+      type: 'lowpass',
+      Q: 0.7,
     });
+    return { node: fakeCab, dispose: () => fakeCab.dispose() };
+  };
+  if (cached) {
+    try {
+      const convolver = new Tone.Convolver({ normalize: true });
+      convolver.buffer = new Tone.ToneAudioBuffer(cached);
+      cabNode = convolver;
+      cabDispose = () => convolver.dispose();
+    } catch (err) {
+      // SR mismatch ou autre — fallback fakecab pour ne pas crasher buildVoices
+      // (et donc le pipeline audio entier qui sortirait en silence partout).
+      console.warn('[ampChain] Convolver buffer set failed, fallback fakecab:', err);
+      const fake = buildFakeCab();
+      cabNode = fake.node;
+      cabDispose = fake.dispose;
+    }
+  } else {
+    const fake = buildFakeCab();
+    cabNode = fake.node;
+    cabDispose = fake.dispose;
+    // Tentative de chargement async pour le prochain rebuildVoices
+    void getCabIR(config.cabName).catch(() => undefined);
   }
 
   // Trim post-cab : la convolution peut booster certaines bandes,
@@ -363,8 +402,8 @@ export function buildAmpChain(
   void room.generate();
 
   // Connection : preamp → tubeSat → bass → mid → treble → powerAmp →
-  //              convolver → postTrim → [delay] → room → output
-  preamp.chain(tubeSat, bassEQ, midEQ, trebleEQ, powerAmp, convolver, postTrim);
+  //              cabNode → postTrim → [delay] → room → output
+  preamp.chain(tubeSat, bassEQ, midEQ, trebleEQ, powerAmp, cabNode, postTrim);
   if (delay) {
     postTrim.chain(delay, room, output);
   } else {
@@ -378,7 +417,7 @@ export function buildAmpChain(
     midEQ,
     trebleEQ,
     powerAmp,
-    convolver,
+    { dispose: cabDispose },
     postTrim,
     room,
   ];

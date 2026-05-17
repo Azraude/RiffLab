@@ -50,14 +50,28 @@ export async function initAudio(timbre: StrumSoundId = 'electric-real-sampled'):
   await reverb.generate();
   reverb.connect(masterLowpass);
 
-  // Pre-warm les IRs cabinet en parallèle — évite le pluck silencieux
-  // au premier strum quand l'utilisateur sélectionne un preset ampChain.
-  // Fire-and-forget : si ça échoue (browser ancien sans OfflineAudioContext),
-  // le Convolver tombe en silence inoffensif.
-  void prewarmCabinets();
+  // Pre-warm les IRs cabinet AVANT de build les voices — sans ça, le
+  // Tone.Convolver est créé avec un buffer null → produit du SILENCE
+  // pendant 50-100ms tant que getCabIR().then(...) ne résolve pas.
+  // Symptôme : /riffs Play silencieux (1ère note 0ms après click).
+  // L'OfflineAudioContext.startRendering est rapide (~50ms × 5 en
+  // parallèle ≈ ~80ms total) → acceptable au premier init.
+  try {
+    await prewarmCabinets();
+  } catch {
+    // Browser sans OfflineAudioContext → on continue, les convolvers
+    // resteront avec buffer null = silence inoffensif sur ces presets.
+  }
 
   activeTimbre = timbre;
   voices = buildVoices(timbre, reverb);
+
+  // Attendre que les samples du sampler nbrosowsky soient downloadés via CDN
+  // (sinon les premières triggers tombent sur sampler.loaded === false et
+  // retournent silence). Fire-and-forget : si le réseau est lent, on rend
+  // l'UI dispo immédiatement et les premières notes sont OK ou silencieuses
+  // selon le timing.
+  void Tone.loaded();
 
   initialized = true;
 }
@@ -75,13 +89,24 @@ export function setMasterVolume(value: number): void {
  * Switch le timbre actif. Dispose les voix actuelles et rebuild avec la
  * nouvelle recette. No-op si l'audio n'est pas encore init (le timbre sera
  * lu au prochain initAudio).
+ *
+ * Async parce qu'on doit s'assurer que les IRs cabinet sont prewarm AVANT
+ * de swap les voices — sinon le Convolver du nouveau preset démarre avec
+ * un buffer null et l'auto-preview qui suit dans Settings (80ms après)
+ * sort en silence → user croit que le switch ne marche pas.
  */
-export function rebuildVoices(timbre: StrumSoundId): void {
+export async function rebuildVoices(timbre: StrumSoundId): Promise<void> {
   if (!initialized || !reverb) {
     activeTimbre = timbre;
     return;
   }
   if (timbre === activeTimbre) return;
+  // Pre-warm cabinet IRs (idempotent — cache hit instantané si déjà fait).
+  try {
+    await prewarmCabinets();
+  } catch {
+    // ignore
+  }
   // Dispose en différé pour laisser les notes en cours finir leur release.
   const oldVoices = voices;
   setTimeout(() => {

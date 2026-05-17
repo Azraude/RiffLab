@@ -19,7 +19,7 @@ usePrefs.subscribe((state, prev) => {
   if (state.theme !== prev.theme) applyTheme(state.theme);
   // Hot-swap du timbre audio quand le user change dans Préférences.
   // No-op si l'audio n'est pas encore init (le timbre sera lu au prochain initAudio).
-  if (state.strumSound !== prev.strumSound) rebuildVoices(state.strumSound);
+  if (state.strumSound !== prev.strumSound) void rebuildVoices(state.strumSound);
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
