@@ -8,12 +8,16 @@ import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS, getAmpStages, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { Check, Lock, Volume2 } from 'lucide-react';
+import { LOCALES, setLocale, type LocaleId } from '@/i18n';
+import { useTranslation } from 'react-i18next';
+import { Check, Lock, Volume2, Globe } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
   const prefs = usePrefs();
   const { strum } = useAudio();
+  const { i18n, t } = useTranslation();
+  const currentLocale: LocaleId = (i18n.resolvedLanguage as LocaleId) ?? 'fr';
 
   const exportLib = async () => {
     const songs = await db.songs.toArray();
@@ -104,6 +108,36 @@ export function Settings() {
               <Toggle checked={prefs.effects3D} onChange={prefs.toggleEffects3D} />
             </div>
           </div>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <div className="mb-3 flex items-center gap-2">
+            <Globe size={16} className="text-gold" />
+            <h3 className="display text-display-sm">{t('settings.language')}</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {LOCALES.map((loc) => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => setLocale(loc.id)}
+                aria-pressed={currentLocale === loc.id}
+                className={clsx(
+                  'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors',
+                  currentLocale === loc.id
+                    ? 'border-gold bg-gold/15 text-gold-bright'
+                    : 'border-border bg-surface-2 text-text-muted hover:border-gold-soft hover:text-text'
+                )}
+              >
+                {currentLocale === loc.id && <Check size={14} strokeWidth={3} />}
+                {loc.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-text-soft">
+            La traduction est partielle (Phase 5+ pour 100%). Les éléments
+            statiques sont en français par défaut.
+          </p>
         </Card>
 
         <Card className="md:col-span-2">

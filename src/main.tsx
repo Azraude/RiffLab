@@ -7,6 +7,7 @@ import { usePrefs } from '@/stores/prefsStore';
 import { applyTheme } from '@/lib/themes';
 import { rebuildVoices } from '@/lib/audio';
 import { PWAUpdateToast } from '@/components/pwa/PWAUpdateToast';
+import '@/i18n'; // setup i18n (react-i18next + browser detector) AVANT le render
 import '@/styles/globals.css';
 
 // Seed the local DB with example songs on first run (non-blocking).
