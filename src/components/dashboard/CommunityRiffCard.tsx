@@ -1,17 +1,20 @@
 /**
- * CommunityRiffCard — widget Dashboard pour le riff hebdomadaire
- * communautaire. Affiche le tab via TabPlayer, le contributeur,
- * un bouton like persisté en Dexie, et un bouton "Partager mon riff"
- * (modal "Bientôt Phase 5" pour l'instant).
+ * CommunityRiffCard — widget Dashboard minimal pointant vers /riffs.
+ *
+ * Session 21 refonte : la page /riffs est devenue le feed social complet.
+ * Ce widget Dashboard est maintenant juste un teaser — affiche le riff
+ * de la semaine + un lien "Voir tous les riffs". Tap card = ouvre
+ * directement le riff dans /riffs (drawer auto-opens).
+ *
+ * Les likes restent ici pour réagir vite sans quitter le Dashboard.
  */
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, Sparkles, Upload, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight, Heart, Sparkles, User } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
-import { TabPlayer } from '@/components/tabs/TabPlayer';
 import { getCurrentCommunityRiff } from '@/lib/communityRiffs';
 import { isRiffLiked, toggleRiffLike } from '@/lib/db';
 import { getCurrentISOWeek } from '@/lib/riffOfTheWeek';
@@ -22,132 +25,90 @@ export function CommunityRiffCard() {
     () => (current ? isRiffLiked(current.riff.id) : Promise.resolve(false)),
     [current?.riff.id]
   );
-  const [shareOpen, setShareOpen] = useState(false);
   const week = useMemo(() => getCurrentISOWeek(), []);
 
   if (!current) return null;
   const { riff, tab } = current;
   const totalLikes = riff.baseLikes + (liked ? 1 : 0);
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     await toggleRiffLike(riff.id);
   };
 
+  const initial = (riff.contributor.replace('@', '')[0] ?? '?').toUpperCase();
+
   return (
-    <>
+    <Link
+      to="/riffs"
+      className="block transition-transform hover:-translate-y-px"
+      aria-label={`Voir le riff de la semaine : ${tab.name}`}
+    >
       <Card className="overflow-hidden">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="eyebrow !text-gold-soft">Riff du moment · Semaine {week}</div>
-            <h2 className="display mt-1.5 text-display-sm">
-              ⭐ {tab.name}
-              {tab.artist && (
-                <span className="ml-1 font-sans text-base font-normal text-text-muted">
-                  — {tab.artist}
-                </span>
-              )}
+          <div className="flex items-center gap-2">
+            <Sparkles size={13} className="text-gold-soft" />
+            <div className="eyebrow !text-gold-soft">Riff de la semaine · S{week}</div>
+          </div>
+          <span className="inline-flex h-7 items-center gap-1 rounded-full bg-gold/10 px-2.5 text-[10px] font-semibold text-gold-bright">
+            Voir tous les riffs <ArrowRight size={11} />
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-base font-bold text-gold">
+            {initial === '?' ? <User size={20} /> : initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="display text-display-sm leading-tight">
+              {tab.name}
             </h2>
+            {tab.artist && (
+              <p className="text-sm text-text-muted">{tab.artist}</p>
+            )}
             <div className="mt-1 flex items-center gap-2 text-xs text-text-soft">
               <span className="font-mono text-gold-soft">{riff.contributor}</span>
               <span>·</span>
-              <button
-                type="button"
-                onClick={handleLike}
-                aria-pressed={!!liked}
-                className={clsx(
-                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs transition-all',
-                  liked
-                    ? 'bg-danger/15 text-danger'
-                    : 'bg-surface-2 text-text-muted hover:bg-danger/10 hover:text-danger'
-                )}
-              >
-                <motion.span
-                  animate={liked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                  className="inline-flex"
-                >
-                  <Heart size={11} fill={liked ? 'currentColor' : 'none'} />
-                </motion.span>
-                {totalLikes}
-              </button>
+              <span>{'⭐'.repeat(riff.difficulty)}</span>
+              <span>·</span>
+              <span className="font-mono">{tab.tempo} BPM</span>
             </div>
           </div>
         </div>
 
-        {/* Tab player */}
-        <div className="mt-5">
-          <TabPlayer tab={tab} loop={false} />
+        {riff.caption && (
+          <p className="mt-3 line-clamp-2 text-sm text-text leading-relaxed">
+            {riff.caption}
+          </p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleLike}
+            aria-pressed={!!liked}
+            className={clsx(
+              'inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+              liked
+                ? 'bg-danger/15 text-danger'
+                : 'bg-surface-2 text-text-muted hover:bg-danger/10 hover:text-danger'
+            )}
+          >
+            <motion.span
+              animate={liked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex"
+            >
+              <Heart size={13} fill={liked ? 'currentColor' : 'none'} />
+            </motion.span>
+            <span className="font-mono">{totalLikes}</span>
+          </button>
+          <span className="font-mono text-xs text-text-soft">
+            {riff.commentsCount ?? 0} commentaires
+          </span>
         </div>
-
-        {/* Divider + share CTA */}
-        <div className="my-5 h-px bg-gradient-to-r from-transparent via-gold-soft/40 to-transparent" />
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          className="group inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-all hover:bg-gold/10"
-        >
-          <Upload size={15} className="transition-transform group-hover:-translate-y-px" />
-          Partager mon riff
-        </button>
       </Card>
-
-      {/* Share modal — placeholder Phase 5 */}
-      <Dialog.Root open={shareOpen} onOpenChange={setShareOpen}>
-        <AnimatePresence>
-          {shareOpen && (
-            <Dialog.Portal forceMount>
-              <Dialog.Overlay asChild>
-                <motion.div
-                  className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                />
-              </Dialog.Overlay>
-              <Dialog.Content asChild aria-describedby={undefined}>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                  <motion.div
-                    className="w-[min(420px,92vw)] rounded-3xl border border-border-gold bg-surface p-7 shadow-2xl"
-                    initial={{ opacity: 0, scale: 0.94, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.94, y: 12 }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setShareOpen(false)}
-                      aria-label="Fermer"
-                      className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-border text-text-muted hover:text-text"
-                    >
-                      <X size={16} />
-                    </button>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
-                      <Sparkles size={22} />
-                    </div>
-                    <Dialog.Title className="display mt-4 text-display-sm">
-                      Bientôt disponible — Phase 5
-                    </Dialog.Title>
-                    <p className="mt-2 text-sm text-text-muted">
-                      La communauté arrive avec la Phase 5 (auth + cloud). Tu pourras
-                      uploader tes propres riffs avec une tab + un audio, et liker
-                      ceux des autres guitaristes.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShareOpen(false)}
-                      className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-b from-gold-bright to-gold font-semibold text-bg hover:-translate-y-px"
-                    >
-                      OK, j'attendrai
-                    </button>
-                  </motion.div>
-                </div>
-              </Dialog.Content>
-            </Dialog.Portal>
-          )}
-        </AnimatePresence>
-      </Dialog.Root>
-    </>
+    </Link>
   );
 }

@@ -1,29 +1,46 @@
+/**
+ * /riffs — feed social des riffs guitare (session 21 refonte).
+ *
+ * Layout Instagram-style :
+ * - Sort tabs : Pour toi (algo basé likes user) / Trending / Récents
+ * - Tags chips scrollables horizontaux
+ * - Feed vertical : 1 RiffFeedCard par post (avatar + caption + tab
+ *   preview inline + actions row Play/Like/Comments/Bookmark/Share)
+ * - FAB "Partager mon riff" mobile + bouton desktop dans header
+ * - Click card → RiffDetailDrawer (TabPlayer full + actions + stats)
+ *
+ * Note : la pagination 10x10 du brief n'est pas implémentée (on a juste
+ * 10 riffs en seed). À ajouter quand le backend Phase 5 livre plus.
+ */
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bookmark,
-  Filter,
   Heart,
+  MessageCircle,
   Play,
   Plus,
+  Share2,
   Sparkles,
   Star,
+  User,
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { TabPlayer } from '@/components/tabs/TabPlayer';
+import { TabReader } from '@/components/tabs/TabReader';
 import {
   COMMUNITY_RIFFS,
   ALL_RIFF_TAGS,
-  getCurrentCommunityRiff,
+  formatRelativeDate,
+  sortFeedRiffs,
   getCommunityRiff,
   type CommunityRiff,
-  type RiffDifficulty,
   type RiffTag,
+  type FeedSort,
 } from '@/lib/communityRiffs';
 import { getTab } from '@/lib/tabsDatabase';
 import {
@@ -34,39 +51,34 @@ import {
   setUserRating,
   isRiffLiked,
   toggleRiffLike,
+  db,
 } from '@/lib/db';
 
-type DifficultyFilter = 'all' | RiffDifficulty;
-type SortMode = 'popular' | 'recent' | 'bookmarked';
-
 export function Riffs() {
-  const [difficulty, setDifficulty] = useState<DifficultyFilter>('all');
+  const [sort, setSort] = useState<FeedSort>('for-you');
   const [tag, setTag] = useState<RiffTag | 'all'>('all');
-  const [sort, setSort] = useState<SortMode>('popular');
   const [openRiffId, setOpenRiffId] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
 
-  const featured = useMemo(() => getCurrentCommunityRiff(), []);
   const bookmarkedIds = useLiveQuery(() => listBookmarkedRiffIds(), []) ?? [];
   const bookmarkedSet = useMemo(() => new Set(bookmarkedIds), [bookmarkedIds]);
+  // Liste des riffs likés (pour l'algo "for you")
+  const likedRows = useLiveQuery(() => db.riffLikes.toArray(), []) ?? [];
+  const likedIds = useMemo(() => likedRows.map((r) => r.id), [likedRows]);
 
-  const filtered = useMemo(() => {
-    let list = COMMUNITY_RIFFS.slice();
-    if (difficulty !== 'all') list = list.filter((r) => r.difficulty === difficulty);
-    if (tag !== 'all') list = list.filter((r) => r.tags.includes(tag));
-    if (sort === 'popular') list.sort((a, b) => b.baseLikes - a.baseLikes);
-    else if (sort === 'recent')
-      list.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
-    else if (sort === 'bookmarked')
-      list = list.filter((r) => bookmarkedSet.has(r.id));
-    return list;
-  }, [difficulty, tag, sort, bookmarkedSet]);
+  const sorted = useMemo(() => {
+    const filtered =
+      tag === 'all'
+        ? COMMUNITY_RIFFS
+        : COMMUNITY_RIFFS.filter((r) => r.tags.includes(tag));
+    return sortFeedRiffs(filtered, sort, likedIds);
+  }, [sort, tag, likedIds]);
 
   return (
     <>
       <PageHeader
         title="Riffs"
-        subtitle="Le hub communautaire — joue les riffs cultes, garde tes favoris, partage les tiens."
+        subtitle="Le feed communautaire — joue, like, sauve, partage. Les meilleurs riffs au quotidien."
       >
         <button
           type="button"
@@ -81,103 +93,51 @@ export function Riffs() {
         </button>
       </PageHeader>
 
-      {/* Featured banner */}
-      {featured && (
-        <FeaturedRiff
-          riff={featured.riff}
-          onOpen={() => setOpenRiffId(featured.riff.id)}
-        />
-      )}
-
-      {/* Filtres */}
-      <div className="mt-8 space-y-3">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-text-soft">
-          <Filter size={12} /> Filtres
+      {/* Sort tabs */}
+      <div className="sticky top-0 z-20 -mx-5 mb-4 border-b border-border bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:px-12">
+        <div className="flex gap-2">
+          <SortTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>
+            Pour toi
+          </SortTab>
+          <SortTab active={sort === 'trending'} onClick={() => setSort('trending')}>
+            Trending
+          </SortTab>
+          <SortTab active={sort === 'recent'} onClick={() => setSort('recent')}>
+            Récents
+          </SortTab>
         </div>
 
-        {/* Difficulty */}
-        <div className="-mx-2 overflow-x-auto px-2 pb-1">
-          <div className="flex gap-2">
-            <FilterChip
-              active={difficulty === 'all'}
-              onClick={() => setDifficulty('all')}
-            >
-              Tous niveaux
-            </FilterChip>
-            {([1, 2, 3, 4, 5] as RiffDifficulty[]).map((d) => (
-              <FilterChip
-                key={d}
-                active={difficulty === d}
-                onClick={() => setDifficulty(d)}
-              >
-                {'⭐'.repeat(d)}
-              </FilterChip>
-            ))}
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="-mx-2 overflow-x-auto px-2 pb-1">
+        {/* Tag chips */}
+        <div className="-mx-5 mt-3 overflow-x-auto px-5 pb-1 md:-mx-12 md:px-12">
           <div className="flex gap-2">
             <FilterChip active={tag === 'all'} onClick={() => setTag('all')}>
-              Tous tags
+              Tous
             </FilterChip>
             {ALL_RIFF_TAGS.map((t) => (
               <FilterChip key={t} active={tag === t} onClick={() => setTag(t)}>
-                {t}
+                #{t}
               </FilterChip>
             ))}
           </div>
         </div>
-
-        {/* Sort */}
-        <div className="-mx-2 overflow-x-auto px-2 pb-1">
-          <div className="flex gap-2">
-            <FilterChip
-              active={sort === 'popular'}
-              onClick={() => setSort('popular')}
-            >
-              Populaires
-            </FilterChip>
-            <FilterChip
-              active={sort === 'recent'}
-              onClick={() => setSort('recent')}
-            >
-              Récents
-            </FilterChip>
-            <FilterChip
-              active={sort === 'bookmarked'}
-              onClick={() => setSort('bookmarked')}
-            >
-              <Bookmark size={12} className="mr-1" />
-              Mes favoris
-            </FilterChip>
-          </div>
-        </div>
       </div>
 
-      {/* Count */}
-      <div className="mt-5 mb-3 text-xs text-text-soft">
-        {filtered.length} riff{filtered.length > 1 ? 's' : ''}
-      </div>
-
-      {/* Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((r) => (
-          <RiffTile
+      {/* Feed */}
+      <div className="mx-auto max-w-2xl space-y-5 pb-24 md:pb-8">
+        {sorted.map((r) => (
+          <RiffFeedCard
             key={r.id}
             riff={r}
             bookmarked={bookmarkedSet.has(r.id)}
             onOpen={() => setOpenRiffId(r.id)}
           />
         ))}
+        {sorted.length === 0 && (
+          <p className="mt-12 text-center text-text-soft">
+            Aucun riff ne correspond à ce filtre.
+          </p>
+        )}
       </div>
-
-      {filtered.length === 0 && (
-        <p className="mt-12 text-center text-text-soft">
-          Aucun riff ne correspond à ces filtres.
-        </p>
-      )}
 
       {/* Mobile FAB */}
       <button
@@ -190,70 +150,18 @@ export function Riffs() {
         <Plus size={26} strokeWidth={2.5} />
       </button>
 
-      {/* Riff detail drawer */}
       <RiffDetailDrawer
         riffId={openRiffId}
         onClose={() => setOpenRiffId(null)}
       />
-
-      {/* Share modal placeholder Phase 5 */}
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </>
   );
 }
 
-// ─── Featured riff banner ─────────────────────────────────────────────
+// ─── Feed card (post Instagram-style) ──────────────────────────────────
 
-function FeaturedRiff({
-  riff,
-  onOpen,
-}: {
-  riff: CommunityRiff;
-  onOpen: () => void;
-}) {
-  const tab = getTab(riff.tabId);
-  if (!tab) return null;
-  return (
-    <Card glow className="mt-2">
-      <div className="flex items-start gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">
-          <Sparkles size={11} /> Featured
-        </span>
-        <span className="text-[10px] uppercase tracking-wider text-text-soft">
-          Riff du moment
-        </span>
-      </div>
-      <h2 className="display mt-2 text-display-sm md:text-display-md">
-        {tab.name}
-        {tab.artist && (
-          <span className="ml-2 font-sans text-base font-normal text-text-muted md:text-lg">
-            — {tab.artist}
-          </span>
-        )}
-      </h2>
-      <div className="mt-2 flex items-center gap-2 text-xs text-text-soft">
-        <span className="font-mono text-gold-soft">{riff.contributor}</span>
-        <span>·</span>
-        <span>{'⭐'.repeat(riff.difficulty)}</span>
-        <span>·</span>
-        <span>❤ {riff.baseLikes}</span>
-        <span>·</span>
-        <span className="font-mono text-gold">{riff.baseRating.toFixed(1)}/5</span>
-      </div>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold px-5 text-sm font-semibold text-bg shadow-gold transition-all hover:-translate-y-px"
-      >
-        <Play size={16} fill="currentColor" /> Ouvrir le riff
-      </button>
-    </Card>
-  );
-}
-
-// ─── Riff tile (grid) ─────────────────────────────────────────────────
-
-function RiffTile({
+function RiffFeedCard({
   riff,
   bookmarked,
   onOpen,
@@ -263,54 +171,234 @@ function RiffTile({
   onOpen: () => void;
 }) {
   const tab = getTab(riff.tabId);
+  const liked = useLiveQuery(() => isRiffLiked(riff.id), [riff.id]);
   if (!tab) return null;
 
-  const handleBookmark = async (e: React.MouseEvent) => {
+  const stopBubble = (fn: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    await toggleRiffBookmark(riff.id);
+    fn();
   };
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group relative flex flex-col items-start gap-2 overflow-hidden rounded-2xl border border-border bg-surface p-4 text-left transition-all hover:-translate-y-0.5 hover:border-gold-soft"
-    >
-      {/* Bookmark btn top-right */}
-      <span
-        onClick={handleBookmark}
-        role="button"
-        tabIndex={0}
-        aria-label={bookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        className={clsx(
-          'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
-          bookmarked
-            ? 'border-gold bg-gold/15 text-gold'
-            : 'border-border bg-surface-2 text-text-soft hover:border-gold-soft hover:text-gold'
-        )}
-      >
-        <Bookmark size={13} fill={bookmarked ? 'currentColor' : 'none'} />
-      </span>
-      <h3 className="display pr-8 text-lg leading-tight">{tab.name}</h3>
-      {tab.artist && <p className="text-xs text-text-muted">{tab.artist}</p>}
-      <div className="mt-1 flex flex-wrap gap-1.5">
-        {riff.tags.slice(0, 3).map((t) => (
-          <span key={t} className="chip text-[9px]">{t}</span>
+    <article className="overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-gold-soft/50">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
+        <div className="flex items-center gap-2.5">
+          <Avatar name={riff.contributor} />
+          <div className="leading-tight">
+            <div className="font-mono text-sm font-semibold text-text">
+              {riff.contributor}
+            </div>
+            <div className="text-[10px] text-text-soft">
+              {formatRelativeDate(riff.addedAt)} · {'⭐'.repeat(riff.difficulty)}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Caption */}
+      {riff.caption && (
+        <p className="px-4 pt-1 text-sm text-text leading-relaxed">
+          {riff.caption}
+        </p>
+      )}
+
+      {/* Tags */}
+      <div className="px-4 pt-2 flex flex-wrap gap-1.5">
+        {riff.tags.map((t) => (
+          <span
+            key={t}
+            className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft"
+          >
+            #{t}
+          </span>
         ))}
       </div>
-      <div className="mt-auto flex w-full items-center justify-between gap-2 pt-3 text-xs text-text-soft">
-        <span className="font-mono text-gold-soft">{riff.contributor}</span>
-        <span className="font-mono">{'⭐'.repeat(riff.difficulty)}</span>
+
+      {/* Tab preview inline (cliquable, ouvre drawer) */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Ouvrir ${tab.name}`}
+        className="mt-3 block w-full border-y border-border bg-surface-2 px-3 py-3 text-left transition-colors hover:bg-surface-2/80"
+      >
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <div>
+            <div className="display text-base text-text">{tab.name}</div>
+            {tab.artist && (
+              <div className="text-xs text-text-muted">{tab.artist}</div>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2 text-[10px] text-text-soft">
+            <span className="font-mono">{tab.tempo} BPM</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-bg">
+              <Play size={12} fill="currentColor" />
+            </span>
+          </div>
+        </div>
+        <div className="-mx-1 max-h-[120px] overflow-hidden">
+          <TabReader tab={tab} lineHeight={14} beatWidth={12} />
+        </div>
+      </button>
+
+      {/* Actions row */}
+      <div className="flex items-center justify-between gap-1 px-3 py-2">
+        <div className="flex items-center gap-0">
+          <ActionButton
+            label={liked ? 'Aimé' : "J'aime"}
+            count={riff.baseLikes + (liked ? 1 : 0)}
+            active={!!liked}
+            activeColor="danger"
+            onClick={stopBubble(() => void toggleRiffLike(riff.id))}
+          >
+            <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+          </ActionButton>
+          <ActionButton
+            label="Commentaires"
+            count={riff.commentsCount ?? 0}
+            onClick={stopBubble(onOpen)}
+          >
+            <MessageCircle size={18} />
+          </ActionButton>
+          <ActionButton
+            label={bookmarked ? 'Sauvegardé' : 'Sauvegarder'}
+            active={bookmarked}
+            activeColor="gold"
+            onClick={stopBubble(() => void toggleRiffBookmark(riff.id))}
+          >
+            <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
+          </ActionButton>
+        </div>
+        <ActionButton
+          label="Partager"
+          onClick={stopBubble(async () => {
+            const shareData = {
+              title: `${tab.name} — RiffLab`,
+              text: `${riff.contributor} : ${riff.caption ?? tab.name}`,
+              url: typeof window !== 'undefined' ? window.location.href : '',
+            };
+            if (navigator.share) {
+              await navigator.share(shareData).catch(() => undefined);
+            } else if (navigator.clipboard) {
+              await navigator.clipboard.writeText(shareData.url);
+            }
+          })}
+        >
+          <Share2 size={18} />
+        </ActionButton>
       </div>
-      <div className="flex w-full items-center justify-between text-[10px] text-text-soft">
-        <span>❤ {riff.baseLikes}</span>
-        <span className="font-mono text-gold">{riff.baseRating.toFixed(1)}/5</span>
-      </div>
+    </article>
+  );
+}
+
+// ─── Avatar (initials in gold circle) ──────────────────────────────────
+
+function Avatar({ name }: { name: string }) {
+  const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
+  return (
+    <div
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-sm font-bold text-gold"
+      aria-hidden="true"
+    >
+      {initial === '?' ? <User size={16} /> : initial}
+    </div>
+  );
+}
+
+// ─── Action button (icon + optional count) ─────────────────────────────
+
+function ActionButton({
+  children,
+  label,
+  count,
+  active,
+  activeColor = 'gold',
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  count?: number;
+  active?: boolean;
+  activeColor?: 'gold' | 'danger';
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const activeCls =
+    activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={clsx(
+        'inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-colors hover:bg-surface-2',
+        active ? activeCls : 'text-text-muted hover:text-text'
+      )}
+    >
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className="font-mono text-xs">{count}</span>
+      )}
     </button>
   );
 }
 
-// ─── Detail drawer (TabPlayer + actions) ──────────────────────────────
+// ─── Sort tab ──────────────────────────────────────────────────────────
+
+function SortTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        'inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold transition-colors',
+        active
+          ? 'bg-gold text-bg shadow-gold'
+          : 'bg-surface-2 text-text-muted hover:text-text'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Filter chip ───────────────────────────────────────────────────────
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        'inline-flex h-8 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-colors',
+        active
+          ? 'border-gold bg-gold/15 text-gold-bright'
+          : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Detail drawer (TabPlayer + actions + stats) ──────────────────────
 
 function RiffDetailDrawer({
   riffId,
@@ -365,18 +453,30 @@ function RiffDetailDrawer({
                     <X size={16} />
                   </button>
                   <div className="px-5 py-6 md:px-8 md:py-8">
-                    {/* Header */}
-                    <div className="eyebrow !text-gold-soft">
-                      {'⭐'.repeat(data.riff.difficulty)} · {data.riff.tags.join(' · ')}
+                    {/* Header — pseudo + date + difficulty */}
+                    <div className="flex items-center gap-3">
+                      <Avatar name={data.riff.contributor} />
+                      <div>
+                        <div className="font-mono text-sm font-semibold text-text">
+                          {data.riff.contributor}
+                        </div>
+                        <div className="text-xs text-text-soft">
+                          {formatRelativeDate(data.riff.addedAt)} ·{' '}
+                          {'⭐'.repeat(data.riff.difficulty)}
+                        </div>
+                      </div>
                     </div>
-                    <h2 className="display mt-2 text-display-md">{data.tab.name}</h2>
+
+                    {data.riff.caption && (
+                      <p className="mt-3 text-base text-text leading-relaxed">
+                        {data.riff.caption}
+                      </p>
+                    )}
+
+                    <h2 className="display mt-4 text-display-md">{data.tab.name}</h2>
                     {data.tab.artist && (
                       <p className="mt-1 text-text-muted">{data.tab.artist}</p>
                     )}
-                    <div className="mt-2 flex items-center gap-3 text-xs text-text-soft">
-                      <span className="font-mono text-gold-soft">{data.riff.contributor}</span>
-                      <span>· ajouté {data.riff.addedAt}</span>
-                    </div>
 
                     {/* Tab + player */}
                     <div className="mt-6">
@@ -418,7 +518,7 @@ function RiffDetailDrawer({
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface-2 p-4 text-center text-xs">
+                    <div className="mt-5 grid grid-cols-3 gap-3 rounded-xl border border-border bg-surface-2 p-4 text-center text-xs">
                       <div>
                         <div className="label-small">Likes</div>
                         <div className="display mt-1 text-display-sm text-gold">
@@ -426,7 +526,13 @@ function RiffDetailDrawer({
                         </div>
                       </div>
                       <div>
-                        <div className="label-small">Note moyenne</div>
+                        <div className="label-small">Commentaires</div>
+                        <div className="display mt-1 text-display-sm text-gold">
+                          {data.riff.commentsCount ?? 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="label-small">Note</div>
                         <div className="display mt-1 text-display-sm text-gold">
                           {data.riff.baseRating.toFixed(1)}
                           <span className="text-sm text-text-soft">/5</span>
@@ -444,7 +550,7 @@ function RiffDetailDrawer({
   );
 }
 
-// ─── Rating stars (1-5, click pour set, re-click pour clear) ──────────
+// ─── Rating stars (1-5, click pour set) ───────────────────────────────
 
 function RatingStars({
   current,
@@ -482,34 +588,6 @@ function RatingStars({
         );
       })}
     </div>
-  );
-}
-
-// ─── Filter chip ───────────────────────────────────────────────────────
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={clsx(
-        'inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-xs font-medium transition-colors',
-        active
-          ? 'border-gold bg-gold text-bg'
-          : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -559,8 +637,8 @@ function ShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     et participer à la communauté.
                   </p>
                   <p className="mt-2 text-sm text-text-muted">
-                    En attendant : bookmarks et ratings sont locaux uniquement,
-                    ils vivent dans Dexie sur ton appareil.
+                    En attendant : likes, bookmarks et ratings sont locaux
+                    uniquement, ils vivent dans Dexie sur ton appareil.
                   </p>
                   <button
                     type="button"
