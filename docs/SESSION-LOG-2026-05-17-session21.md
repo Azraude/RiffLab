@@ -152,3 +152,35 @@ Pratique pour démontrer RiffLab à quelqu'un ou rattraper si zappé au premier 
 Si Melvin valide l'audio à l'oreille demain matin → continuer i18n full coverage Dashboard + autres pages, ou attaquer les bonus TASK 6-10 (SEO + OG, a11y audit Lighthouse, capo polish, stats heatmap calendaire, loading skeletons).
 
 Le pivot WebAudioFont est sain et stable. Si un preset GM précis ne sonne pas convaincant, swap `WAF_PRESETS[X].url` vers un autre slot GM ou une autre banque (ex `Aspirin_sf2_file.js` au lieu de `FluidR3_GM_sf2_file.js`).
+
+---
+
+# PHASE 2 — Bonus tasks (5 commits post-prio)
+
+User a dit "vasy go enchaine phase suivante" → j'ai attaqué les bonus TASK 6-10 du brief session 21.
+
+## ✅ Phase 2 livrée (5 commits)
+
+- **TASK 9** — `dd4692c` — **Stats enrichies** : heatmap calendaire GitHub-style 365 jours (52 cols × 7 lignes, 5 paliers gold), best streak ever (run consécutif max dans l'historique), comparaison ce mois vs précédent (delta + delta% avec badge vert/rouge/égal). Helpers `lastYearPracticed` / `bestStreakEver` / `monthVsPreviousMonth` ajoutés dans `db.ts`. Nouveau composant `PracticeHeatmap.tsx` (SVG mask, mois labels en haut, tooltip natif via `<title>`).
+- **TASK 8** — `dd4692c` (même commit) — **Capo polish** : ajout d'un one-liner scannable au-dessus du detail dans `CapoSuggestionPanel` : `"Capo 3 → joue Dm-G-Am au lieu de Fm-Bb-Cm"`. Bordure gold + font-mono pour lisibilité répèt.
+- **TASK 7** — `6fb3ca7` — **A11y polish** : `syncHtmlLang` qui met à jour `document.documentElement.lang` au boot + à chaque `languageChanged` (lecteurs d'écran prononciation correcte FR vs EN). Audit Dialog.Content : tous OK (aria-describedby={undefined} Radix pattern). Le reste de l'a11y baseline (focus-visible, prefers-reduced-motion ciblé, skip-link, aria-live PWA toasts) déjà en place depuis recovery 20.1.
+- **TASK 10** — `1297460` — **Skeletons** : nouveau `SetlistTileSkeleton` qui matche le rendu réel (titre + sous-titre + 3 lignes songs), wired dans Setlists pendant le load Dexie. Stats.tsx : `isLoading` flag groupé sur les 6 live queries → affiche 4 KPI card skeletons au lieu d'un flash blanc. Songs déjà skeletoné (SongTileSkeleton).
+- **i18n bonus** — `61c2277` — Dashboard daily hero + streak card migrés vers `t()`. Nouvelles clés JSON : `workChordPrefix`, `combineWithScale`, `chord`, `scale`, `category`. Toggle FR↔EN sur `/dashboard` est maintenant 100% live (hero, streak title, plural "jour/jours d'affilée", liens stats/plan).
+
+**TASK 6 (SEO + OG)** : déjà fait en session 20 nuit (commit `e26bcb6`) — robots.txt + sitemap.xml + og-image.svg + meta tags index.html présents. Skip.
+
+## ⏱ Stats phase 2
+
+- 5 commits pushés
+- ~400 lignes ajoutées net
+- Build pass à chaque commit
+- Main bundle stable ~310 KB gzip
+
+## 🎯 À tester au réveil
+
+1. `/stats` → heatmap année visible + record + ce mois vs précédent
+2. `/songs/:id` avec capo suggérable → one-liner gold "Capo X → joue X-Y-Z au lieu de..."
+3. `/setlists` à froid → skeletons gold shimmer pendant Dexie load
+4. Toggle FR/EN sur `/dashboard` → hero + streak card switchent live
+
+Pages encore non migrées en i18n (Songs / Chords / Scales / Stats / Tuner / Metronome / etc.) — incrémental, à faire au fil de l'eau quand on a 5 min entre deux features.
