@@ -38,6 +38,15 @@ void i18n
     },
   });
 
+// Sync <html lang> avec la langue active — important pour les lecteurs
+// d'écran qui doivent prononcer le texte avec la bonne phonétique.
+function syncHtmlLang(lang: string | undefined) {
+  if (typeof document === 'undefined' || !lang) return;
+  document.documentElement.lang = lang;
+}
+syncHtmlLang(i18n.resolvedLanguage);
+i18n.on('languageChanged', syncHtmlLang);
+
 export function setLocale(locale: LocaleId): void {
   void i18n.changeLanguage(locale);
 }
