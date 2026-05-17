@@ -25,6 +25,7 @@ import { getRiffOfTheWeek } from '@/lib/riffOfTheWeek';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import { CommunityRiffCard } from '@/components/dashboard/CommunityRiffCard';
+import { DailyChallengeCard } from '@/components/dashboard/DailyChallengeCard';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 
 /**
@@ -304,6 +305,9 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Daily Challenge — tab du jour pickée déterministe (TASK E) */}
+      <DailyChallengeCard />
 
       {/* Scale preview */}
       <div className="mt-10">

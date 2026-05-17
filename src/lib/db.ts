@@ -109,6 +109,14 @@ export type Interaction = {
   interactedAt: number;
 };
 
+/** Daily challenge — un défi quotidien pré-pickés depuis tabsDatabase. */
+export type DailyChallenge = {
+  /** YYYY-MM-DD — sert de PK */
+  date: string;
+  tabId: string;
+  completedAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
@@ -120,6 +128,7 @@ class RiffLabDB extends Dexie {
   riffBookmarks!: Table<RiffBookmark, string>;
   riffRatings!: Table<RiffRating, string>;
   interactions!: Table<Interaction, string>;
+  dailyChallenges!: Table<DailyChallenge, string>;
 
   constructor() {
     super('rifflab');
@@ -179,6 +188,19 @@ class RiffLabDB extends Dexie {
       riffBookmarks: 'id, bookmarkedAt',
       riffRatings: 'id, ratedAt',
       interactions: 'key, type, itemId, interactedAt',
+    });
+    // v8 : Daily Challenge — un défi quotidien (tab pické deterministe par date)
+    this.version(8).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
     });
   }
 }
