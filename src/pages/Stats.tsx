@@ -4,16 +4,23 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import {
   computeStreak,
   last30DaysPracticed,
+  lastYearPracticed,
+  bestStreakEver,
+  monthVsPreviousMonth,
   topPracticeItems,
 } from '@/lib/db';
 import { getChord } from '@/lib/chordDatabase';
 import { getScale } from '@/lib/scaleDatabase';
-import { Flame } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Trophy, Minus } from 'lucide-react';
+import { PracticeHeatmap } from '@/components/stats/PracticeHeatmap';
 
 export function Stats() {
   const streak = useLiveQuery(() => computeStreak(), []);
   const tops = useLiveQuery(() => topPracticeItems(5), []);
   const days = useLiveQuery(() => last30DaysPracticed(), []);
+  const yearDays = useLiveQuery(() => lastYearPracticed(), []);
+  const bestStreak = useLiveQuery(() => bestStreakEver(), []);
+  const monthCmp = useLiveQuery(() => monthVsPreviousMonth(), []);
 
   const maxCount = Math.max(1, ...(days ?? []).map((d) => d.count));
 
@@ -24,7 +31,7 @@ export function Stats() {
         subtitle="Tes données de pratique depuis le début."
       />
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-4">
         <Card>
           <div className="label-small">Série actuelle</div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -44,6 +51,16 @@ export function Stats() {
         </Card>
 
         <Card>
+          <div className="label-small flex items-center gap-1">
+            <Trophy size={11} className="text-gold-soft" /> Record
+          </div>
+          <div className="display text-display-lg mt-2 text-gold">
+            {bestStreak ?? 0}
+          </div>
+          <div className="mt-1 text-xs text-text-soft">meilleure série jamais</div>
+        </Card>
+
+        <Card>
           <div className="label-small">Total sessions</div>
           <div className="display text-display-lg mt-2 text-gold">
             {tops?.totalSessions ?? 0}
@@ -52,14 +69,52 @@ export function Stats() {
         </Card>
 
         <Card>
-          <div className="label-small">Pratiqué cette semaine</div>
+          <div className="label-small">Cette semaine</div>
           <div className="display text-display-lg mt-2 text-gold">
             {days ? days.slice(-7).filter((d) => d.count > 0).length : 0}
             <span className="text-display-sm text-text-muted">/7</span>
           </div>
-          <div className="mt-1 text-xs text-text-soft">jours sur 7</div>
+          <div className="mt-1 text-xs text-text-soft">jours pratiqués</div>
         </Card>
       </div>
+
+      {/* Comparaison mois sur mois */}
+      {monthCmp && (
+        <Card className="mt-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <div className="eyebrow">Ce mois vs mois précédent</div>
+              <div className="mt-2 flex items-baseline gap-3">
+                <div className="display text-display-md text-gold">
+                  {monthCmp.current.uniqueDays}
+                </div>
+                <span className="text-sm text-text-muted">
+                  jour{monthCmp.current.uniqueDays > 1 ? 's' : ''} ce mois (
+                  {monthCmp.previous.uniqueDays} le mois précédent)
+                </span>
+              </div>
+            </div>
+            <MonthDelta diff={monthCmp.diff} diffPct={monthCmp.diffPct} />
+          </div>
+        </Card>
+      )}
+
+      {/* Heatmap calendaire 365 jours */}
+      <Card className="mt-6">
+        <div className="mb-3 flex items-baseline justify-between">
+          <div className="eyebrow">Année calendaire</div>
+          <div className="text-xs text-text-soft">
+            {yearDays ? yearDays.filter((d) => d.count > 0).length : 0} jours sur 365
+          </div>
+        </div>
+        {yearDays && yearDays.length > 0 ? (
+          <PracticeHeatmap days={yearDays} />
+        ) : (
+          <div className="py-6 text-center text-sm text-text-soft">
+            Pas encore de pratique enregistrée.
+          </div>
+        )}
+      </Card>
 
       {/* Courbe 30 jours */}
       <Card className="mt-6">
@@ -170,5 +225,33 @@ export function Stats() {
         </Card>
       </div>
     </>
+  );
+}
+
+function MonthDelta({ diff, diffPct }: { diff: number; diffPct: number }) {
+  if (diff === 0) {
+    return (
+      <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 text-sm text-text-muted">
+        <Minus size={14} />
+        Égal
+      </div>
+    );
+  }
+  const isPositive = diff > 0;
+  const Icon = isPositive ? TrendingUp : TrendingDown;
+  return (
+    <div
+      className={
+        'inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold ' +
+        (isPositive
+          ? 'border-success/40 bg-success/15 text-success'
+          : 'border-danger/40 bg-danger/15 text-danger')
+      }
+    >
+      <Icon size={14} />
+      {isPositive ? '+' : ''}
+      {diff} ({isPositive ? '+' : ''}
+      {diffPct}%)
+    </div>
   );
 }

@@ -354,15 +354,22 @@ function CapoSuggestionPanel({
 
   // Cas 3 : amélioration possible
   const delta = bestOpenCount - currentOpenCount;
+  // One-liner summary scannable : "Capo 3 → joue Dm-G-Am au lieu de Fm-Bb-Cm"
+  const origChords = Object.keys(mapping);
+  const newChords = origChords.map((c) => mapping[c]);
+  const summary = `Capo ${bestCapo} → joue ${newChords.join('-')} au lieu de ${origChords.join('-')}`;
   return (
     <div>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="eyebrow">Suggestion</div>
           <h3 className="display mt-1 text-display-sm">
             Capo <span className="text-gold text-gold-glow">{bestCapo}</span>
           </h3>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-2 rounded-lg border border-border-gold bg-gold/5 px-3 py-2 font-mono text-sm leading-relaxed text-text">
+            {summary}
+          </p>
+          <p className="mt-2 text-sm text-text-muted">
             <span className="text-gold">{bestOpenCount}/{totalChords}</span> accords en
             open chord (vs {currentOpenCount}/{totalChords} actuellement, +{delta}).
           </p>

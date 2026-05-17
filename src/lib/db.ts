@@ -501,6 +501,85 @@ export async function last30DaysPracticed(): Promise<{ date: string; count: numb
   return out;
 }
 
+/**
+ * 365 derniers jours, count de sessions par jour. Format pour heatmap
+ * calendaire GitHub-style (52 colonnes × 7 lignes).
+ */
+export async function lastYearPracticed(): Promise<
+  { date: string; count: number }[]
+> {
+  const all = await db.sessions.filter((s) => s.completed === true).toArray();
+  const counts = new Map<string, number>();
+  for (const s of all) counts.set(s.date, (counts.get(s.date) ?? 0) + 1);
+  const out: { date: string; count: number }[] = [];
+  const DAYS = 365;
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    out.push({ date, count: counts.get(date) ?? 0 });
+  }
+  return out;
+}
+
+/**
+ * Longest consecutive streak ever (en jours).
+ * Calcule en parcourant l'historique trié des sessions complétées et en
+ * comptant les runs de jours consécutifs.
+ */
+export async function bestStreakEver(): Promise<number> {
+  const sessions = await db.sessions.filter((s) => s.completed === true).toArray();
+  if (sessions.length === 0) return 0;
+  const dates = Array.from(new Set(sessions.map((s) => s.date))).sort();
+  let best = 1;
+  let current = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1]);
+    const cur = new Date(dates[i]);
+    const diffDays = Math.round((cur.getTime() - prev.getTime()) / 86_400_000);
+    if (diffDays === 1) {
+      current++;
+      if (current > best) best = current;
+    } else {
+      current = 1;
+    }
+  }
+  return best;
+}
+
+/**
+ * Comparaison ce mois vs mois précédent — nombre de jours uniques
+ * pratiqués (pas le nb de sessions, mais combien de jours distincts).
+ */
+export async function monthVsPreviousMonth(): Promise<{
+  current: { yearMonth: string; uniqueDays: number };
+  previous: { yearMonth: string; uniqueDays: number };
+  diff: number;
+  diffPct: number;
+}> {
+  const sessions = await db.sessions.filter((s) => s.completed === true).toArray();
+  const now = new Date();
+  const curYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevYm = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  const curSet = new Set<string>();
+  const prevSet = new Set<string>();
+  for (const s of sessions) {
+    if (s.date.startsWith(curYm)) curSet.add(s.date);
+    else if (s.date.startsWith(prevYm)) prevSet.add(s.date);
+  }
+  const current = curSet.size;
+  const previous = prevSet.size;
+  const diff = current - previous;
+  const diffPct = previous === 0 ? (current > 0 ? 100 : 0) : Math.round((diff / previous) * 100);
+  return {
+    current: { yearMonth: curYm, uniqueDays: current },
+    previous: { yearMonth: prevYm, uniqueDays: previous },
+    diff,
+    diffPct,
+  };
+}
+
 // Seed: create 2-3 example songs + 1 démo setlist if DB is empty on first load
 export async function seedIfEmpty(): Promise<void> {
   const count = await db.songs.count();
