@@ -14,6 +14,7 @@ import {
   type Song,
 } from '@/lib/db';
 import { Plus, ListMusic } from 'lucide-react';
+import { SetlistTileSkeleton } from '@/components/ui/SetlistTileSkeleton';
 
 export function Setlists() {
   const setlists = useLiveQuery(() => listSetlists(), []);
@@ -45,7 +46,11 @@ export function Setlists() {
       </PageHeader>
 
       {!setlists ? (
-        <div className="text-text-soft">Chargement…</div>
+        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SetlistTileSkeleton key={i} />
+          ))}
+        </div>
       ) : setlists.length === 0 ? (
         <Card className="text-center py-12">
           <ListMusic size={32} className="mx-auto mb-3 text-gold-soft" strokeWidth={1.5} />

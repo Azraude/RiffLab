@@ -13,6 +13,7 @@ import { getChord } from '@/lib/chordDatabase';
 import { getScale } from '@/lib/scaleDatabase';
 import { Flame, TrendingUp, TrendingDown, Trophy, Minus } from 'lucide-react';
 import { PracticeHeatmap } from '@/components/stats/PracticeHeatmap';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export function Stats() {
   const streak = useLiveQuery(() => computeStreak(), []);
@@ -23,6 +24,13 @@ export function Stats() {
   const monthCmp = useLiveQuery(() => monthVsPreviousMonth(), []);
 
   const maxCount = Math.max(1, ...(days ?? []).map((d) => d.count));
+  const isLoading =
+    streak === undefined ||
+    tops === undefined ||
+    days === undefined ||
+    yearDays === undefined ||
+    bestStreak === undefined ||
+    monthCmp === undefined;
 
   return (
     <>
@@ -31,6 +39,20 @@ export function Stats() {
         subtitle="Tes données de pratique depuis le début."
       />
 
+      {isLoading && (
+        <div className="grid gap-5 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <Skeleton className="h-3 w-24" rounded="md" />
+              <Skeleton className="mt-3 h-10 w-16" rounded="md" />
+              <Skeleton className="mt-2 h-3 w-32" rounded="md" />
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && (
+      <>
       <div className="grid gap-5 md:grid-cols-4">
         <Card>
           <div className="label-small">Série actuelle</div>
@@ -224,6 +246,8 @@ export function Stats() {
           )}
         </Card>
       </div>
+      </>
+      )}
     </>
   );
 }
