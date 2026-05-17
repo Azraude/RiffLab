@@ -3,21 +3,85 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0a0a" />
-    <meta name="description" content="RiffLab — Le carnet du guitariste moderne. Pratique quotidienne, sons, accords, gammes." />
+
+    <!-- Primary SEO -->
+    <title>RiffLab — Le carnet du guitariste moderne</title>
+    <meta
+      name="description"
+      content="RiffLab : carnet de sons perso, bibliothèque accords et gammes, entraînement quotidien. PWA mobile-first pour guitaristes."
+    />
+    <meta
+      name="keywords"
+      content="guitare, accords, gammes, chord, scale, tablature, fretboard, métronome, tuner, riff, songbook, guitariste, songwriter"
+    />
+    <meta name="author" content="Melvin Bruhat" />
+    <link rel="canonical" href="https://rifflab.app/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RiffLab" />
+    <meta property="og:title" content="RiffLab — Le carnet du guitariste moderne" />
+    <meta
+      property="og:description"
+      content="Carnet de sons perso, bibliothèque accords/gammes, entraînement quotidien. PWA mobile-first pour guitaristes."
+    />
+    <meta property="og:url" content="https://rifflab.app/" />
+    <meta property="og:image" content="https://rifflab.app/og-image.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RiffLab — logo flamme + tagline" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RiffLab — Le carnet du guitariste moderne" />
+    <meta
+      name="twitter:description"
+      content="Pratique quotidienne, sons, accords, gammes. PWA mobile-first."
+    />
+    <meta name="twitter:image" content="https://rifflab.app/og-image.svg" />
+    <meta name="twitter:image:alt" content="RiffLab — logo flamme + tagline" />
+
     <!-- PWA — manifest généré auto par vite-plugin-pwa au build -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="RiffLab" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <title>RiffLab — Le carnet du guitariste</title>
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "RiffLab",
+        "description": "Carnet de sons perso, bibliothèque accords et gammes, entraînement quotidien. PWA mobile-first pour guitaristes.",
+        "url": "https://rifflab.app/",
+        "applicationCategory": "MusicApplication",
+        "operatingSystem": "Any (PWA)",
+        "browserRequirements": "Requires JavaScript and a modern browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Melvin Bruhat"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
