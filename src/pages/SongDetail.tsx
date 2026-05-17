@@ -96,18 +96,27 @@ export function SongDetail() {
             <span>● {song.status}</span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            const url = buildShareUrl(encodeSong(song));
-            const ok = await copyShareUrl(url);
-            if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
-          }}
-          className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-xl border border-border bg-surface px-3 text-sm text-text-muted hover:border-gold-soft hover:text-text md:self-end"
-          aria-label="Partager ce son"
-        >
-          <Share2 size={14} /> Partager
-        </button>
+        <div className="flex flex-wrap gap-2 self-start md:self-end">
+          <Link
+            to={`/songs/${song.id}/play`}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-gold bg-gold/10 px-3 text-sm font-semibold text-gold hover:bg-gold/20"
+            aria-label="Lancer le mode lecture full-screen"
+          >
+            <Play size={14} fill="currentColor" /> Mode lecture
+          </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              const url = buildShareUrl(encodeSong(song));
+              const ok = await copyShareUrl(url);
+              if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
+            }}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm text-text-muted hover:border-gold-soft hover:text-text"
+            aria-label="Partager ce son"
+          >
+            <Share2 size={14} /> Partager
+          </button>
+        </div>
       </div>
 
       {/* Chord palette */}

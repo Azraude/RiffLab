@@ -22,12 +22,15 @@ import { PracticePlan } from '@/pages/PracticePlan';
 import { SharePreview } from '@/pages/SharePreview';
 import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
+import { Teleprompter } from '@/pages/Teleprompter';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Landing />,
   },
+  // Routes full-screen (hors Layout) — pas de sidebar
+  { path: '/songs/:id/play', element: <Teleprompter /> },
   {
     path: '/',
     element: <Layout />,
