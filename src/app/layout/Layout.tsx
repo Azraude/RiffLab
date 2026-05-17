@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
+import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -13,6 +14,7 @@ export function Layout() {
   const location = useLocation();
 
   return (
+    <KeyboardShortcutsProvider>
     <div className="min-h-screen bg-bg">
       {/*
         IMPORTANT : grid-cols-[minmax(0,1fr)] explicite en mobile (pas
@@ -44,5 +46,6 @@ export function Layout() {
       </div>
       <MobileNav />
     </div>
+    </KeyboardShortcutsProvider>
   );
 }
