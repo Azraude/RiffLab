@@ -12,6 +12,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { HeroScene3DLazy } from '@/components/three/HeroScene3DLazy';
+import { useTranslation } from 'react-i18next';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 
 /**
@@ -27,6 +28,7 @@ import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
  * sur enfants directs). Particules CSS dans le hero (pas de WebGL).
  */
 export function Landing() {
+  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Ambient halo gold derrière le hero — pure CSS, accompagne la 3D */}
@@ -53,7 +55,7 @@ export function Landing() {
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-border-gold bg-surface/60 px-3 text-sm text-text backdrop-blur-md transition-all hover:bg-gold/10 md:h-11 md:px-4"
           >
             <LogIn size={15} />
-            Se connecter
+            {t('landing.signIn')}
           </Link>
         </div>
       </header>
@@ -85,9 +87,9 @@ export function Landing() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="eyebrow mb-5 md:mb-7"
         >
-          Le carnet du guitariste moderne
+          {t('landing.kicker')}
         </motion.div>
-        <HeroTitle text="Pratique. Compose. Joue." />
+        <HeroTitle text={t('landing.headline')} />
 
         <motion.p
           initial={{ opacity: 0, y: 12 }}

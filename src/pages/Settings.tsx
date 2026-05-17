@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
+import { LOCALES, setLocale, type LocaleId } from '@/i18n';
 import { usePrefs } from '@/stores/prefsStore';
 import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
@@ -9,12 +11,14 @@ import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { Check, Lock, Volume2, GraduationCap, Compass } from 'lucide-react';
+import { Check, Lock, Volume2, GraduationCap, Compass, Globe } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
   const prefs = usePrefs();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const currentLocale: LocaleId = (i18n.resolvedLanguage as LocaleId) ?? 'fr';
 
   const replayTutorial = () => {
     prefs.setOnboardingCompleted(false);
@@ -47,11 +51,39 @@ export function Settings() {
 
   return (
     <>
-      <PageHeader title="Préférences" showSettingsLink={false} />
+      <PageHeader title={t('settings.title')} showSettingsLink={false} />
 
       <div className="grid gap-5 md:grid-cols-2">
+        <Card className="md:col-span-2">
+          <div className="mb-3 flex items-center gap-2">
+            <Globe size={16} className="text-gold" />
+            <h3 className="display text-display-sm">{t('settings.language')}</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {LOCALES.map((loc) => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => setLocale(loc.id)}
+                aria-pressed={currentLocale === loc.id}
+                className={clsx(
+                  'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors',
+                  currentLocale === loc.id
+                    ? 'border-gold bg-gold/15 text-gold-bright'
+                    : 'border-border bg-surface-2 text-text-muted hover:border-gold-soft hover:text-text'
+                )}
+              >
+                <span aria-hidden="true">{loc.flag}</span>
+                {loc.label}
+                {currentLocale === loc.id && <Check size={14} strokeWidth={3} />}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-text-soft">{t('settings.languageNote')}</p>
+        </Card>
+
         <Card>
-          <h3 className="display text-display-sm mb-3">Accordage par défaut</h3>
+          <h3 className="display text-display-sm mb-3">{t('settings.tuning')}</h3>
           <select
             value={prefs.tuning}
             onChange={(e) => prefs.setTuning(e.target.value as TuningId)}

@@ -1,4 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import {
   LayoutDashboard,
@@ -24,47 +25,49 @@ type Section = 'perso' | 'library' | 'tools' | 'account';
 
 type NavItem = {
   to: string;
-  label: string;
+  /** Clé i18n dans nav.* (ex: 'today', 'songs') */
+  labelKey: string;
   icon: React.ReactNode;
   section: Section;
 };
 
 const items: NavItem[] = [
   // Espace perso — quotidien
-  { to: '/dashboard', label: "Aujourd'hui", icon: <LayoutDashboard size={18} />, section: 'perso' },
-  { to: '/songs', label: 'Mes sons', icon: <Music2 size={18} />, section: 'perso' },
-  { to: '/setlists', label: 'Setlists', icon: <ListMusic size={18} />, section: 'perso' },
-  { to: '/riff-of-the-week', label: 'Riff du moment', icon: <Sparkles size={18} />, section: 'perso' },
-  { to: '/jam', label: 'Mode jam', icon: <Disc3 size={18} />, section: 'perso' },
+  { to: '/dashboard', labelKey: 'today', icon: <LayoutDashboard size={18} />, section: 'perso' },
+  { to: '/songs', labelKey: 'songs', icon: <Music2 size={18} />, section: 'perso' },
+  { to: '/setlists', labelKey: 'setlists', icon: <ListMusic size={18} />, section: 'perso' },
+  { to: '/riff-of-the-week', labelKey: 'riffOfTheWeek', icon: <Sparkles size={18} />, section: 'perso' },
+  { to: '/jam', labelKey: 'jam', icon: <Disc3 size={18} />, section: 'perso' },
 
   // Bibliothèques — référence
-  { to: '/chords', label: 'Accords', icon: <Grid3x3 size={18} />, section: 'library' },
-  { to: '/scales', label: 'Gammes', icon: <Waves size={18} />, section: 'library' },
-  { to: '/progressions', label: 'Progressions', icon: <Workflow size={18} />, section: 'library' },
-  { to: '/riffs', label: 'Riffs', icon: <Flame size={18} />, section: 'library' },
-  { to: '/strum-patterns', label: 'Rythmiques', icon: <Activity size={18} />, section: 'library' },
+  { to: '/chords', labelKey: 'chords', icon: <Grid3x3 size={18} />, section: 'library' },
+  { to: '/scales', labelKey: 'scales', icon: <Waves size={18} />, section: 'library' },
+  { to: '/progressions', labelKey: 'progressions', icon: <Workflow size={18} />, section: 'library' },
+  { to: '/riffs', labelKey: 'riffs', icon: <Flame size={18} />, section: 'library' },
+  { to: '/strum-patterns', labelKey: 'strumPatterns', icon: <Activity size={18} />, section: 'library' },
 
   // Outils — utilitaires
-  { to: '/tuner', label: 'Tuner', icon: <Mic size={18} />, section: 'tools' },
-  { to: '/metronome', label: 'Métronome', icon: <Timer size={18} />, section: 'tools' },
-  { to: '/ear-training', label: 'Oreille', icon: <Ear size={18} />, section: 'tools' },
+  { to: '/tuner', labelKey: 'tuner', icon: <Mic size={18} />, section: 'tools' },
+  { to: '/metronome', labelKey: 'metronome', icon: <Timer size={18} />, section: 'tools' },
+  { to: '/ear-training', labelKey: 'earTraining', icon: <Ear size={18} />, section: 'tools' },
 
   // Compte — tracking + paramètres
-  { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'account' },
-  { to: '/plan', label: 'Mon plan', icon: <Target size={18} />, section: 'account' },
-  { to: '/settings', label: 'Préférences', icon: <SettingsIcon size={18} />, section: 'account' },
+  { to: '/stats', labelKey: 'stats', icon: <BarChart3 size={18} />, section: 'account' },
+  { to: '/plan', labelKey: 'plan', icon: <Target size={18} />, section: 'account' },
+  { to: '/settings', labelKey: 'settings', icon: <SettingsIcon size={18} />, section: 'account' },
 ];
 
-const sectionLabels: Record<Section, string> = {
-  perso: 'Espace perso',
-  library: 'Bibliothèques',
-  tools: 'Outils',
-  account: 'Compte',
+const sectionLabelKeys: Record<Section, string> = {
+  perso: 'sectionPerso',
+  library: 'sectionLibrary',
+  tools: 'sectionTools',
+  account: 'sectionAccount',
 };
 
 const SECTION_ORDER: Section[] = ['perso', 'library', 'tools', 'account'];
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const grouped = items.reduce<Record<Section, NavItem[]>>(
     (acc, it) => {
       (acc[it.section] ??= []).push(it);
@@ -85,7 +88,7 @@ export function Sidebar() {
 
       {SECTION_ORDER.map((sec) => (
         <div key={sec} className="mb-2">
-          <div className="label-small mb-1 px-2 mt-3">{sectionLabels[sec]}</div>
+          <div className="label-small mb-1 px-2 mt-3">{t(`nav.${sectionLabelKeys[sec]}`)}</div>
           {grouped[sec].map((it) => (
             <NavLink
               key={it.to}
@@ -100,7 +103,7 @@ export function Sidebar() {
               }
             >
               <span className="opacity-90">{it.icon}</span>
-              {it.label}
+              {t(`nav.${it.labelKey}`)}
             </NavLink>
           ))}
         </div>

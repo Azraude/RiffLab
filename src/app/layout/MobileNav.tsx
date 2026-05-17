@@ -1,27 +1,28 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Music2, Grid3x3, Waves, Timer, Mic, Wrench, Ear } from 'lucide-react';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 
-const TOOLS: Array<{ to: string; label: string; description: string; icon: React.ReactNode }> = [
+const TOOLS: Array<{ to: string; labelKey: string; description: string; icon: React.ReactNode }> = [
   {
     to: '/tuner',
-    label: 'Tuner',
+    labelKey: 'tuner',
     description: 'Accordage au micro avec détection de pitch',
     icon: <Mic size={20} />,
   },
   {
     to: '/metronome',
-    label: 'Métronome',
+    labelKey: 'metronome',
     description: 'Garde le tempo, 40-220 BPM',
     icon: <Timer size={20} />,
   },
   {
     to: '/ear-training',
-    label: 'Oreille',
+    labelKey: 'earTraining',
     description: 'Devine intervalles, accords et progressions',
     icon: <Ear size={20} />,
   },
@@ -32,6 +33,7 @@ const toolPaths = TOOLS.map((t) => t.to);
 export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [toolsOpen, setToolsOpen] = useState(false);
 
   const toolsActive = toolPaths.includes(location.pathname);
@@ -75,9 +77,9 @@ export function MobileNav() {
             )}
           </NavLink>
 
-          <NavItem to="/songs" label="Sons" icon={<Music2 size={20} />} />
-          <NavItem to="/chords" label="Accords" icon={<Grid3x3 size={20} />} />
-          <NavItem to="/scales" label="Gammes" icon={<Waves size={20} />} />
+          <NavItem to="/songs" label={t('nav.songs')} icon={<Music2 size={20} />} />
+          <NavItem to="/chords" label={t('nav.chords')} icon={<Grid3x3 size={20} />} />
+          <NavItem to="/scales" label={t('nav.scales')} icon={<Waves size={20} />} />
 
           {/* Outils — bouton (pas NavLink) qui ouvre une sheet */}
           <button
@@ -91,7 +93,7 @@ export function MobileNav() {
             )}
           >
             <Wrench size={20} />
-            <span>Outils</span>
+            <span>{t('nav.sectionTools')}</span>
           </button>
         </div>
       </nav>
@@ -130,7 +132,7 @@ export function MobileNav() {
                     <span className="h-1.5 w-12 rounded-full bg-text-soft/40" />
                   </div>
                   <div className="px-5 pb-2">
-                    <Dialog.Title className="display text-display-sm">Outils</Dialog.Title>
+                    <Dialog.Title className="display text-display-sm">{t('nav.sectionTools')}</Dialog.Title>
                     <Dialog.Description className="mt-0.5 text-sm text-text-muted">
                       Tes outils de pratique
                     </Dialog.Description>
@@ -167,7 +169,7 @@ export function MobileNav() {
                                 active ? 'text-gold' : 'text-text'
                               )}
                             >
-                              {tool.label}
+                              {t(`nav.${tool.labelKey}`)}
                             </span>
                             <span className="block text-xs text-text-muted">
                               {tool.description}
