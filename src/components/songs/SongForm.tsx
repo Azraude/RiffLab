@@ -12,8 +12,9 @@ import {
 import { NOTE_NAMES, TUNING_LABELS, type NoteName, type TuningId } from '@/lib/theory';
 import { COMMON_CHORD_NAMES } from '@/lib/chordDatabase';
 import { parseTabText } from '@/lib/tabImporter';
-import { Plus, Upload, X, Trash2, Wand2 } from 'lucide-react';
+import { Plus, Upload, X, Trash2, Wand2, Link as LinkIcon } from 'lucide-react';
 import { SectionStrumEditor } from './SectionStrumEditor';
+import { UgImportModal } from './UgImportModal';
 
 interface SongFormProps {
   /** Appelé après save réussi avec l'id du song créé. */
@@ -98,6 +99,7 @@ export function SongForm({ onSaved, onCancel }: SongFormProps) {
   };
 
   const [importOpen, setImportOpen] = useState(false);
+  const [ugImportOpen, setUgImportOpen] = useState(false);
 
   const handleImport = (parsed: ReturnType<typeof parseTabText>) => {
     setSong((s) => ({
@@ -107,23 +109,39 @@ export function SongForm({ onSaved, onCancel }: SongFormProps) {
       sections: parsed.sections.length > 0 ? parsed.sections : s.sections,
     }));
     setImportOpen(false);
+    setUgImportOpen(false);
   };
 
   return (
     <div className="grid gap-5">
-      {/* Import depuis tab — bouton en haut, modal au click */}
-      <button
-        type="button"
-        onClick={() => setImportOpen(true)}
-        className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-all hover:bg-gold/10"
-      >
-        <Upload size={14} className="transition-transform group-hover:-translate-y-0.5" />
-        Importer depuis une tab (copier-coller)
-      </button>
+      {/* Import — 2 options : paste tab ou URL UG */}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setImportOpen(true)}
+          className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-all hover:bg-gold/10"
+        >
+          <Upload size={14} className="transition-transform group-hover:-translate-y-0.5" />
+          Coller une tab (texte)
+        </button>
+        <button
+          type="button"
+          onClick={() => setUgImportOpen(true)}
+          className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-all hover:bg-gold/10"
+        >
+          <LinkIcon size={14} className="transition-transform group-hover:-translate-y-0.5" />
+          Importer URL Ultimate Guitar
+        </button>
+      </div>
 
       <TabImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+      />
+      <UgImportModal
+        open={ugImportOpen}
+        onClose={() => setUgImportOpen(false)}
         onImport={handleImport}
       />
 
