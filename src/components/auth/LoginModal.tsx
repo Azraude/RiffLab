@@ -93,14 +93,18 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
               />
             </Dialog.Overlay>
-            <Dialog.Content asChild forceMount aria-describedby={undefined}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
-                className="fixed inset-x-2 top-1/2 z-50 -translate-y-1/2 overflow-hidden rounded-2xl border border-border-gold bg-bg shadow-gold-strong sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2 sm:translate-y-[-50%]"
-              >
+            <Dialog.Content forceMount aria-describedby={undefined} className="outline-none">
+              {/* Wrapper flex centering — évite que framer-motion (scale/y)
+                  écrase le -translate-y-1/2 de Tailwind via transform.
+                  Le motion.div intérieur fait juste l'anim opacity+scale. */}
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-3 pointer-events-none">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                  transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+                  className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl border border-border-gold bg-bg shadow-gold-strong"
+                >
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -234,7 +238,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </>
                   )}
                 </div>
-              </motion.div>
+                </motion.div>
+              </div>
             </Dialog.Content>
           </Dialog.Portal>
         )}
