@@ -22,6 +22,7 @@ import { PracticePlan } from '@/pages/PracticePlan';
 import { SharePreview } from '@/pages/SharePreview';
 import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
+import { Profile } from '@/pages/Profile';
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'tuner', element: <Tuner /> },
       { path: 'stats', element: <Stats /> },
       { path: 'settings', element: <Settings /> },
+      { path: 'profile', element: <Profile /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

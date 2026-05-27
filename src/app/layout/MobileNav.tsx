@@ -6,6 +6,8 @@ import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { AuthMenu } from '@/components/auth/AuthMenu';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 const TOOLS: Array<{ to: string; labelKey: string; description: string; icon: React.ReactNode }> = [
   {
@@ -178,6 +180,13 @@ export function MobileNav() {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Langue + Auth — bottom du sheet, juste au-dessus du safe area */}
+                  <div className="space-y-2 border-t border-border px-3 pb-2 pt-3">
+                    <div className="label-small px-1">{t('settings.language')}</div>
+                    <LanguageSwitcher />
+                    <AuthMenu />
                   </div>
                 </motion.div>
               </Dialog.Content>

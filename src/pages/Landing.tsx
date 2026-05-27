@@ -12,8 +12,10 @@ import {
   LogIn,
 } from 'lucide-react';
 import { HeroScene3DLazy } from '@/components/three/HeroScene3DLazy';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 /**
  * Landing publique de RiffLab.
@@ -29,6 +31,7 @@ import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
  */
 export function Landing() {
   const { t } = useTranslation();
+  const [loginOpen, setLoginOpen] = useState(false);
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Ambient halo gold derrière le hero — pure CSS, accompagne la 3D */}
@@ -50,15 +53,17 @@ export function Landing() {
             <RiffLabLogo size={26} />
             <span className="display text-[22px] tracking-wide md:text-[26px]">RiffLab</span>
           </Link>
-          <Link
-            to="/dashboard"
+          <button
+            type="button"
+            onClick={() => setLoginOpen(true)}
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-border-gold bg-surface/60 px-3 text-sm text-text backdrop-blur-md transition-all hover:bg-gold/10 md:h-11 md:px-4"
           >
             <LogIn size={15} />
             {t('landing.signIn')}
-          </Link>
+          </button>
         </div>
       </header>
+      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
 
       {/* 3D scene en BACKGROUND absolu de la moitié basse du hero —
           plus de cadre rounded, plus de "carte vignette". Le contenu

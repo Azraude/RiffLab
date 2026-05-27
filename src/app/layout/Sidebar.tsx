@@ -1,6 +1,8 @@
 import { NavLink, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
+import { AuthMenu } from '@/components/auth/AuthMenu';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import {
   LayoutDashboard,
   Music2,
@@ -86,28 +88,36 @@ export function Sidebar() {
         <span className="display text-[28px] tracking-wide">RiffLab</span>
       </Link>
 
-      {SECTION_ORDER.map((sec) => (
-        <div key={sec} className="mb-2">
-          <div className="label-small mb-1 px-2 mt-3">{t(`nav.${sectionLabelKeys[sec]}`)}</div>
-          {grouped[sec].map((it) => (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              className={({ isActive }) =>
-                clsx(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
-                  isActive
-                    ? 'bg-surface-2 text-gold'
-                    : 'text-text-muted hover:bg-surface-2 hover:text-text'
-                )
-              }
-            >
-              <span className="opacity-90">{it.icon}</span>
-              {t(`nav.${it.labelKey}`)}
-            </NavLink>
-          ))}
-        </div>
-      ))}
+      <nav className="flex-1">
+        {SECTION_ORDER.map((sec) => (
+          <div key={sec} className="mb-2">
+            <div className="label-small mb-1 px-2 mt-3">{t(`nav.${sectionLabelKeys[sec]}`)}</div>
+            {grouped[sec].map((it) => (
+              <NavLink
+                key={it.to}
+                to={it.to}
+                className={({ isActive }) =>
+                  clsx(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                    isActive
+                      ? 'bg-surface-2 text-gold'
+                      : 'text-text-muted hover:bg-surface-2 hover:text-text'
+                  )
+                }
+              >
+                <span className="opacity-90">{it.icon}</span>
+                {t(`nav.${it.labelKey}`)}
+              </NavLink>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Bottom : drapeaux i18n + auth menu */}
+      <div className="mt-4 space-y-2 border-t border-border pt-4">
+        <LanguageSwitcher />
+        <AuthMenu />
+      </div>
     </aside>
   );
 }
