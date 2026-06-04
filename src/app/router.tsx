@@ -23,6 +23,7 @@ import { SharePreview } from '@/pages/SharePreview';
 import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
+import { Composer } from '@/pages/Composer';
 
 export const router = createBrowserRouter([
   {
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
       { path: 'progressions', element: <Progressions /> },
+      { path: 'composer', element: <Composer /> },
       { path: 'riffs', element: <Riffs /> },
       { path: 'ear-training', element: <EarTraining /> },
       { path: 'strum-patterns', element: <StrumPatterns /> },

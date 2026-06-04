@@ -19,6 +19,7 @@ import {
   Flame,
   Target,
   Sparkles,
+  Wand2,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -45,6 +46,7 @@ const items: NavItem[] = [
   { to: '/chords', labelKey: 'chords', icon: <Grid3x3 size={18} />, section: 'library' },
   { to: '/scales', labelKey: 'scales', icon: <Waves size={18} />, section: 'library' },
   { to: '/progressions', labelKey: 'progressions', icon: <Workflow size={18} />, section: 'library' },
+  { to: '/composer', labelKey: 'composer', icon: <Wand2 size={18} />, section: 'library' },
   { to: '/riffs', labelKey: 'riffs', icon: <Flame size={18} />, section: 'library' },
   { to: '/strum-patterns', labelKey: 'strumPatterns', icon: <Activity size={18} />, section: 'library' },
 

@@ -119,6 +119,22 @@ export type DailyChallenge = {
   completedAt: number;
 };
 
+/** Progression custom sauvée depuis /composer (session compositeur). */
+export type CustomProgression = {
+  id: string;
+  name: string;
+  /** Tonalité de référence (ex 'A', 'C#') */
+  key: string;
+  mode: 'major' | 'minor';
+  /** Style de génération initial (pop / rock / jazz / ...) — facultatif si user a tout custom */
+  style?: string;
+  /** Chiffres romains des degrés (I, vi, IV, V...) */
+  romans: string[];
+  /** Noms d'accords résolus (Am, F, C, G) */
+  chords: string[];
+  createdAt: number;
+};
+
 // ─── Database ──────────────────────────────────────────────────
 class RiffLabDB extends Dexie {
   songs!: Table<Song, string>;
@@ -131,6 +147,7 @@ class RiffLabDB extends Dexie {
   riffRatings!: Table<RiffRating, string>;
   interactions!: Table<Interaction, string>;
   dailyChallenges!: Table<DailyChallenge, string>;
+  customProgressions!: Table<CustomProgression, string>;
 
   constructor() {
     super('rifflab');
@@ -204,6 +221,20 @@ class RiffLabDB extends Dexie {
       interactions: 'key, type, itemId, interactedAt',
       dailyChallenges: 'date, completedAt',
     });
+    // v9 : custom progressions (compositeur)
+    this.version(9).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+    });
   }
 }
 
@@ -236,6 +267,23 @@ export function emptySetlist(partial: Partial<Setlist> = {}): Setlist {
 
 export function newRecordingId() {
   return 'rec_' + crypto.randomUUID();
+}
+
+export function newCustomProgressionId() {
+  return 'prog_' + crypto.randomUUID();
+}
+
+// ─── Custom progressions (compositeur) ───────────────────────────
+export async function saveCustomProgression(p: CustomProgression): Promise<void> {
+  await db.customProgressions.put(p);
+}
+
+export async function listCustomProgressions(): Promise<CustomProgression[]> {
+  return db.customProgressions.orderBy('createdAt').reverse().toArray();
+}
+
+export async function deleteCustomProgression(id: string): Promise<void> {
+  await db.customProgressions.delete(id);
 }
 
 // ─── Riff likes (community riff) ─────────────────────────────────
