@@ -1,57 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://rifflab.app/</loc>
+    <loc>https://riff-lab-sigma.vercel.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/dashboard</loc>
+    <loc>https://riff-lab-sigma.vercel.app/dashboard</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/songs</loc>
+    <loc>https://riff-lab-sigma.vercel.app/songs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/chords</loc>
+    <loc>https://riff-lab-sigma.vercel.app/chords</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/scales</loc>
+    <loc>https://riff-lab-sigma.vercel.app/scales</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/progressions</loc>
+    <loc>https://riff-lab-sigma.vercel.app/progressions</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/riffs</loc>
+    <loc>https://riff-lab-sigma.vercel.app/composer</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://riff-lab-sigma.vercel.app/riffs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/strum-patterns</loc>
+    <loc>https://riff-lab-sigma.vercel.app/strum-patterns</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/tuner</loc>
+    <loc>https://riff-lab-sigma.vercel.app/tuner</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/metronome</loc>
+    <loc>https://riff-lab-sigma.vercel.app/metronome</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rifflab.app/plan</loc>
+    <loc>https://riff-lab-sigma.vercel.app/plan</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
