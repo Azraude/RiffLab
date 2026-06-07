@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -6,7 +6,7 @@ import { TiltCard } from '@/components/ui/TiltCard';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
 import { countRecordingsBySong, db, type Song } from '@/lib/db';
-import { Mic, Plus } from 'lucide-react';
+import { Dices, Mic, Plus } from 'lucide-react';
 
 export function Songs() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
@@ -14,27 +14,63 @@ export function Songs() {
   // Quand la route /songs/new est active, le Sheet de création est par-dessus :
   // on cache le FAB (sinon il transparaît à travers le backdrop).
   const location = useLocation();
+  const navigate = useNavigate();
   const isNewModalOpen = location.pathname === '/songs/new';
+
+  /**
+   * Random song picker — bonus : pondéré pour pousser le backlog "à bosser".
+   * Si plusieurs songs marqués "à bosser", 60% chance pick parmi eux.
+   * Sinon random total sur la bibliothèque. Pas d'effet si <2 sons.
+   */
+  const handleRandomSong = async () => {
+    const allSongs = await db.songs.toArray();
+    if (allSongs.length === 0) return;
+    if (allSongs.length === 1) {
+      navigate(`/songs/${allSongs[0].id}`);
+      return;
+    }
+    const toWork = allSongs.filter((s) => s.status === 'à bosser');
+    const pool =
+      toWork.length >= 2 && Math.random() < 0.6 ? toWork : allSongs;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    navigate(`/songs/${picked.id}`);
+  };
+
+  const songsCount = songs?.length ?? 0;
+  const canRandom = songsCount >= 2;
 
   return (
     <>
       <PageHeader
         title="Mes sons"
-        subtitle={`${songs?.length ?? 0} sons dans ta bibliothèque.`}
+        subtitle={`${songsCount} sons dans ta bibliothèque.`}
       >
-        {/* Header CTA — desktop only. Mobile uses the floating FAB.
-            Variant "hero" : gradient gold + sheen au hover pour distinguer
-            cette action critique du reste. */}
-        <Link
-          to="/songs/new"
-          className="group relative hidden h-10 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-b from-gold-bright to-gold px-5 text-sm font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px md:inline-flex"
-        >
-          <span className="pointer-events-none absolute inset-y-0 -left-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-all duration-700 group-hover:left-full" />
-          <span className="relative inline-flex items-center gap-2">
-            <span className="font-serif italic text-base leading-none transition-transform group-hover:rotate-90">+</span>
-            Nouveau son
-          </span>
-        </Link>
+        <div className="hidden gap-2 md:flex">
+          {/* Bouton "Au hasard" — pondéré pour pousser le backlog "à bosser" */}
+          {canRandom && (
+            <button
+              type="button"
+              onClick={handleRandomSong}
+              aria-label="Ouvrir un son au hasard (priorité backlog à bosser)"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-gold bg-surface px-4 text-sm font-semibold text-text transition-colors hover:bg-gold/5"
+            >
+              <Dices size={14} className="text-gold" /> Au hasard
+            </button>
+          )}
+          {/* Header CTA — desktop only. Mobile uses the floating FAB.
+              Variant "hero" : gradient gold + sheen au hover pour distinguer
+              cette action critique du reste. */}
+          <Link
+            to="/songs/new"
+            className="group relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-b from-gold-bright to-gold px-5 text-sm font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px"
+          >
+            <span className="pointer-events-none absolute inset-y-0 -left-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-all duration-700 group-hover:left-full" />
+            <span className="relative inline-flex items-center gap-2">
+              <span className="font-serif italic text-base leading-none transition-transform group-hover:rotate-90">+</span>
+              Nouveau son
+            </span>
+          </Link>
+        </div>
       </PageHeader>
 
       {!songs ? (
