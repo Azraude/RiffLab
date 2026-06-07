@@ -43,6 +43,9 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { keys: ['g', 'm'], description: 'Aller au Métronome' },
       { keys: ['g', 'l'], description: 'Aller aux Setlists' },
       { keys: ['g', 'j'], description: 'Aller au mode Jam' },
+      { keys: ['g', 'w'], description: 'Aller au Compositeur' },
+      { keys: ['g', 'o'], description: 'Aller aux Progressions' },
+      { keys: ['g', 'i'], description: 'Aller à Mon profil' },
     ],
   },
   {
@@ -110,6 +113,9 @@ export function KeyboardShortcutsProvider({ children }: { children: ReactNode })
         m: '/metronome',
         l: '/setlists',
         j: '/jam',
+        w: '/composer', // w pour Wand2 (Compositeur)
+        o: '/progressions', // o pour prOgressions (g p déjà pris par Plan)
+        i: '/profile', // i pour Identity / Mon profIl
       };
       if (first === 'g' && map[second]) {
         navigate(map[second]);
