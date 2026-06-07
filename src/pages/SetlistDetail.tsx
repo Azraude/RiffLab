@@ -13,10 +13,12 @@ import {
   type Song,
 } from '@/lib/db';
 import { encodeSetlist, buildShareUrl, copyShareUrl } from '@/lib/share';
+import { exportSetlistToPdf } from '@/lib/setlistPdf';
 import {
   ArrowDown,
   ArrowUp,
   ChevronLeft,
+  FileText,
   Play,
   Plus,
   Share2,
@@ -38,6 +40,9 @@ export function SetlistDetail() {
   const [addOpen, setAddOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfInkSaver, setPdfInkSaver] = useState(true);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   if (!setlist) {
     return (
@@ -84,6 +89,27 @@ export function SetlistDetail() {
     if (!confirm(`Supprimer "${setlist.name}" ?`)) return;
     await deleteSetlist(setlist.id);
     navigate('/setlists');
+  };
+
+  const handleExportPdf = async () => {
+    if (!setlist) return;
+    const orderedSongs = setlist.songIds
+      .map((sid) => songsById.get(sid))
+      .filter(Boolean) as Song[];
+    if (orderedSongs.length === 0) {
+      alert('Ajoute au moins un son avant d\'exporter.');
+      return;
+    }
+    setPdfBusy(true);
+    try {
+      await exportSetlistToPdf(setlist, orderedSongs, { inkSaver: pdfInkSaver });
+      setPdfOpen(false);
+    } catch (err) {
+      console.error('[pdf] export failed', err);
+      alert('Erreur lors de la génération du PDF — voir console.');
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   const handleShare = async () => {
@@ -142,14 +168,25 @@ export function SetlistDetail() {
             {setlist.songIds.length} song{setlist.songIds.length > 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleShare}
-          aria-label="Partager"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text md:h-10 md:w-10"
-        >
-          <Share2 size={16} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPdfOpen(true)}
+            aria-label="Exporter en PDF"
+            title="Exporter en PDF"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text md:h-10 md:w-10"
+          >
+            <FileText size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Partager"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text md:h-10 md:w-10"
+          >
+            <Share2 size={16} />
+          </button>
+        </div>
       </div>
 
       {/* CTA mode lecture */}
@@ -269,6 +306,57 @@ export function SetlistDetail() {
           setAddOpen(false);
         }}
       />
+
+      {/* Sheet "Exporter PDF" */}
+      <Sheet
+        open={pdfOpen}
+        onOpenChange={setPdfOpen}
+        title="📄 Exporter en PDF"
+        description={`Chord chart imprimable A4 pour ta répèt — ${setlist.songIds.length} song${setlist.songIds.length > 1 ? 's' : ''}`}
+      >
+        <div className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-gold-soft">
+            <input
+              type="checkbox"
+              checked={pdfInkSaver}
+              onChange={(e) => setPdfInkSaver(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-gold"
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Imprimer en noir</span>
+              <span className="block text-xs text-text-muted">
+                Remplace le gold par du gris foncé pour économiser l'encre couleur.
+                Recommandé pour la plupart des imprimantes.
+              </span>
+            </span>
+          </label>
+
+          <div className="rounded-xl border border-border bg-surface-2 p-3 text-xs text-text-muted leading-relaxed">
+            <strong className="text-text">Contenu :</strong> 1 page par song, titre + meta
+            (key / BPM / capo), chord chart aligné en grille, rythmique
+            (D/U/X/.) si présente, lyrics si présentes, footer "RiffLab" + n° page.
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setPdfOpen(false)}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm text-text-muted hover:text-text"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleExportPdf()}
+              disabled={pdfBusy}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright disabled:opacity-60"
+            >
+              <FileText size={14} />
+              {pdfBusy ? 'Génération…' : 'Télécharger'}
+            </button>
+          </div>
+        </div>
+      </Sheet>
     </>
   );
 }
