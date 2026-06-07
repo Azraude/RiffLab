@@ -6,45 +6,68 @@
 
 ---
 
+## ✅ Résolu — Compression modèles 3D (sess 24)
+
+Pipeline `@gltf-transform/cli optimize --texture-compress webp --texture-size 1024` :
+
+| Fichier | Avant | Après | Réduction |
+|---|---|---|---|
+| `guitar-fender-rose.glb` | 22 MB | **244 KB** | -98.9% |
+| `amp.glb` | 8.5 MB | **216 KB** | -97.5% |
+| `guitar-fender-classic.glb` | 981 KB | **131 KB** | -86.7% |
+| **Total** | **~31.5 MB** | **~591 KB** | **-98.1%** |
+
+Pipeline complet (flatten / join / weld / simplify / resample / prune /
+sparse / textureCompress webp 1024 / meshopt) tourne en ~1.5s par modèle.
+`@gltf-transform/cli` ajouté dans devDependencies pour re-compression
+future si un modèle est remplacé.
+
+Commande pour re-compresser un modèle :
+```bash
+npx gltf-transform optimize public/models/X.glb public/models/X.optim.glb --texture-compress webp --texture-size 1024
+mv public/models/X.optim.glb public/models/X.glb
+```
+
+**`studio-scene.glb` (110 MB)** : reste blacklisted dans `.gitignore` —
+jamais loadé en prod (fallback gradient en place dans HeroScene3D). À
+compresser et whitelister Phase 5+ si on veut le hero studio plein.
+
+---
+
 ## 🔴 Critique (bloquant si on garde tel quel en prod)
 
-### Modèles 3D non optimisés (mai 2026)
-
-Les 4 .glb dans `public/models/` sont des téléchargements bruts Sketchfab,
-**non compressés** :
-
-| Fichier | Taille actuelle | Cible | Notes |
-|---|---|---|---|
-| `studio-scene.glb` | **110 MB** | < 5 MB | Hero landing — critique, c'est ce qui s'affiche en premier |
-| `guitar-fender-rose.glb` | 22 MB | < 2 MB | Décor Dashboard / Plan |
-| `amp.glb` | 8.5 MB | < 1.5 MB | Décor Métronome |
-| `guitar-fender-classic.glb` | 981 KB | ✅ OK | Pas besoin d'optimiser |
-
-**Impact actuel** : un user en 4G attend ~2 min pour charger la landing
-(110 MB). Tueur de conversion absolu.
-
-**Comment optimiser** : passer chaque fichier dans
-[gltf.report](https://gltf.report) → onglet Optimize → cocher :
-- Draco geometry compression
-- Meshopt compression
-- Texture resize 1024 ou 2048 (Sketchfab pousse souvent du 4K inutile)
-- WebP texture format
-
-Replace dans `public/models/` sous le même nom, le code n'a pas à
-bouger. Compter ~5 min de manip par fichier.
-
-**Quand le faire** : avant le deploy public Phase 5, pas avant. En dev
-local + Vercel preview ça marche, c'est juste qu'on flambe la bande
-passante de Vercel sur les builds.
+_(plus rien — compression .glb résolue sess 24)_
 
 ---
 
 ## 🟠 Important (à régler avant la promotion publique)
 
-*(à compléter au fur et à mesure des découvertes)*
+### OG image PNG (vs SVG actuel)
+SVG en place mais Twitter/Discord rendent mal → preview cassé pour ces
+plateformes. Cible : générer PNG 1200×630 via sharp ou script offscreen
+canvas. ~30 min.
+
+### Vercel env vars Supabase
+À setup dans Vercel dashboard avant que `VITE_SUPABASE_*` marchent en
+prod. Sans ça l'auth fail silencieusement. 5 min.
+
+### Mode Lecture teleprompter (Phase 3.5)
+Sur branche `feature/teleprompter`, 70% fait. Mapping chord/syllabe à
+trancher (3 options dans le code). ~4h pour merger + finir.
 
 ---
 
 ## 🟡 Nice-to-have
 
-*(à compléter)*
+### Audio Neural-quality / IR cabinets réels
+WebAudioFont GM (sess 21) suffit pour v1. Upgrade Phase 5+ si Pro tier
+le justifie (IR files licensing à clarifier d'abord).
+
+### i18n traductions incomplètes
+Nav full + Dashboard hero migré, le reste FR hardcoded.
+Songs/Chords/Scales/Stats/Tuner/Composer/Quiz pas encore. Bloque
+l'audience EN. ~4h sweep complet.
+
+### SetlistDetail loading vs not-found
+Affiche "Setlist introuvable" pendant le load Dexie initial (UX subtle
+bug, pas critique). Fix avec local state + useEffect. ~15 min.
