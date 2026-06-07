@@ -7,7 +7,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { FloatingGuitar3DLazy } from '@/components/three/FloatingGuitar3DLazy';
 import { Confetti } from '@/components/ui/Confetti';
 import { PlanTutorial } from '@/components/onboarding/PlanTutorial';
+import { NodeQuiz } from '@/components/plan/NodeQuiz';
 import { usePrefs } from '@/stores/prefsStore';
+import { listQuizResults } from '@/lib/db';
 import {
   PATH_LEVELS,
   listCompletedNodes,
@@ -56,6 +58,18 @@ export function PracticePlan() {
   // Plan tutorial — déclenché au PREMIER click sur n'importe quel node
   const planTutorialSeen = usePrefs((s) => s.planTutorialSeen);
   const [planTutorialOpen, setPlanTutorialOpen] = useState(false);
+  // Mini-quiz fin de niveau — déclenché à la complétion d'un node
+  const [quizNode, setQuizNode] = useState<PathLevel | null>(null);
+  // Liste des nodeId avec quiz passed (badge ⭐) — live query Dexie
+  const quizPassedIds = useMemo(() => new Set<string>(), []);
+  const quizResults = useLiveQuery(() => listQuizResults(), []) ?? [];
+  // Update set ad-hoc — useMemo + useLiveQuery refresh ensemble
+  useMemo(() => {
+    quizPassedIds.clear();
+    for (const r of quizResults) {
+      if (r.passed) quizPassedIds.add(r.nodeId);
+    }
+  }, [quizResults, quizPassedIds]);
   const handleNodeClickWithTutorial = (level: PathLevel) => {
     setOpenLevel(level);
     if (!planTutorialSeen && !planTutorialOpen) {
@@ -117,6 +131,12 @@ export function PracticePlan() {
           setTimeout(() => {
             if (!cancelled) setToastMessage(null);
           }, 3000);
+          // Propose le mini-quiz bonus (skippable)
+          if (!cancelled) {
+            window.setTimeout(() => {
+              if (!cancelled) setQuizNode(level);
+            }, 1500);
+          }
         }
       }
     }
@@ -242,7 +262,11 @@ export function PracticePlan() {
 
       {/* Zigzag path */}
       <div data-tutorial-id="plan-path" className="mx-auto max-w-md px-4 py-6">
-        <PathDisplay states={states} onLevelClick={handleNodeClickWithTutorial} />
+        <PathDisplay
+          states={states}
+          quizPassedIds={quizPassedIds}
+          onLevelClick={handleNodeClickWithTutorial}
+        />
       </div>
 
       {/* Plan tutorial — first time only, triggered au click sur un node */}
@@ -250,15 +274,31 @@ export function PracticePlan() {
         <PlanTutorial onDone={() => setPlanTutorialOpen(false)} />
       )}
 
+      {/* Mini-quiz fin de niveau — auto-trigger 1.5s après complétion */}
+      <NodeQuiz node={quizNode} onClose={() => setQuizNode(null)} />
+
       {/* Level drawer */}
       <LevelDrawer
         level={openLevel}
         state={openLevel ? states[openLevel.id] : 'locked'}
         progress={openLevel ? getNodeProgress(openLevel) : null}
+        quizPassed={openLevel ? quizPassedIds.has(openLevel.id) : false}
         onClose={() => setOpenLevel(null)}
         onMarkCompleted={async (id) => {
           await markNodeCompleted(id);
+          const level = PATH_LEVELS.find((l) => l.id === id) ?? null;
           setOpenLevel(null);
+          // Trigger quiz après fermeture du drawer
+          if (level) {
+            window.setTimeout(() => setQuizNode(level), 400);
+          }
+        }}
+        onRetakeQuiz={(id) => {
+          const level = PATH_LEVELS.find((l) => l.id === id) ?? null;
+          if (level) {
+            setOpenLevel(null);
+            window.setTimeout(() => setQuizNode(level), 300);
+          }
         }}
         onUnmark={async (id) => {
           await unmarkNodeCompleted(id);
@@ -277,9 +317,11 @@ const HORIZONTAL_OFFSET = 70; // décalage gauche/droite depuis le centre
 
 function PathDisplay({
   states,
+  quizPassedIds,
   onLevelClick,
 }: {
   states: Record<string, NodeState>;
+  quizPassedIds: Set<string>;
   onLevelClick: (l: PathLevel) => void;
 }) {
   // Position chaque node (x signé, y croissant)
@@ -333,6 +375,7 @@ function PathDisplay({
             key={p.level.id}
             level={p.level}
             state={state}
+            quizPassed={quizPassedIds.has(p.level.id)}
             style={{
               position: 'absolute',
               left: svgWidth / 2 + p.x - NODE_DIAMETER / 2,
@@ -353,11 +396,13 @@ function PathDisplay({
 function PathNode({
   level,
   state,
+  quizPassed,
   style,
   onClick,
 }: {
   level: PathLevel;
   state: NodeState;
+  quizPassed: boolean;
   style: React.CSSProperties;
   onClick: () => void;
 }) {
@@ -366,7 +411,16 @@ function PathNode({
   const isCompleted = state === 'completed';
 
   return (
-    <div style={style}>
+    <div style={style} className="relative">
+      {quizPassed && (
+        <span
+          className="pointer-events-none absolute -right-1 -top-1 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-bg bg-gradient-to-b from-gold-bright to-gold text-base shadow-gold"
+          title="Quiz validé ⭐"
+          aria-label="Quiz fin de niveau validé"
+        >
+          ⭐
+        </span>
+      )}
       <motion.button
         type="button"
         onClick={onClick}
@@ -444,15 +498,19 @@ function LevelDrawer({
   level,
   state,
   progress,
+  quizPassed,
   onClose,
   onMarkCompleted,
+  onRetakeQuiz,
   onUnmark,
 }: {
   level: PathLevel | null;
   state: NodeState;
   progress: NodeProgress | null;
+  quizPassed: boolean;
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
+  onRetakeQuiz: (id: string) => void;
   onUnmark: (id: string) => void;
 }) {
   // Détection mobile pour switcher entre bottom-sheet (mobile) et modal
@@ -714,15 +772,25 @@ function LevelDrawer({
                   )}
 
                   {state !== 'locked' && (
-                    <div className="mt-6">
+                    <div className="mt-6 space-y-2">
                       {state === 'completed' ? (
-                        <button
-                          type="button"
-                          onClick={() => onUnmark(level.id)}
-                          className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border text-sm text-text-muted hover:text-text"
-                        >
-                          Marquer comme non terminé
-                        </button>
+                        <>
+                          {/* Refaire le quiz — disponible toujours pour les nodes terminés */}
+                          <button
+                            type="button"
+                            onClick={() => onRetakeQuiz(level.id)}
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 text-sm font-semibold text-text transition-colors hover:bg-gold/10"
+                          >
+                            {quizPassed ? '⭐ Refaire le quiz' : '🎓 Faire le quiz'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onUnmark(level.id)}
+                            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border text-xs text-text-soft hover:text-text"
+                          >
+                            Marquer comme non terminé
+                          </button>
+                        </>
                       ) : (
                         <button
                           type="button"

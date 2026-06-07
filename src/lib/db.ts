@@ -119,6 +119,19 @@ export type DailyChallenge = {
   completedAt: number;
 };
 
+/** Résultat d'un mini-quiz fin de niveau Practice Plan. */
+export type QuizResult = {
+  /** ID du PathLevel (clé) */
+  nodeId: string;
+  /** Score 0-3 (sur 3 questions) */
+  score: number;
+  /** Total questions présentées */
+  total: number;
+  /** True si score >= 2/3 (validé avec bonus) */
+  passed: boolean;
+  takenAt: number;
+};
+
 /** Progression custom sauvée depuis /composer (session compositeur). */
 export type CustomProgression = {
   id: string;
@@ -148,6 +161,7 @@ class RiffLabDB extends Dexie {
   interactions!: Table<Interaction, string>;
   dailyChallenges!: Table<DailyChallenge, string>;
   customProgressions!: Table<CustomProgression, string>;
+  quizResults!: Table<QuizResult, string>;
 
   constructor() {
     super('rifflab');
@@ -235,6 +249,21 @@ class RiffLabDB extends Dexie {
       dailyChallenges: 'date, completedAt',
       customProgressions: 'id, createdAt, key, mode',
     });
+    // v10 : quizResults (mini-quiz fin de niveau Practice Plan)
+    this.version(10).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+      quizResults: 'nodeId, takenAt',
+    });
   }
 }
 
@@ -284,6 +313,20 @@ export async function listCustomProgressions(): Promise<CustomProgression[]> {
 
 export async function deleteCustomProgression(id: string): Promise<void> {
   await db.customProgressions.delete(id);
+}
+
+// ─── Quiz results (mini-quiz fin de niveau Plan) ─────────────────
+export async function saveQuizResult(r: QuizResult): Promise<void> {
+  // Upsert : on garde seulement le dernier essai par nodeId
+  await db.quizResults.put(r);
+}
+
+export async function listQuizResults(): Promise<QuizResult[]> {
+  return db.quizResults.toArray();
+}
+
+export async function getQuizResult(nodeId: string): Promise<QuizResult | undefined> {
+  return db.quizResults.get(nodeId);
 }
 
 // ─── Riff likes (community riff) ─────────────────────────────────
