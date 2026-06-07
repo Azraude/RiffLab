@@ -332,20 +332,42 @@ function PathDisplay({
   }));
   const totalHeight = (PATH_LEVELS.length - 1) * VERTICAL_SPACING + NODE_DIAMETER;
   const svgWidth = HORIZONTAL_OFFSET * 2 + NODE_DIAMETER + 20;
-  // Build the curve path
-  const curve = positions
-    .map((p, i) => {
-      const cx = svgWidth / 2 + p.x;
-      const cy = p.y + NODE_DIAMETER / 2;
-      if (i === 0) return `M ${cx} ${cy}`;
-      const prev = positions[i - 1];
-      const pcx = svgWidth / 2 + prev.x;
-      const pcy = prev.y + NODE_DIAMETER / 2;
-      // Control points : courbe bezier qui passe entre les deux nodes
-      const midY = (cy + pcy) / 2;
-      return `C ${pcx} ${midY} ${cx} ${midY} ${cx} ${cy}`;
-    })
-    .join(' ');
+
+  // Build segment d strings — utiles pour le path complet ET pour la
+  // portion débloquée (jusqu'au dernier node available/current/completed).
+  const segments = positions.map((p, i) => {
+    const cx = svgWidth / 2 + p.x;
+    const cy = p.y + NODE_DIAMETER / 2;
+    if (i === 0) return `M ${cx} ${cy}`;
+    const prev = positions[i - 1];
+    const pcx = svgWidth / 2 + prev.x;
+    const pcy = prev.y + NODE_DIAMETER / 2;
+    const midY = (cy + pcy) / 2;
+    return `C ${pcx} ${midY} ${cx} ${midY} ${cx} ${cy}`;
+  });
+  const curve = segments.join(' ');
+
+  // Trouve le dernier index de node "débloqué" (available/current/completed).
+  // Les particules dorées flottent uniquement sur la portion menant
+  // jusqu'à ce node — pour suggérer "ton parcours actif".
+  let lastUnlockedIdx = -1;
+  for (let i = positions.length - 1; i >= 0; i--) {
+    const s = states[positions[i].level.id];
+    if (s === 'available' || s === 'current' || s === 'completed') {
+      lastUnlockedIdx = i;
+      break;
+    }
+  }
+  // Path d juste pour les particules : "M start + segments jusqu'au lastUnlockedIdx"
+  const unlockedCurve =
+    lastUnlockedIdx > 0 ? segments.slice(0, lastUnlockedIdx + 1).join(' ') : '';
+
+  // Respect prefers-reduced-motion + auto-disable sur mobile pour perf
+  const reduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+  const particleCount = reduced ? 0 : isMobileViewport ? 8 : 16;
 
   return (
     <div className="relative mx-auto" style={{ width: svgWidth, height: totalHeight }}>
@@ -358,6 +380,16 @@ function PathDisplay({
         fill="none"
         aria-hidden
       >
+        <defs>
+          {/* Path invisible référencé par <animateMotion> des particules */}
+          {unlockedCurve && (
+            <path id="plan-unlocked-curve" d={unlockedCurve} fill="none" />
+          )}
+          {/* Glow filter pour les particules */}
+          <filter id="particle-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5" />
+          </filter>
+        </defs>
         <path
           d={curve}
           stroke="rgb(var(--gold) / 0.4)"
@@ -365,6 +397,41 @@ function PathDisplay({
           strokeDasharray="6 8"
           strokeLinecap="round"
         />
+        {/* Particles dorées qui suivent la portion débloquée */}
+        {unlockedCurve && particleCount > 0 && (
+          <g aria-hidden="true">
+            {Array.from({ length: particleCount }).map((_, i) => {
+              // Stagger naturel : chaque particule démarre à un % différent du path
+              const begin = -(i / particleCount) * 6;
+              const dur = 5 + (i % 3) * 1.2; // 5-8.4s
+              return (
+                <circle
+                  key={i}
+                  r={1.6 + (i % 3) * 0.4}
+                  fill="rgb(var(--gold-bright))"
+                  opacity="0"
+                  filter="url(#particle-glow)"
+                >
+                  <animateMotion
+                    href="#plan-unlocked-curve"
+                    dur={`${dur}s`}
+                    begin={`${begin}s`}
+                    repeatCount="indefinite"
+                    rotate="auto"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0;0.9;0.9;0"
+                    keyTimes="0;0.15;0.85;1"
+                    dur={`${dur}s`}
+                    begin={`${begin}s`}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              );
+            })}
+          </g>
+        )}
       </svg>
 
       {/* Nodes */}
