@@ -132,6 +132,15 @@ export type QuizResult = {
   takenAt: number;
 };
 
+/** Riff marqué comme maîtrisé par l'user via mode "Apprendre" (sess 27 Phase 2). */
+export type MasteredRiff = {
+  /** id du community riff (cr-smoke, cr-iron, ...) */
+  id: string;
+  masteredAt: number;
+  /** Combien de fois l'user a joué le riff avant de le valider */
+  playCount?: number;
+};
+
 /** Stats d'une session du mini-jeu Fretboard Learner (sess 26 Phase 2). */
 export type FretboardLearnerLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 export type FretboardLearnerStats = {
@@ -181,6 +190,7 @@ class RiffLabDB extends Dexie {
   customProgressions!: Table<CustomProgression, string>;
   quizResults!: Table<QuizResult, string>;
   fretboardLearnerStats!: Table<FretboardLearnerStats, number>;
+  masteredRiffs!: Table<MasteredRiff, string>;
 
   constructor() {
     super('rifflab');
@@ -298,6 +308,23 @@ class RiffLabDB extends Dexie {
       customProgressions: 'id, createdAt, key, mode',
       quizResults: 'nodeId, takenAt',
       fretboardLearnerStats: '++id, date, level',
+    });
+    // v12 : masteredRiffs (mode Apprendre sess 27 Phase 2 Riffs refonte)
+    this.version(12).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+      quizResults: 'nodeId, takenAt',
+      fretboardLearnerStats: '++id, date, level',
+      masteredRiffs: 'id, masteredAt',
     });
   }
 }
@@ -459,6 +486,28 @@ export async function aggregateFretboardLearnerStats(): Promise<{
     favoriteLevel,
     daily,
   };
+}
+
+// ─── Mastered riffs (mode "Apprendre ce riff" sess 27 Phase 2) ───
+
+export async function isRiffMastered(id: string): Promise<MasteredRiff | undefined> {
+  return db.masteredRiffs.get(id);
+}
+
+export async function listMasteredRiffs(): Promise<MasteredRiff[]> {
+  return db.masteredRiffs.orderBy('masteredAt').reverse().toArray();
+}
+
+export async function markRiffMastered(id: string, playCount = 0): Promise<MasteredRiff> {
+  const existing = await db.masteredRiffs.get(id);
+  if (existing) return existing; // déjà maîtrisé, no-op (date conservée)
+  const row: MasteredRiff = { id, masteredAt: Date.now(), playCount };
+  await db.masteredRiffs.put(row);
+  return row;
+}
+
+export async function unmarkRiffMastered(id: string): Promise<void> {
+  await db.masteredRiffs.delete(id);
 }
 
 // ─── Riff likes (community riff) ─────────────────────────────────

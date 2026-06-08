@@ -25,17 +25,17 @@ import { Sheet } from '@/components/ui/Sheet';
 import { RiffCard } from '@/components/riffs/RiffCard';
 import { RiffFilters, EMPTY_FILTERS, activeFilterCount, type RiffFilterState } from '@/components/riffs/RiffFilters';
 import { RiffTabModal } from '@/components/riffs/RiffTabModal';
+import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
   sortFeedRiffs,
-  getCommunityRiff,
   difficultyToLevel,
   type CommunityRiff,
   type FeedSort,
 } from '@/lib/communityRiffs';
 import { getTab } from '@/lib/tabsDatabase';
-import { db } from '@/lib/db';
+import { db, listMasteredRiffs } from '@/lib/db';
 import { useAudio } from '@/hooks/useAudio';
 import { useToast } from '@/hooks/useToast';
 
@@ -47,10 +47,17 @@ export function Riffs() {
   const [shareOpen, setShareOpen] = useState(false);
   const [tabModalRiff, setTabModalRiff] = useState<CommunityRiff | null>(null);
   const [shareDrawerRiff, setShareDrawerRiff] = useState<CommunityRiff | null>(null);
+  const [learnRiff, setLearnRiff] = useState<CommunityRiff | null>(null);
 
   // Liste des riffs likés (pour l'algo "for you")
   const likedRows = useLiveQuery(() => db.riffLikes.toArray(), []) ?? [];
   const likedIds = useMemo(() => likedRows.map((r) => r.id), [likedRows]);
+  // Mastered riffs map pour afficher le badge sur les cards
+  const masteredRows = useLiveQuery(() => listMasteredRiffs(), []) ?? [];
+  const masteredMap = useMemo(
+    () => new Map(masteredRows.map((m) => [m.id, m.masteredAt] as const)),
+    [masteredRows]
+  );
 
   const { playMidi } = useAudio();
   const toast = useToast();
@@ -122,9 +129,7 @@ export function Riffs() {
   };
 
   const handleLearn = (riff: CommunityRiff) => {
-    // Phase 2 : ouvrira le mode apprendre full-screen.
-    // Pour l'instant : navigate vers la page détail (Phase 3) ou ouvre le modal.
-    navigate(`/riffs/${riff.id}`);
+    setLearnRiff(riff);
   };
 
   const handleOpenDetail = (riff: CommunityRiff) => {
@@ -204,6 +209,7 @@ export function Riffs() {
                   <RiffCard
                     riff={r}
                     tab={tab}
+                    masteredAt={masteredMap.get(r.id) ?? null}
                     onListen={() => void handleListen(r)}
                     onViewTab={() => setTabModalRiff(r)}
                     onLearn={() => handleLearn(r)}
@@ -314,7 +320,13 @@ export function Riffs() {
         </div>
       </Sheet>
 
-      {ensureRiffsExist()}
+      {/* Mode Apprendre full-screen */}
+      <LearnRiffMode
+        open={!!learnRiff}
+        onClose={() => setLearnRiff(null)}
+        riff={learnRiff}
+        tab={learnRiff ? getTab(learnRiff.tabId) ?? null : null}
+      />
     </>
   );
 }
@@ -352,12 +364,3 @@ function UnderlineTab({
   );
 }
 
-/**
- * Helper de defensive — assure que getCommunityRiff existe (utilisé Phase 3).
- * Ne rend rien visuellement.
- */
-function ensureRiffsExist() {
-  // No-op : import getCommunityRiff sans dead-code elim
-  void getCommunityRiff;
-  return null;
-}
