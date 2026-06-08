@@ -21,6 +21,7 @@ type PrefsState = {
   onboardingCompleted: boolean;
   tutorialCompleted: boolean;
   planTutorialSeen: boolean;
+  composerTutorialSeen: boolean;
   level: PlayerLevel;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
@@ -35,6 +36,7 @@ type PrefsState = {
   setOnboardingCompleted: (done: boolean) => void;
   setTutorialCompleted: (done: boolean) => void;
   setPlanTutorialSeen: (seen: boolean) => void;
+  setComposerTutorialSeen: (seen: boolean) => void;
   setLevel: (level: PlayerLevel) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
@@ -55,6 +57,7 @@ export const usePrefs = create<PrefsState>()(
       onboardingCompleted: false,
       tutorialCompleted: false,
       planTutorialSeen: false,
+      composerTutorialSeen: false,
       level: 'beginner',
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
@@ -69,6 +72,7 @@ export const usePrefs = create<PrefsState>()(
       setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
       setTutorialCompleted: (tutorialCompleted) => set({ tutorialCompleted }),
       setPlanTutorialSeen: (planTutorialSeen) => set({ planTutorialSeen }),
+      setComposerTutorialSeen: (composerTutorialSeen) => set({ composerTutorialSeen }),
       setLevel: (level) => set({ level }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
@@ -115,6 +119,7 @@ export const usePrefs = create<PrefsState>()(
           onboardingCompleted: p.onboardingCompleted ?? true,
           tutorialCompleted: p.tutorialCompleted ?? true,
           planTutorialSeen: p.planTutorialSeen ?? true, // users existants : skip
+          composerTutorialSeen: p.composerTutorialSeen ?? true, // idem
           level: p.level ?? 'beginner',
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;

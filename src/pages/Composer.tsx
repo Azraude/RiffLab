@@ -46,8 +46,11 @@ import {
   X,
   Square,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { usePrefs } from '@/stores/prefsStore';
+import { ComposerTutorial } from '@/components/onboarding/ComposerTutorial';
 
 export function Composer() {
   const [key, setKey] = useState<NoteName>('C');
@@ -60,6 +63,17 @@ export function Composer() {
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
   const { strum } = useAudio();
+
+  // Tutorial first-visit — auto-trigger 600ms après mount (laisser le hero
+  // se rendre d'abord pour que les data-tutorial-id soient en DOM)
+  const composerTutorialSeen = usePrefs((s) => s.composerTutorialSeen);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  useEffect(() => {
+    if (!composerTutorialSeen) {
+      const t = window.setTimeout(() => setTutorialOpen(true), 600);
+      return () => window.clearTimeout(t);
+    }
+  }, [composerTutorialSeen]);
 
   // Génère une progression au premier mount + à chaque changement de paramètre
   useEffect(() => {
@@ -152,12 +166,22 @@ export function Composer() {
           </span>
         }
         subtitle="Génère des progressions d'accords qui sonnent bien, swipe les voicings, écoute en live."
-      />
+      >
+        <button
+          type="button"
+          onClick={() => setTutorialOpen(true)}
+          aria-label="Aide — revoir le tour guidé"
+          title="Revoir le tour guidé"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-muted transition-colors hover:border-gold-soft hover:text-gold"
+        >
+          <HelpCircle size={16} />
+        </button>
+      </PageHeader>
 
       {/* Header card — selectors + génération */}
       <Card>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1.4fr_auto] sm:items-end">
-          <div>
+          <div data-tutorial-id="composer-key">
             <div className="label-small mb-1.5">Tonalité</div>
             <select
               value={key}
@@ -182,7 +206,7 @@ export function Composer() {
               <option value="minor">Mineur</option>
             </select>
           </div>
-          <div>
+          <div data-tutorial-id="composer-style">
             <div className="label-small mb-1.5">Style</div>
             <select
               value={style}
@@ -199,6 +223,7 @@ export function Composer() {
           <button
             type="button"
             onClick={generateNew}
+            data-tutorial-id="composer-generate"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold px-5 text-sm font-semibold text-bg shadow-gold transition-all hover:-translate-y-px md:h-10"
           >
             <Sparkles size={14} />
@@ -207,9 +232,12 @@ export function Composer() {
         </div>
       </Card>
 
+      {/* Tutorial overlay first-visit + bouton ? */}
+      {tutorialOpen && <ComposerTutorial onDone={() => setTutorialOpen(false)} />}
+
       {/* Grid 4 chord cards */}
       {progression && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div data-tutorial-id="composer-slots" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {progression.chords.map((chordName, i) => (
             <ChordSlot
               key={i + chordName}
