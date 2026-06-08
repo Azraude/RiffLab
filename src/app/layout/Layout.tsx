@@ -6,6 +6,7 @@ import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
 import { KonamiProvider } from '@/hooks/useKonamiCode';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { ToastViewport } from '@/hooks/useToast';
+import { StickyPlayer } from '@/components/audio/StickyPlayer';
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -58,6 +59,7 @@ export function Layout() {
       <MobileNav />
       <FeedbackButton />
       <ToastViewport />
+      <StickyPlayer />
     </div>
     </KonamiProvider>
     </KeyboardShortcutsProvider>
