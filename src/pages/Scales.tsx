@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Fretboard2D } from '@/components/fretboard/Fretboard2D';
@@ -13,6 +14,7 @@ import { Box, Square } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Scales() {
+  const { t } = useTranslation();
   const [key, setKey] = useState<NoteName>('A');
   const [scaleId, setScaleId] = useState(SCALES[2].id); // penta_minor default
   const [view, setView] = useState<'2d' | '3d'>('2d');
@@ -27,13 +29,13 @@ export function Scales() {
   return (
     <>
       <PageHeader
-        title="Gammes"
-        subtitle="Visualise n'importe quelle gamme sur le manche dans la tonalité de ton choix."
+        title={t('scales.title')}
+        subtitle={t('scales.subtitle')}
       />
 
       <Card className="mb-8">
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <Field label="Tonalité">
+          <Field label={t('scales.key')}>
             <select
               value={key}
               onChange={(e) => setKey(e.target.value as NoteName)}
@@ -46,7 +48,7 @@ export function Scales() {
               ))}
             </select>
           </Field>
-          <Field label="Gamme">
+          <Field label={t('scales.scale')}>
             <select
               value={scaleId}
               onChange={(e) => setScaleId(e.target.value as typeof scaleId)}

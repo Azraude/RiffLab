@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { SwipeableChordCard } from '@/components/chord/SwipeableChordCard';
@@ -12,6 +13,7 @@ type RootFilter = 'all' | (typeof NOTE_NAMES)[number];
 type QualityFilter = 'all' | (typeof QUALITY_ORDER)[number];
 
 export function Chords() {
+  const { t } = useTranslation();
   const [rootFilter, setRootFilter] = useState<RootFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [search, setSearch] = useState('');
@@ -30,17 +32,17 @@ export function Chords() {
   return (
     <>
       <PageHeader
-        title="Accords"
-        subtitle={`${CHORDS.length} accords. Tape une carte pour entendre, swipe pour voir d'autres positions.`}
+        title={t('chords.title')}
+        subtitle={t('chords.subtitle', { count: CHORDS.length })}
       />
 
       {/* Tonalité — chips scrollables */}
       <div className="mb-3">
-        <div className="label-small mb-2">Tonalité</div>
+        <div className="label-small mb-2">{t('chords.key')}</div>
         <div className="-mx-2 overflow-x-auto px-2 pb-1">
           <div className="flex gap-2">
             <FilterChip active={rootFilter === 'all'} onClick={() => setRootFilter('all')}>
-              Toutes
+              {t('chords.all')}
             </FilterChip>
             {NOTE_NAMES.map((n) => (
               <FilterChip
@@ -58,14 +60,14 @@ export function Chords() {
 
       {/* Qualité — chips scrollables */}
       <div className="mb-3">
-        <div className="label-small mb-2">Qualité</div>
+        <div className="label-small mb-2">{t('chords.family')}</div>
         <div className="-mx-2 overflow-x-auto px-2 pb-1">
           <div className="flex gap-2">
             <FilterChip
               active={qualityFilter === 'all'}
               onClick={() => setQualityFilter('all')}
             >
-              Toutes
+              {t('chords.all')}
             </FilterChip>
             {QUALITY_ORDER.map((q) => (
               <FilterChip
@@ -83,7 +85,7 @@ export function Chords() {
       {/* Recherche */}
       <input
         type="text"
-        placeholder="Chercher un accord (ex: Em7, F#m, Cmaj7)…"
+        placeholder={t('chords.searchPlaceholder')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="mb-5 h-11 w-full rounded-lg border border-border bg-surface px-4 text-sm placeholder:text-text-soft focus:border-gold-soft focus:outline-none md:h-10 md:max-w-md"
@@ -91,7 +93,9 @@ export function Chords() {
 
       {/* Compteur de résultats */}
       <div className="mb-3 text-xs text-text-soft">
-        {filtered.length} accord{filtered.length > 1 ? 's' : ''}
+        {filtered.length > 1
+          ? t('chords.resultsCountOther', { count: filtered.length })
+          : t('chords.resultsCountOne', { count: filtered.length })}
       </div>
 
       {/* Grille de cards swipeables — pas de StaggerGrid ici car la grille
@@ -115,7 +119,7 @@ export function Chords() {
 
       {filtered.length === 0 && (
         <p className="mt-12 text-center text-text-soft">
-          Aucun accord ne correspond à ces filtres.
+          {t('chords.noResult')}
         </p>
       )}
     </>

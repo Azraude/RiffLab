@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
@@ -10,6 +11,7 @@ import { countRecordingsBySong, db, seedIfEmpty, type Song } from '@/lib/db';
 import { Dices, Mic, Music2, Plus } from 'lucide-react';
 
 export function Songs() {
+  const { t } = useTranslation();
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
   const recCounts = useLiveQuery(() => countRecordingsBySong(), []);
   // Quand la route /songs/new est active, le Sheet de création est par-dessus :
@@ -43,8 +45,12 @@ export function Songs() {
   return (
     <>
       <PageHeader
-        title="Mes sons"
-        subtitle={`${songsCount} sons dans ta bibliothèque.`}
+        title={t('songs.title')}
+        subtitle={
+          songsCount > 1
+            ? t('songs.countOther', { count: songsCount })
+            : t('songs.countOne', { count: songsCount })
+        }
       >
         <div className="hidden gap-2 md:flex">
           {/* Bouton "Au hasard" — pondéré pour pousser le backlog "à bosser" */}
@@ -52,10 +58,10 @@ export function Songs() {
             <button
               type="button"
               onClick={handleRandomSong}
-              aria-label="Ouvrir un son au hasard (priorité backlog à bosser)"
+              aria-label={t('songs.randomAria')}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-gold bg-surface px-4 text-sm font-semibold text-text transition-colors hover:bg-gold/5"
             >
-              <Dices size={14} className="text-gold" /> Au hasard
+              <Dices size={14} className="text-gold" /> {t('songs.random')}
             </button>
           )}
           {/* Header CTA — desktop only. Mobile uses the floating FAB.
@@ -68,7 +74,7 @@ export function Songs() {
             <span className="pointer-events-none absolute inset-y-0 -left-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-all duration-700 group-hover:left-full" />
             <span className="relative inline-flex items-center gap-2">
               <span className="font-serif italic text-base leading-none transition-transform group-hover:rotate-90">+</span>
-              Nouveau son
+              {t('songs.newSong')}
             </span>
           </Link>
         </div>
@@ -83,16 +89,16 @@ export function Songs() {
       ) : songs.length === 0 ? (
         <EmptyState
           icon={Music2}
-          title="Ta première chanson n'attend que toi"
-          description="Note tes covers, tes compos, tes idées de riffs. Accords + paroles + sections, le tout local, sans pub, sans compte."
+          title={t('songs.emptyTitle')}
+          description={t('songs.emptyDescription')}
           primaryAction={{
-            label: '+ Ajouter mon premier morceau',
+            label: t('songs.emptyPrimary'),
             onClick: () => navigate('/songs/new'),
           }}
           secondaryAction={{
-            label: 'Charger 3 morceaux d\'exemple',
+            label: t('songs.emptySecondary'),
             onClick: () => void seedIfEmpty(),
-            sublabel: 'Wonderwall, Smoke on the Water, Knockin\' on Heaven\'s Door',
+            sublabel: t('songs.emptySublabel'),
           }}
         />
       ) : (
@@ -110,7 +116,7 @@ export function Songs() {
       {!isNewModalOpen && (
         <Link
           to="/songs/new"
-          aria-label="Ajouter un son"
+          aria-label={t('songs.newSongFab')}
           className="fixed right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-bg shadow-gold-strong transition-transform active:scale-95 md:hidden"
           style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 1rem)' }}
         >

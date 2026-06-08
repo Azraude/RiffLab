@@ -38,7 +38,9 @@
     "search": "Search",
     "yes": "Yes",
     "no": "No",
-    "free": "Free"
+    "free": "Free",
+    "all": "All",
+    "send": "Send"
   },
   "landing": {
     "signIn": "Sign in",
@@ -79,6 +81,60 @@
     "challengeDone": "Challenge completed",
     "viewStats": "View my stats →",
     "viewPlan": "My plan →"
+  },
+  "songs": {
+    "title": "My songs",
+    "countOne": "{{count}} song in your library.",
+    "countOther": "{{count}} songs in your library.",
+    "random": "Random pick",
+    "randomAria": "Open a random song (backlog 'to work on' priority)",
+    "newSong": "New song",
+    "newSongFab": "Add a song",
+    "emptyTitle": "Your first song is waiting",
+    "emptyDescription": "Note your covers, originals, riff ideas. Chords + lyrics + sections, all local, no ads, no account.",
+    "emptyPrimary": "+ Add my first song",
+    "emptySecondary": "Load 3 example songs",
+    "emptySublabel": "Wonderwall, Smoke on the Water, Knockin' on Heaven's Door",
+    "tries": "take",
+    "triesPlural": "takes"
+  },
+  "chords": {
+    "title": "Chords",
+    "subtitle": "{{count}} chords. Tap a card to hear it, swipe to see other voicings.",
+    "key": "Key",
+    "all": "All",
+    "family": "Family",
+    "searchPlaceholder": "Search (e.g. Em, Cmaj7)…",
+    "noResult": "No chord matches this filter.",
+    "resultsCountOne": "{{count}} chord found",
+    "resultsCountOther": "{{count}} chords found"
+  },
+  "scales": {
+    "title": "Scales",
+    "subtitle": "Visualize any scale on the fretboard in the key of your choice.",
+    "key": "Key",
+    "scale": "Scale",
+    "view2d": "2D view",
+    "view3d": "3D view",
+    "showNoteNames": "Show note names",
+    "fretboardSkin": "Fretboard skin"
+  },
+  "feedback": {
+    "buttonAria": "Send feedback",
+    "buttonHover": "Send your feedback",
+    "title": "💬 Your feedback",
+    "description": "Bug, idea, troll, suggestion… everything goes. Anonymous by default.",
+    "type": "Type",
+    "typeBug": "Bug",
+    "typeIdea": "Idea",
+    "typeOther": "Other",
+    "messageLabel": "Your message",
+    "emailLabel": "Email",
+    "emailNote": "(optional — for a reply)",
+    "send": "Send",
+    "openMail": "Open my mail",
+    "thanksTitle": "Thank you!",
+    "thanksBody": "We received your message. You'll get a reply if you left an email."
   },
   "settings": {
     "title": "Settings",

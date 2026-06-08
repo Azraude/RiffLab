@@ -38,7 +38,9 @@
     "search": "Rechercher",
     "yes": "Oui",
     "no": "Non",
-    "free": "Gratuit"
+    "free": "Gratuit",
+    "all": "Toutes",
+    "send": "Envoyer"
   },
   "landing": {
     "signIn": "Se connecter",
@@ -79,6 +81,60 @@
     "challengeDone": "Défi relevé",
     "viewStats": "Voir mes stats →",
     "viewPlan": "Mon plan →"
+  },
+  "songs": {
+    "title": "Mes sons",
+    "countOne": "{{count}} son dans ta bibliothèque.",
+    "countOther": "{{count}} sons dans ta bibliothèque.",
+    "random": "Au hasard",
+    "randomAria": "Ouvrir un son au hasard (priorité backlog à bosser)",
+    "newSong": "Nouveau son",
+    "newSongFab": "Ajouter un son",
+    "emptyTitle": "Ta première chanson n'attend que toi",
+    "emptyDescription": "Note tes covers, tes compos, tes idées de riffs. Accords + paroles + sections, le tout local, sans pub, sans compte.",
+    "emptyPrimary": "+ Ajouter mon premier morceau",
+    "emptySecondary": "Charger 3 morceaux d'exemple",
+    "emptySublabel": "Wonderwall, Smoke on the Water, Knockin' on Heaven's Door",
+    "tries": "essai",
+    "triesPlural": "essais"
+  },
+  "chords": {
+    "title": "Accords",
+    "subtitle": "{{count}} accords. Tape une carte pour entendre, swipe pour voir d'autres positions.",
+    "key": "Tonalité",
+    "all": "Toutes",
+    "family": "Famille",
+    "searchPlaceholder": "Rechercher (ex: Em, Cmaj7)…",
+    "noResult": "Aucun accord ne correspond à ce filtre.",
+    "resultsCountOne": "{{count}} accord trouvé",
+    "resultsCountOther": "{{count}} accords trouvés"
+  },
+  "scales": {
+    "title": "Gammes",
+    "subtitle": "Visualise n'importe quelle gamme sur le manche dans la tonalité de ton choix.",
+    "key": "Tonalité",
+    "scale": "Gamme",
+    "view2d": "Vue 2D",
+    "view3d": "Vue 3D",
+    "showNoteNames": "Afficher les noms de notes",
+    "fretboardSkin": "Skin du manche"
+  },
+  "feedback": {
+    "buttonAria": "Donner mon avis",
+    "buttonHover": "Donne ton avis",
+    "title": "💬 Ton avis",
+    "description": "Bug, idée, troll, suggestion… tout passe. Anonyme par défaut.",
+    "type": "Type",
+    "typeBug": "Bug",
+    "typeIdea": "Idée",
+    "typeOther": "Autre",
+    "messageLabel": "Ton message",
+    "emailLabel": "Email",
+    "emailNote": "(optionnel — pour avoir une réponse)",
+    "send": "Envoyer",
+    "openMail": "Ouvrir mon mail",
+    "thanksTitle": "Merci !",
+    "thanksBody": "On a bien reçu ton message. Tu auras une réponse si tu as laissé un email."
   },
   "settings": {
     "title": "Préférences",
