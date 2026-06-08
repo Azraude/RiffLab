@@ -26,6 +26,8 @@ import { RiffCard } from '@/components/riffs/RiffCard';
 import { RiffFilters, EMPTY_FILTERS, activeFilterCount, type RiffFilterState } from '@/components/riffs/RiffFilters';
 import { RiffTabModal } from '@/components/riffs/RiffTabModal';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
+import { RiffOfTheDayHero } from '@/components/riffs/RiffOfTheDayHero';
+import { CollectionsCarousel } from '@/components/riffs/CollectionsCarousel';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
@@ -157,8 +159,14 @@ export function Riffs() {
         </div>
       </div>
 
+      {/* === Hero Riff du jour + Collections carousel === */}
+      <div className="mx-auto max-w-3xl space-y-8">
+        <RiffOfTheDayHero />
+        <CollectionsCarousel />
+      </div>
+
       {/* === Tabs underline + bouton filtres === */}
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto mt-8 max-w-3xl">
         <div className="mb-5 flex items-end justify-between border-b border-border">
           <div className="flex gap-1">
             <UnderlineTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>

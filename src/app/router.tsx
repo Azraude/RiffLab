@@ -30,6 +30,8 @@ import { ResourcesHub } from '@/pages/hubs/ResourcesHub';
 import { CreateHub } from '@/pages/hubs/CreateHub';
 import { ToolsHub } from '@/pages/hubs/ToolsHub';
 import { FretboardLearner } from '@/pages/FretboardLearner';
+import { RiffDetail } from '@/pages/RiffDetail';
+import { RiffCollection } from '@/pages/RiffCollection';
 
 export const router = createBrowserRouter([
   {
@@ -60,6 +62,8 @@ export const router = createBrowserRouter([
       { path: 'setlists/:id', element: <SetlistDetail /> },
       { path: 'setlists/:id/play', element: <SetlistPlay /> },
       { path: 'riffs', element: <Riffs /> },
+      { path: 'riffs/collections/:slug', element: <RiffCollection /> },
+      { path: 'riffs/:id', element: <RiffDetail /> },
       { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
 
       // ─── Bibliothèque (référence) ───────────────────────────────
