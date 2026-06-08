@@ -323,9 +323,25 @@ export function formatRelativeDate(isoDate: string, now: Date = new Date()): str
 export type FeedSort = 'for-you' | 'trending' | 'recent';
 
 /**
+ * Contexte enrichi pour le tri "For You" (sess 27 Phase 5).
+ *  - likedIds : riffs likés par l'user (tag overlap +20)
+ *  - masteredIds : riffs déjà maîtrisés (-10 pour pas répéter)
+ *  - userLevel : niveau actuel du Practice Plan user pour matcher
+ *    la difficulté (+30 si match)
+ *  - exploreWeight : 0-100, ajuste l'aléatoire (0 = confort zone,
+ *    100 = explorer)
+ */
+export interface ForYouContext {
+  likedIds?: string[];
+  masteredIds?: string[];
+  userLevel?: RiffLevel;
+  exploreWeight?: number;
+}
+
+/**
  * Trie les riffs selon le mode du feed :
- * - 'for-you' : algo simple — riffs avec tags matching les riffs que le
- *   user a liké, fallback sur baseLikes. Si pas de likes user → trending.
+ * - 'for-you' : algo pondéré (likes / level / mastered penalty / random
+ *   explore). Si pas de signal user → fallback trending.
  * - 'trending' : par baseLikes desc
  * - 'recent' : par addedAt desc
  */
@@ -333,6 +349,7 @@ export function sortFeedRiffs(
   riffs: CommunityRiff[],
   mode: FeedSort,
   likedIds: string[] = [],
+  context: ForYouContext = {}
 ): CommunityRiff[] {
   const arr = [...riffs];
   if (mode === 'recent') {
@@ -341,23 +358,47 @@ export function sortFeedRiffs(
   if (mode === 'trending') {
     return arr.sort((a, b) => b.baseLikes - a.baseLikes);
   }
-  // 'for-you' : si pas de likes user, fallback trending
-  if (likedIds.length === 0) {
+
+  // 'for-you' : algo pondéré sess 27 Phase 5
+  const masteredIds = context.masteredIds ?? [];
+  const userLevel = context.userLevel;
+  const explore = Math.max(0, Math.min(100, context.exploreWeight ?? 25));
+
+  // Si zéro signal user, fallback trending
+  if (likedIds.length === 0 && masteredIds.length === 0 && !userLevel) {
     return arr.sort((a, b) => b.baseLikes - a.baseLikes);
   }
-  // Compte les tags présents dans les riffs likés
+
+  // Tag score depuis les likes
   const tagScore = new Map<RiffTag, number>();
-  for (const id of likedIds) {
+  const likedArtists = new Set<string>();
+  for (const id of [...likedIds, ...masteredIds]) {
     const r = arr.find((x) => x.id === id);
     if (!r) continue;
     for (const t of r.tags) {
       tagScore.set(t, (tagScore.get(t) ?? 0) + 1);
     }
+    likedArtists.add(r.contributor);
   }
-  return arr.sort((a, b) => {
-    const scoreA = a.tags.reduce((s, t) => s + (tagScore.get(t) ?? 0), 0);
-    const scoreB = b.tags.reduce((s, t) => s + (tagScore.get(t) ?? 0), 0);
-    if (scoreA !== scoreB) return scoreB - scoreA;
-    return b.baseLikes - a.baseLikes;
-  });
+
+  return arr
+    .map((r) => {
+      let score = 0;
+      // +20 si tag overlap avec likes
+      score += r.tags.reduce((s, t) => s + (tagScore.get(t) ?? 0) * 20, 0);
+      // +30 si difficulté matche le niveau de l'user
+      if (userLevel && difficultyToLevel(r.difficulty) === userLevel) score += 30;
+      // +15 si même artiste qu'un mastered ou liked
+      if (likedArtists.has(r.contributor)) score += 15;
+      // -10 si déjà mastered (pour pas répéter)
+      if (masteredIds.includes(r.id)) score -= 10;
+      // +random (0 → explore/10) — plus exploreWeight haut, plus de
+      // diversité dans le ranking
+      score += Math.random() * (explore / 10);
+      // Baseline likes pour départager
+      score += r.baseLikes / 100;
+      return { r, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ r }) => r);
 }

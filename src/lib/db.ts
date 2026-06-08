@@ -132,6 +132,12 @@ export type QuizResult = {
   takenAt: number;
 };
 
+/** Badge unlock par l'user (gamif sess 27 Phase 5). */
+export type UserBadge = {
+  slug: string;
+  unlockedAt: number;
+};
+
 /** Riff créé par l'user via l'éditeur Phase 4 (sess 27). */
 export type UserRiff = {
   /** id stable (user-xxxxx) */
@@ -214,6 +220,7 @@ class RiffLabDB extends Dexie {
   fretboardLearnerStats!: Table<FretboardLearnerStats, number>;
   masteredRiffs!: Table<MasteredRiff, string>;
   userRiffs!: Table<UserRiff, string>;
+  userBadges!: Table<UserBadge, string>;
 
   constructor() {
     super('rifflab');
@@ -366,6 +373,25 @@ class RiffLabDB extends Dexie {
       fretboardLearnerStats: '++id, date, level',
       masteredRiffs: 'id, masteredAt',
       userRiffs: 'id, createdAt, updatedAt',
+    });
+    // v14 : userBadges (gamif sess 27 Phase 5)
+    this.version(14).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+      quizResults: 'nodeId, takenAt',
+      fretboardLearnerStats: '++id, date, level',
+      masteredRiffs: 'id, masteredAt',
+      userRiffs: 'id, createdAt, updatedAt',
+      userBadges: 'slug, unlockedAt',
     });
   }
 }
@@ -549,6 +575,68 @@ export async function getUserRiff(id: string): Promise<UserRiff | undefined> {
 
 export async function deleteUserRiff(id: string): Promise<void> {
   await db.userRiffs.delete(id);
+}
+
+// ─── Badges gamif (sess 27 Phase 5) ────────────────────────────────
+
+export async function listUserBadges(): Promise<UserBadge[]> {
+  return db.userBadges.orderBy('unlockedAt').reverse().toArray();
+}
+
+export async function hasBadge(slug: string): Promise<boolean> {
+  return !!(await db.userBadges.get(slug));
+}
+
+/** Unlock un badge — idempotent (no-op si déjà). Retourne true si NOUVEAU. */
+export async function unlockBadge(slug: string): Promise<boolean> {
+  const existing = await db.userBadges.get(slug);
+  if (existing) return false;
+  await db.userBadges.put({ slug, unlockedAt: Date.now() });
+  return true;
+}
+
+/**
+ * Check tous les badges suite à une interaction utile.
+ * Appelé après : like, mastered, publish, etc. Retourne la liste des
+ * badges NOUVEAUX (à afficher en toast).
+ */
+export async function checkAndUnlockBadges(): Promise<string[]> {
+  const unlocked: string[] = [];
+
+  // 🎸 Premier post : 1+ user riff publié
+  const userRiffCount = await db.userRiffs.count();
+  if (userRiffCount >= 1) {
+    if (await unlockBadge('first-riff')) unlocked.push('first-riff');
+  }
+
+  // 🎯 10 riffs maîtrisés
+  const masteredCount = await db.masteredRiffs.count();
+  if (masteredCount >= 10) {
+    if (await unlockBadge('mastered-10')) unlocked.push('mastered-10');
+  }
+  if (masteredCount >= 1) {
+    if (await unlockBadge('mastered-1')) unlocked.push('mastered-1');
+  }
+
+  // ❤️ 5 riffs likés (proxy "engagé")
+  const likedCount = await db.riffLikes.count();
+  if (likedCount >= 5) {
+    if (await unlockBadge('liked-5')) unlocked.push('liked-5');
+  }
+
+  // 📚 5 riffs sauvegardés (bookmark)
+  const bookmarkCount = await db.riffBookmarks.count();
+  if (bookmarkCount >= 5) {
+    if (await unlockBadge('saved-5')) unlocked.push('saved-5');
+  }
+
+  // 🎯 Fretboard Learner master : 5+ sessions
+  const fretboardSessions = await db.fretboardLearnerStats.count();
+  if (fretboardSessions >= 5) {
+    if (await unlockBadge('fretboard-5')) unlocked.push('fretboard-5');
+  }
+
+  return unlocked;
 }
 
 // ─── Mastered riffs (mode "Apprendre ce riff" sess 27 Phase 2) ───

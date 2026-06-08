@@ -27,7 +27,8 @@ import {
 } from '@/lib/communityRiffs';
 import { computeDifficulty } from '@/lib/riffDifficulty';
 import { RiffPlayer } from './RiffPlayer';
-import { newUserRiffId, saveUserRiff, type UserRiff } from '@/lib/db';
+import { checkAndUnlockBadges, newUserRiffId, saveUserRiff, type UserRiff } from '@/lib/db';
+import { getBadgeMeta } from '@/lib/badges';
 import { useToast } from '@/hooks/useToast';
 
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']; // top → bottom (high E first)
@@ -186,6 +187,12 @@ export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
     await saveUserRiff(userRiff);
     setPublishing(false);
     toast.success(`🎸 "${title}" publié dans tes riffs perso !`);
+    // Badge "first-riff" unlock potentiel
+    const newBadges = await checkAndUnlockBadges();
+    for (const slug of newBadges) {
+      const meta = getBadgeMeta(slug);
+      if (meta) toast.success(`${meta.emoji} Badge : ${meta.title}`, { duration: 6000 });
+    }
     onPublished?.(userRiff);
     handleReset();
     onClose();

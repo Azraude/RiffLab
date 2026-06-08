@@ -20,7 +20,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { X, Check, Trophy } from 'lucide-react';
 import type { CommunityRiff } from '@/lib/communityRiffs';
 import type { Tab } from '@/lib/tabsDatabase';
-import { isRiffMastered, markRiffMastered } from '@/lib/db';
+import { checkAndUnlockBadges, isRiffMastered, markRiffMastered } from '@/lib/db';
+import { getBadgeMeta } from '@/lib/badges';
 import { RiffPlayer } from './RiffPlayer';
 import { Confetti } from '@/components/ui/Confetti';
 import { useToast } from '@/hooks/useToast';
@@ -73,6 +74,14 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
     await markRiffMastered(riff.id, playCount);
     setConfettiTrigger((t) => t + 1);
     toast.success(`🏆 ${tab?.name ?? 'Riff'} maîtrisé !`);
+    // Check les badges qui débloquent suite à un nouveau mastery
+    const newBadges = await checkAndUnlockBadges();
+    for (const slug of newBadges) {
+      const meta = getBadgeMeta(slug);
+      if (meta) {
+        toast.success(`${meta.emoji} Badge débloqué : ${meta.title}`, { duration: 6000 });
+      }
+    }
   };
 
   if (typeof document === 'undefined') return null;

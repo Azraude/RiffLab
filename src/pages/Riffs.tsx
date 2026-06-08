@@ -27,6 +27,7 @@ import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { RiffOfTheDayHero } from '@/components/riffs/RiffOfTheDayHero';
 import { CollectionsCarousel } from '@/components/riffs/CollectionsCarousel';
 import { RiffEditor } from '@/components/riffs/RiffEditor';
+import { BadgesStrip } from '@/components/riffs/BadgesStrip';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
@@ -36,7 +37,10 @@ import {
   type FeedSort,
 } from '@/lib/communityRiffs';
 import { getTab } from '@/lib/tabsDatabase';
-import { db, listMasteredRiffs } from '@/lib/db';
+import { checkAndUnlockBadges, db, listMasteredRiffs } from '@/lib/db';
+import { getBadgeMeta } from '@/lib/badges';
+import { usePrefs } from '@/stores/prefsStore';
+import { useEffect } from 'react';
 import { useAudio } from '@/hooks/useAudio';
 import { useToast } from '@/hooks/useToast';
 
@@ -59,6 +63,28 @@ export function Riffs() {
     () => new Map(masteredRows.map((m) => [m.id, m.masteredAt] as const)),
     [masteredRows]
   );
+  const masteredIds = useMemo(() => masteredRows.map((m) => m.id), [masteredRows]);
+  // Pour toi smart : adapte au niveau du user (Plan Duolingo)
+  const userLevelPref = usePrefs((s) => s.level);
+  const userLevelMapped =
+    userLevelPref === 'beginner'
+      ? 'beginner'
+      : userLevelPref === 'advanced'
+        ? 'advanced'
+        : 'intermediate';
+
+  // Check badges au mount (cas où user a fait des actions ailleurs)
+  useEffect(() => {
+    void (async () => {
+      const newBadges = await checkAndUnlockBadges();
+      for (const slug of newBadges) {
+        const meta = getBadgeMeta(slug);
+        if (meta) toast.success(`${meta.emoji} Badge débloqué : ${meta.title}`, { duration: 6000 });
+      }
+    })();
+    // Voluntary : ne re-run pas à chaque change de toast
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { playMidi } = useAudio();
   const toast = useToast();
@@ -101,9 +127,13 @@ export function Riffs() {
     }
     if (filters.sort === 'popular') return arr.sort((a, b) => b.baseLikes - a.baseLikes);
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
-    // 'relevance' → utilise sortFeedRiffs basé sur sort tab
-    return sortFeedRiffs(arr, sort, likedIds);
-  }, [filters, sort, likedIds]);
+    // 'relevance' → utilise sortFeedRiffs avec contexte enrichi (Phase 5)
+    return sortFeedRiffs(arr, sort, likedIds, {
+      masteredIds,
+      userLevel: userLevelMapped,
+      exploreWeight: 25,
+    });
+  }, [filters, sort, likedIds, masteredIds, userLevelMapped]);
 
   const activeFilters = activeFilterCount(filters);
 
@@ -158,9 +188,10 @@ export function Riffs() {
         </div>
       </div>
 
-      {/* === Hero Riff du jour + Collections carousel === */}
+      {/* === Hero Riff du jour + Badges + Collections carousel === */}
       <div className="mx-auto max-w-3xl space-y-8">
         <RiffOfTheDayHero />
+        <BadgesStrip />
         <CollectionsCarousel />
       </div>
 
