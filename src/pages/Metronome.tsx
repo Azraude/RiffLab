@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Breadcrumb } from '@/components/nav/Breadcrumb';
 import { Toggle } from '@/components/ui/Toggle';
 import { useMetronome } from '@/stores/metronomeStore';
 import { FloatingAmp3DLazy } from '@/components/three/FloatingAmp3DLazy';
@@ -18,6 +19,7 @@ export function Metronome() {
 
   return (
     <>
+      <Breadcrumb to="/tools" label="Outils" />
       <PageHeader
         title="Métronome"
         subtitle="Garde le tempo. Tape Démarrer, ajuste le BPM en live."

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Breadcrumb } from '@/components/nav/Breadcrumb';
 import { Card } from '@/components/ui/Card';
 import { usePitchDetector, midiToFreq } from '@/hooks/usePitchDetector';
 import { usePrefs } from '@/stores/prefsStore';
@@ -96,6 +97,7 @@ export function Tuner() {
   if (state === 'idle' || state === 'requesting') {
     return (
       <>
+        <Breadcrumb to="/tools" label="Outils" />
         <PageHeader
           title="Tuner"
           subtitle="Accordage au micro avec détection de pitch précise."
@@ -126,6 +128,7 @@ export function Tuner() {
   if (state === 'denied' || state === 'error') {
     return (
       <>
+        <Breadcrumb to="/tools" label="Outils" />
         <PageHeader title="Tuner" />
         <Card className="mx-auto max-w-xl text-center py-10">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-danger/40 bg-danger/10 text-danger">
@@ -161,6 +164,7 @@ export function Tuner() {
 
   return (
     <>
+      <Breadcrumb to="/tools" label="Outils" />
       <PageHeader title="Tuner">
         <button
           type="button"

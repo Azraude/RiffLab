@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { Breadcrumb } from '@/components/nav/Breadcrumb';
 import { useAudio } from '@/hooks/useAudio';
 import { NOTE_NAMES, type NoteName } from '@/lib/theory';
 import {
@@ -99,6 +100,7 @@ export function EarTraining() {
 
   return (
     <>
+      <Breadcrumb to="/tools" label="Outils" />
       <PageHeader
         title="Ear Training"
         subtitle={

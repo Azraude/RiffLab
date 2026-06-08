@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { Breadcrumb } from '@/components/nav/Breadcrumb';
 import { Fretboard2D, type FretboardPosition } from '@/components/fretboard/Fretboard2D';
 import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
@@ -41,7 +42,6 @@ import {
   SkipForward,
   Target,
   Trophy,
-  ChevronLeft,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -300,12 +300,7 @@ export function FretboardLearner() {
 
   return (
     <>
-      <Link
-        to="/tools"
-        className="mb-3 inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold"
-      >
-        <ChevronLeft size={14} /> Outils
-      </Link>
+      <Breadcrumb to="/tools" label="Outils" />
 
       <PageHeader
         title="Fretboard Learner"
