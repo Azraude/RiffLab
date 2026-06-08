@@ -16,12 +16,13 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Sheet } from '@/components/ui/Sheet';
 import { Confetti } from '@/components/ui/Confetti';
-import { Check, X, Award, ChevronRight } from 'lucide-react';
+import { Check, X, Award, ChevronRight, RotateCcw, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { generateQuiz, type Quiz, type QuizQuestion } from '@/lib/nodeQuiz';
-import { saveQuizResult } from '@/lib/db';
+import { saveQuizResult, getQuizResult } from '@/lib/db';
 import type { PathLevel } from '@/lib/practicePath';
 
 interface NodeQuizProps {
@@ -30,13 +31,27 @@ interface NodeQuizProps {
 }
 
 export function NodeQuiz({ node, onClose }: NodeQuizProps) {
-  // Génère un nouveau quiz à chaque ouverture (re-randomisation)
-  const quiz = useMemo<Quiz | null>(() => (node ? generateQuiz(node) : null), [node]);
+  // Compteur regen pour reset le quiz au "Retenter" (sinon useMemo[node]
+  // ne détecte pas le besoin de regen tant que node ne change pas)
+  const [regenTick, setRegenTick] = useState(0);
+  // Génère un nouveau quiz à chaque ouverture OU click "Retenter"
+  const quiz = useMemo<Quiz | null>(
+    () => (node ? generateQuiz(node) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [node, regenTick],
+  );
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [finished, setFinished] = useState(false);
   const [confettiTick, setConfettiTick] = useState(0);
+
+  // Best score précédent (depuis Dexie quizResults) — affiché en haut +
+  // utilisé pour ne JAMAIS écraser un meilleur score par un moins bon
+  const previous = useLiveQuery(
+    () => (node ? getQuizResult(node.id) : Promise.resolve(undefined)),
+    [node?.id],
+  );
 
   // Reset state à chaque nouveau quiz
   useEffect(() => {
@@ -66,18 +81,27 @@ export function NodeQuiz({ node, onClose }: NodeQuizProps) {
       setCurrentIdx((i) => i + 1);
       setSelectedIdx(null);
     } else {
-      // Fin → persist
+      // Fin → persist en gardant LE MEILLEUR score (Math.max avec previous)
+      const prevScore = previous?.score ?? 0;
+      const bestScore = Math.max(prevScore, score);
+      const bestPassed = bestScore >= 2;
       void saveQuizResult({
         nodeId: node.id,
-        score,
+        score: bestScore,
         total,
-        passed,
+        passed: bestPassed,
         takenAt: Date.now(),
       });
       if (passed) setConfettiTick((t) => t + 1);
       setFinished(true);
     }
   };
+
+  const handleRetake = () => {
+    setRegenTick((t) => t + 1);
+  };
+
+  const bestEverScore = Math.max(previous?.score ?? 0, finished ? score : 0);
 
   return (
     <Sheet
@@ -86,8 +110,8 @@ export function NodeQuiz({ node, onClose }: NodeQuizProps) {
       title={`🎓 Petit test — ${node.title}`}
       description={
         finished
-          ? `Résultat : ${score}/${total}`
-          : `Question ${currentIdx + 1} sur ${total}`
+          ? `Résultat : ${score}/${total}${bestEverScore > score ? ` · Meilleur : ${bestEverScore}/${total}` : ''}`
+          : `Question ${currentIdx + 1} sur ${total}${previous && previous.score > 0 ? ` · Meilleur précédent : ${previous.score}/${previous.total}` : ''}`
       }
     >
       <Confetti trigger={confettiTick} count={40} duration={2} />
@@ -124,17 +148,35 @@ export function NodeQuiz({ node, onClose }: NodeQuizProps) {
               ) : (
                 <>
                   Tu as eu <strong className="text-gold">{score}/{total}</strong>.
-                  Le niveau reste validé, tu peux retenter le quiz quand tu veux.
+                  Le niveau reste validé, mais ton badge <span className="text-gold-bright">⭐</span> attend
+                  un 2/3 ou plus. Retente quand tu veux — les questions seront différentes.
                 </>
               )}
             </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright"
-            >
-              Fermer
-            </button>
+            {bestEverScore > score && (
+              <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[11px] font-semibold text-gold-bright">
+                <Sparkles size={11} /> Meilleur score : {bestEverScore}/{total} ✨
+              </p>
+            )}
+            <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
+              {!passed && (
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-gold bg-gold/5 px-5 text-sm font-semibold text-text hover:bg-gold/10"
+                >
+                  <RotateCcw size={14} />
+                  Retenter (nouvelles questions)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright"
+              >
+                {passed ? 'Continuer' : 'Fermer'}
+              </button>
+            </div>
           </motion.div>
         ) : currentQ ? (
           <motion.div
