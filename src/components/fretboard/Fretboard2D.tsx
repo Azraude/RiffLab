@@ -40,6 +40,23 @@ const INNER_H = H - PAD_T - PAD_B;
 const STRING_COUNT = 6;
 const STRING_SPACING = INNER_H / (STRING_COUNT - 1);
 
+/**
+ * Position cliquable sur le manche.
+ *  - stringIdx 0 = corde de Mi grave (E2), 5 = Mi aigu (E4)
+ *  - fret 0 = corde à vide, 1+ = frette
+ */
+export type FretboardPosition = { stringIdx: number; fret: number };
+
+/**
+ * Feedback à overlay sur le manche pendant le jeu Fretboard Learner.
+ *  - correct: positions à highlight en vert pulsé
+ *  - incorrect: positions à highlight en rouge pulsé
+ */
+export type FretboardFeedback = {
+  correct?: FretboardPosition[];
+  incorrect?: FretboardPosition[];
+};
+
 interface Fretboard2DProps {
   tuning?: TuningId;
   numFrets?: number;
@@ -50,6 +67,10 @@ interface Fretboard2DProps {
   showNoteNames?: boolean;
   skin?: FretboardSkinId;
   className?: string;
+  /** Mode interactif : callback déclenché au clic sur une position. */
+  onPositionClick?: (pos: FretboardPosition) => void;
+  /** Feedback overlay (correct / incorrect pulsé) — pour le mini-jeu. */
+  feedback?: FretboardFeedback;
 }
 
 export function Fretboard2D({
@@ -62,6 +83,8 @@ export function Fretboard2D({
   showNoteNames = true,
   skin = 'noir-mat',
   className,
+  onPositionClick,
+  feedback,
 }: Fretboard2DProps) {
   // Unique IDs prevent collisions if multiple fretboards live on the page.
   const uid = useId().replace(/:/g, '');
@@ -395,6 +418,79 @@ export function Fretboard2D({
             />
           );
         })}
+
+      {/* Feedback overlay (mini-jeu Fretboard Learner)
+          Positions correctes : pulse vert / incorrectes : pulse rouge.
+          Anim 1.5s qui se boucle tant que le feedback est passé. */}
+      {feedback?.incorrect?.map((pos, i) => {
+        const cx = pos.fret === 0 ? PAD_L - 12 : x(pos.fret) - fretSpacing / 2;
+        const cy = y(pos.stringIdx);
+        return (
+          <motion.circle
+            key={`fb-bad-${i}`}
+            cx={cx}
+            cy={cy}
+            r={12}
+            fill="#d4685e"
+            stroke="#0a0a0a"
+            strokeWidth={1.5}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: [1, 1.18, 1], opacity: [0.95, 0.6, 0.95] }}
+            transition={{ duration: 0.6, repeat: 2, ease: 'easeOut' }}
+            filter={`url(#${id('note-shadow')})`}
+          />
+        );
+      })}
+      {feedback?.correct?.map((pos, i) => {
+        const cx = pos.fret === 0 ? PAD_L - 12 : x(pos.fret) - fretSpacing / 2;
+        const cy = y(pos.stringIdx);
+        return (
+          <motion.circle
+            key={`fb-ok-${i}`}
+            cx={cx}
+            cy={cy}
+            r={12}
+            fill="#4caf85"
+            stroke="#0a0a0a"
+            strokeWidth={1.5}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: [1, 1.18, 1], opacity: [0.95, 0.6, 0.95] }}
+            transition={{ duration: 0.6, repeat: 2, ease: 'easeOut' }}
+            filter={`url(#${id('note-shadow')})`}
+          />
+        );
+      })}
+
+      {/* Click zones — mode interactif. Hit-areas invisibles couvrent
+          chaque (corde × frette) y compris les open strings (fret 0).
+          On les met EN DERNIER pour qu'elles capturent les events au-dessus
+          des notes affichées. Hover state subtil pour feedback visuel. */}
+      {onPositionClick && (
+        <g className="cursor-pointer">
+          {Array.from({ length: STRING_COUNT }).map((_, sIdx) =>
+            Array.from({ length: numFrets + 1 }).map((_, f) => {
+              const cx = f === 0 ? PAD_L - 12 : x(f) - fretSpacing / 2;
+              const hitWidth = f === 0 ? 22 : fretSpacing;
+              const hitX = cx - hitWidth / 2;
+              return (
+                <rect
+                  key={`hit-${sIdx}-${f}`}
+                  x={hitX}
+                  y={y(sIdx) - STRING_SPACING / 2}
+                  width={hitWidth}
+                  height={STRING_SPACING}
+                  fill="transparent"
+                  className="transition-colors hover:fill-[rgba(245,217,122,0.08)]"
+                  onClick={() => onPositionClick({ stringIdx: sIdx, fret: f })}
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Corde ${sIdx + 1}, frette ${f}`}
+                />
+              );
+            })
+          )}
+        </g>
+      )}
     </svg>
   );
 }

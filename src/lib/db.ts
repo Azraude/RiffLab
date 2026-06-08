@@ -132,6 +132,24 @@ export type QuizResult = {
   takenAt: number;
 };
 
+/** Stats d'une session du mini-jeu Fretboard Learner (sess 26 Phase 2). */
+export type FretboardLearnerLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+export type FretboardLearnerStats = {
+  id?: number;
+  /** ISO timestamp de la fin de session */
+  date: string;
+  level: FretboardLearnerLevel;
+  correct: number;
+  incorrect: number;
+  skipped: number;
+  /** Plus longue série de bonnes réponses consécutives */
+  bestStreak: number;
+  /** Plus rapide réponse correcte (ms depuis affichage question) */
+  fastestResponseMs: number;
+  /** Durée totale de la session (ms) */
+  totalTimeMs: number;
+};
+
 /** Progression custom sauvée depuis /composer (session compositeur). */
 export type CustomProgression = {
   id: string;
@@ -162,6 +180,7 @@ class RiffLabDB extends Dexie {
   dailyChallenges!: Table<DailyChallenge, string>;
   customProgressions!: Table<CustomProgression, string>;
   quizResults!: Table<QuizResult, string>;
+  fretboardLearnerStats!: Table<FretboardLearnerStats, number>;
 
   constructor() {
     super('rifflab');
@@ -264,6 +283,22 @@ class RiffLabDB extends Dexie {
       customProgressions: 'id, createdAt, key, mode',
       quizResults: 'nodeId, takenAt',
     });
+    // v11 : fretboardLearnerStats (mini-jeu apprentissage du manche sess 26)
+    this.version(11).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+      quizResults: 'nodeId, takenAt',
+      fretboardLearnerStats: '++id, date, level',
+    });
   }
 }
 
@@ -327,6 +362,103 @@ export async function listQuizResults(): Promise<QuizResult[]> {
 
 export async function getQuizResult(nodeId: string): Promise<QuizResult | undefined> {
   return db.quizResults.get(nodeId);
+}
+
+// ─── Fretboard Learner stats (mini-jeu mémorisation manche sess 26) ─
+
+export async function saveFretboardLearnerStats(
+  s: Omit<FretboardLearnerStats, 'id'>
+): Promise<void> {
+  await db.fretboardLearnerStats.add(s);
+}
+
+export async function listFretboardLearnerStats(): Promise<FretboardLearnerStats[]> {
+  return db.fretboardLearnerStats.orderBy('date').toArray();
+}
+
+/** Stats agrégées all-time pour la section /stats Fretboard Mastery. */
+export async function aggregateFretboardLearnerStats(): Promise<{
+  sessions: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+  totalSkipped: number;
+  accuracy: number; // 0-1
+  bestStreakEver: number;
+  fastestResponseMs: number;
+  favoriteLevel: FretboardLearnerLevel | null;
+  /** [{ date: 'YYYY-MM-DD', sessions: n, accuracy: 0-1 }] sur 30 jours */
+  daily: Array<{ date: string; sessions: number; accuracy: number }>;
+}> {
+  const rows = await db.fretboardLearnerStats.toArray();
+  if (rows.length === 0) {
+    return {
+      sessions: 0,
+      totalCorrect: 0,
+      totalIncorrect: 0,
+      totalSkipped: 0,
+      accuracy: 0,
+      bestStreakEver: 0,
+      fastestResponseMs: 0,
+      favoriteLevel: null,
+      daily: [],
+    };
+  }
+  const totalCorrect = rows.reduce((s, r) => s + r.correct, 0);
+  const totalIncorrect = rows.reduce((s, r) => s + r.incorrect, 0);
+  const totalSkipped = rows.reduce((s, r) => s + r.skipped, 0);
+  const denom = totalCorrect + totalIncorrect;
+  const accuracy = denom > 0 ? totalCorrect / denom : 0;
+  const bestStreakEver = rows.reduce((m, r) => Math.max(m, r.bestStreak), 0);
+  const fastestResponseMs = rows
+    .filter((r) => r.fastestResponseMs > 0)
+    .reduce(
+      (m, r) => (m === 0 ? r.fastestResponseMs : Math.min(m, r.fastestResponseMs)),
+      0
+    );
+  // Favorite level = celui qui revient le plus
+  const levelCounts: Record<FretboardLearnerLevel, number> = {
+    beginner: 0,
+    intermediate: 0,
+    advanced: 0,
+    expert: 0,
+  };
+  rows.forEach((r) => {
+    levelCounts[r.level]++;
+  });
+  const favoriteLevel = (Object.keys(levelCounts) as FretboardLearnerLevel[]).reduce(
+    (a, b) => (levelCounts[b] > levelCounts[a] ? b : a)
+  );
+  // Daily 30 derniers jours
+  const today = new Date();
+  const daily: Array<{ date: string; sessions: number; accuracy: number }> = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayRows = rows.filter((r) => r.date.slice(0, 10) === dateStr);
+    if (dayRows.length === 0) {
+      daily.push({ date: dateStr, sessions: 0, accuracy: 0 });
+    } else {
+      const c = dayRows.reduce((s, r) => s + r.correct, 0);
+      const i2 = dayRows.reduce((s, r) => s + r.incorrect, 0);
+      daily.push({
+        date: dateStr,
+        sessions: dayRows.length,
+        accuracy: c + i2 > 0 ? c / (c + i2) : 0,
+      });
+    }
+  }
+  return {
+    sessions: rows.length,
+    totalCorrect,
+    totalIncorrect,
+    totalSkipped,
+    accuracy,
+    bestStreakEver,
+    fastestResponseMs,
+    favoriteLevel,
+    daily,
+  };
 }
 
 // ─── Riff likes (community riff) ─────────────────────────────────
