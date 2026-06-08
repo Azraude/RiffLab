@@ -214,9 +214,19 @@ export function Landing() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 text-xs text-text-soft md:px-8">
-          <span>RiffLab — v0.4</span>
-          <span>Local-first · Open source</span>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 text-xs text-text-soft md:px-8">
+          <span>RiffLab — v0.4 · local-first · open source</span>
+          <div className="flex items-center gap-4">
+            <Link to="/about" className="hover:text-text">À propos</Link>
+            <a
+              href="https://github.com/Azraude/RiffLab"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-text"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </footer>
     </div>

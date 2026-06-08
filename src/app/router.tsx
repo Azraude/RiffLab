@@ -24,11 +24,16 @@ import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
 import { Composer } from '@/pages/Composer';
+import { About } from '@/pages/About';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Landing />,
+  },
+  {
+    path: '/about',
+    element: <About />,
   },
   {
     path: '/',
