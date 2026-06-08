@@ -9,8 +9,21 @@
  */
 import { getTab, type Tab } from './tabsDatabase';
 
+/** Difficulté 1-5 (legacy session 17) → mappée vers les 4 niveaux nommés. */
 export type RiffDifficulty = 1 | 2 | 3 | 4 | 5;
+export type RiffLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 export type RiffTag = 'rock' | 'blues' | 'metal' | 'pop' | 'folk' | 'classique' | 'arpège' | 'iconique';
+/** Techniques travaillées dans le riff — utilisé par les filtres. */
+export type RiffTechnique =
+  | 'bend'
+  | 'slide'
+  | 'hammer'
+  | 'pull-off'
+  | 'palm-mute'
+  | 'tapping'
+  | 'arpège'
+  | 'sweep'
+  | 'vibrato';
 
 export type CommunityRiff = {
   id: string;
@@ -30,6 +43,55 @@ export type CommunityRiff = {
   /** Compteur de commentaires seed (stub — pas de système de commentaires
    *  encore, juste affichage du compteur sur les cards) */
   commentsCount?: number;
+  /** Techniques travaillées dans ce riff (filtre cible) — optionnel,
+   *  fallback : array vide si pas renseigné. */
+  techniques?: RiffTechnique[];
+};
+
+/** Mapping difficulty 1-5 → level nommé. Utilisé par les filtres + UI. */
+export function difficultyToLevel(d: RiffDifficulty): RiffLevel {
+  if (d <= 1) return 'beginner';
+  if (d <= 2) return 'intermediate';
+  if (d <= 4) return 'advanced';
+  return 'expert';
+}
+
+export const LEVEL_LABELS: Record<RiffLevel, string> = {
+  beginner: 'Débutant',
+  intermediate: 'Intermédiaire',
+  advanced: 'Avancé',
+  expert: 'Expert',
+};
+
+export const LEVEL_COLORS: Record<RiffLevel, string> = {
+  beginner: 'text-success border-success/40 bg-success/10',
+  intermediate: 'text-gold-bright border-gold/40 bg-gold/10',
+  advanced: 'text-[#e8a04b] border-[#e8a04b]/40 bg-[#e8a04b]/10',
+  expert: 'text-danger border-danger/40 bg-danger/10',
+};
+
+export const ALL_RIFF_TECHNIQUES: RiffTechnique[] = [
+  'bend',
+  'slide',
+  'hammer',
+  'pull-off',
+  'palm-mute',
+  'tapping',
+  'arpège',
+  'sweep',
+  'vibrato',
+];
+
+export const TECHNIQUE_LABELS: Record<RiffTechnique, string> = {
+  bend: 'Bend',
+  slide: 'Slide',
+  hammer: 'Hammer-on',
+  'pull-off': 'Pull-off',
+  'palm-mute': 'Palm mute',
+  tapping: 'Tapping',
+  arpège: 'Arpège',
+  sweep: 'Sweep',
+  vibrato: 'Vibrato',
 };
 
 export const COMMUNITY_RIFFS: CommunityRiff[] = [
@@ -44,6 +106,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-01-15',
     caption: "Le riff que TOUT le monde connaît. Si t'es débutant, c'est le premier à savoir par cœur 🤘",
     commentsCount: 28,
+    techniques: ['palm-mute'],
   },
   {
     id: 'cr-iron',
@@ -56,6 +119,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-02-03',
     caption: "Tony Iommi en mode total — joue palm-muted sur les notes basses pour le vrai grain Sabbath.",
     commentsCount: 14,
+    techniques: ['palm-mute', 'hammer'],
   },
   {
     id: 'cr-sevennation',
@@ -68,6 +132,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-01-20',
     caption: "Le riff qui passe dans tous les stades de foot. Joue-le sur la corde de mi grave, simple comme bonjour.",
     commentsCount: 47,
+    techniques: [],
   },
   {
     id: 'cr-sunshine',
@@ -80,6 +145,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-02-10',
     caption: "Clapton à son meilleur. Travaille le bend sur la 3e mesure, c'est ce qui fait toute la différence.",
     commentsCount: 19,
+    techniques: ['bend', 'vibrato'],
   },
   {
     id: 'cr-stairway',
@@ -92,6 +158,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-01-08',
     caption: "L'intro qui a marqué une génération. Prends ton temps sur l'arpège, chaque note doit respirer.",
     commentsCount: 53,
+    techniques: ['arpège'],
   },
   {
     id: 'cr-sweet-child',
@@ -104,6 +171,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-02-18',
     caption: "Slash a dit qu'il l'a écrit en s'échauffant. Décompose mesure par mesure et travaille la précision avant la vitesse.",
     commentsCount: 31,
+    techniques: ['arpège', 'hammer', 'pull-off'],
   },
   {
     id: 'cr-back-in-black',
@@ -116,6 +184,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-03-01',
     caption: "AC/DC kiff total. Le swing c'est tout — joue laid back, pas droit comme un piquet.",
     commentsCount: 22,
+    techniques: ['palm-mute'],
   },
   {
     id: 'cr-day-tripper',
@@ -128,6 +197,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-03-15',
     caption: "Beatles 1965 — riff catchy mais propre techniquement. Travaille les hammer-on en alternance.",
     commentsCount: 16,
+    techniques: ['hammer', 'pull-off'],
   },
   {
     id: 'cr-crazy-train',
@@ -140,6 +210,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-04-02',
     caption: "Randy Rhoads RIP 🤘 Le riff est plus dur qu'il en a l'air, surtout la transition en mesure 4.",
     commentsCount: 38,
+    techniques: ['palm-mute', 'slide'],
   },
   {
     id: 'cr-money-nothing',
@@ -152,10 +223,12 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     addedAt: '2026-04-20',
     caption: "Knopfler fingerpicking au pouce. Si tu joues au médiator, faux bons résultats mais c'est moins authentique.",
     commentsCount: 11,
+    techniques: ['arpège'],
   },
 ];
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Riff de la semaine courante (rotation auto par numéro de semaine). */
 export function getCurrentCommunityRiff(now: Date = new Date()): {
@@ -167,6 +240,41 @@ export function getCurrentCommunityRiff(now: Date = new Date()): {
   const tab = getTab(riff.tabId);
   if (!tab) return null;
   return { riff, tab };
+}
+
+/** Pitches déterministes pour le "Riff du jour" — texte court qui change
+ *  selon le riff (basés sur tags + difficulté). */
+function pitchForDailyRiff(riff: CommunityRiff): string {
+  if (riff.techniques?.includes('bend')) {
+    return "Aujourd'hui : un classique pour bosser ton bend";
+  }
+  if (riff.techniques?.includes('arpège')) {
+    return "Aujourd'hui : un riff d'arpège pour la précision";
+  }
+  if (riff.tags.includes('iconique') && riff.difficulty <= 2) {
+    return "Aujourd'hui : un riff incontournable, facile à attaquer";
+  }
+  if (riff.tags.includes('blues')) {
+    return "Aujourd'hui : un blues pour travailler le feel";
+  }
+  if (riff.difficulty >= 4) {
+    return "Aujourd'hui : un riff costaud — défi du jour";
+  }
+  return "Aujourd'hui : le riff à découvrir";
+}
+
+/** Riff du jour — rotation déterministe sur la date (même jour = même
+ *  riff pour tous). Utilisé dans le hero de /riffs (sess 27 Phase 3). */
+export function getDailyRiff(now: Date = new Date()): {
+  riff: CommunityRiff;
+  tab: Tab;
+  pitch: string;
+} | null {
+  const dayIdx = Math.floor(now.getTime() / DAY_MS);
+  const riff = COMMUNITY_RIFFS[dayIdx % COMMUNITY_RIFFS.length];
+  const tab = getTab(riff.tabId);
+  if (!tab) return null;
+  return { riff, tab, pitch: pitchForDailyRiff(riff) };
 }
 
 /** Lookup d'un riff par ID — utilisé par les pages /riffs/:id et le hub. */
