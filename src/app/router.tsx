@@ -25,6 +25,11 @@ import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
 import { Composer } from '@/pages/Composer';
 import { About } from '@/pages/About';
+import { LibraryHub } from '@/pages/hubs/LibraryHub';
+import { ResourcesHub } from '@/pages/hubs/ResourcesHub';
+import { CreateHub } from '@/pages/hubs/CreateHub';
+import { ToolsHub } from '@/pages/hubs/ToolsHub';
+import { FretboardLearner } from '@/pages/FretboardLearner';
 
 export const router = createBrowserRouter([
   {
@@ -40,26 +45,48 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: 'dashboard', element: <Dashboard /> },
+
+      // ─── Hubs (refonte sidebar sess 26) ─────────────────────────
+      { path: 'library', element: <LibraryHub /> },
+      { path: 'resources', element: <ResourcesHub /> },
+      { path: 'create', element: <CreateHub /> },
+      { path: 'tools', element: <ToolsHub /> },
+
+      // ─── Pages perso (anciennes URLs préservées) ────────────────
       { path: 'songs', element: <Songs /> },
       { path: 'songs/new', element: <SongNew /> },
       { path: 'songs/:id', element: <SongDetail /> },
       { path: 'setlists', element: <Setlists /> },
       { path: 'setlists/:id', element: <SetlistDetail /> },
       { path: 'setlists/:id/play', element: <SetlistPlay /> },
+      { path: 'riffs', element: <Riffs /> },
+      { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
+
+      // ─── Bibliothèque (référence) ───────────────────────────────
       { path: 'chords', element: <Chords /> },
       { path: 'scales', element: <Scales /> },
       { path: 'progressions', element: <Progressions /> },
-      { path: 'composer', element: <Composer /> },
-      { path: 'riffs', element: <Riffs /> },
-      { path: 'ear-training', element: <EarTraining /> },
       { path: 'strum-patterns', element: <StrumPatterns /> },
-      { path: 'plan', element: <PracticePlan /> },
-      { path: 'share/:encoded', element: <SharePreview /> },
-      { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
-      { path: 'jam', element: <Jam /> },
-      { path: 'metronome', element: <Metronome /> },
+
+      // ─── Création ───────────────────────────────────────────────
+      { path: 'composer', element: <Composer /> },
+
+      // ─── Outils (URLs canoniques /tools/* + anciennes en alias) ─
+      // Le hub /tools liste ces 4. Les anciennes URLs restent valides
+      // pour pas casser les liens partagés / bookmarks.
+      { path: 'tools/tuner', element: <Tuner /> },
+      { path: 'tools/metronome', element: <Metronome /> },
+      { path: 'tools/ear-training', element: <EarTraining /> },
+      { path: 'tools/fretboard-learner', element: <FretboardLearner /> },
       { path: 'tuner', element: <Tuner /> },
+      { path: 'metronome', element: <Metronome /> },
+      { path: 'ear-training', element: <EarTraining /> },
+
+      // ─── Quotidien & comptes ────────────────────────────────────
+      { path: 'plan', element: <PracticePlan /> },
       { path: 'stats', element: <Stats /> },
+      { path: 'jam', element: <Jam /> },
+      { path: 'share/:encoded', element: <SharePreview /> },
       { path: 'settings', element: <Settings /> },
       { path: 'profile', element: <Profile /> },
     ],

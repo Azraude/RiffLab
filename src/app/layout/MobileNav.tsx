@@ -1,216 +1,121 @@
-import { useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Music2, Grid3x3, Waves, Timer, Mic, Wrench, Ear } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Music2, Target, Wrench, Settings as SettingsIcon } from 'lucide-react';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
-import * as Dialog from '@radix-ui/react-dialog';
-import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { AuthMenu } from '@/components/auth/AuthMenu';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
-const TOOLS: Array<{ to: string; labelKey: string; description: string; icon: React.ReactNode }> = [
+/**
+ * Bottom nav mobile — 5 items max (limite UX mobile).
+ *
+ * Refonte sess 26 : avant 5 items qui pointaient direct vers /songs
+ * /chords /scales + bouton Outils qui ouvrait un sheet avec 3 outils.
+ * Maintenant : 5 items qui pointent vers les hubs ou les pages clés.
+ *
+ * Items :
+ *  1. Home → /dashboard
+ *  2. Ma musique → /library (hub)
+ *  3. Mon plan → /plan
+ *  4. Outils → /tools (hub)
+ *  5. Préférences → /settings
+ *
+ * Pour rester actif quand on est dans une sous-page (ex: /songs, /chords),
+ * on check les matchPrefixes. L'ancien sheet outils est supprimé : maintenant
+ * on tap "Outils" et on arrive sur le hub /tools qui propose les 4 outils.
+ */
+
+type Item = {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+  /** URLs additionnelles qui doivent aussi marquer comme actif */
+  matchPrefixes?: string[];
+};
+
+const ITEMS: Item[] = [
   {
-    to: '/tuner',
-    labelKey: 'tuner',
-    description: 'Accordage au micro avec détection de pitch',
-    icon: <Mic size={20} />,
+    to: '/library',
+    label: 'Ma musique',
+    icon: <Music2 size={20} />,
+    matchPrefixes: ['/songs', '/setlists', '/riffs', '/riff-of-the-week', '/library'],
   },
   {
-    to: '/metronome',
-    labelKey: 'metronome',
-    description: 'Garde le tempo, 40-220 BPM',
-    icon: <Timer size={20} />,
+    to: '/plan',
+    label: 'Mon plan',
+    icon: <Target size={20} />,
+    matchPrefixes: ['/plan', '/stats'],
   },
   {
-    to: '/ear-training',
-    labelKey: 'earTraining',
-    description: 'Devine intervalles, accords et progressions',
-    icon: <Ear size={20} />,
+    to: '/tools',
+    label: 'Outils',
+    icon: <Wrench size={20} />,
+    matchPrefixes: ['/tools', '/tuner', '/metronome', '/ear-training'],
+  },
+  {
+    to: '/settings',
+    label: 'Préférences',
+    icon: <SettingsIcon size={20} />,
+    matchPrefixes: ['/settings', '/profile'],
   },
 ];
 
-const toolPaths = TOOLS.map((t) => t.to);
-
 export function MobileNav() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const [toolsOpen, setToolsOpen] = useState(false);
-
-  const toolsActive = toolPaths.includes(location.pathname);
-
-  const handleToolPick = (to: string) => {
-    setToolsOpen(false);
-    navigate(to);
-  };
 
   return (
-    <>
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-md md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="grid grid-cols-5">
-          {/* Home — flamme logo RiffLab. Animation flicker active toujours,
-              opacity réduite quand inactif pour rester reconnaissable
-              comme nav (le "tab actif" doit ressortir). */}
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              clsx(
-                'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
-                isActive ? 'text-gold' : 'text-text-soft hover:text-text'
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={clsx(
-                    'flex h-5 w-5 items-center justify-center transition-opacity',
-                    isActive ? 'opacity-100' : 'opacity-60'
-                  )}
-                >
-                  <RiffLabLogo size={20} />
-                </span>
-                <span>Home</span>
-              </>
-            )}
-          </NavLink>
-
-          <NavItem to="/songs" label={t('nav.songs')} icon={<Music2 size={20} />} />
-          <NavItem to="/chords" label={t('nav.chords')} icon={<Grid3x3 size={20} />} />
-          <NavItem to="/scales" label={t('nav.scales')} icon={<Waves size={20} />} />
-
-          {/* Outils — bouton (pas NavLink) qui ouvre une sheet */}
-          <button
-            type="button"
-            onClick={() => setToolsOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={toolsOpen}
-            className={clsx(
-              'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
-              toolsActive ? 'text-gold' : 'text-text-soft hover:text-text'
-            )}
-          >
-            <Wrench size={20} />
-            <span>{t('nav.sectionTools')}</span>
-          </button>
-        </div>
-      </nav>
-
-      <Dialog.Root open={toolsOpen} onOpenChange={setToolsOpen}>
-        <AnimatePresence>
-          {toolsOpen && (
-            <Dialog.Portal forceMount>
-              <Dialog.Overlay asChild>
-                <motion.div
-                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                />
-              </Dialog.Overlay>
-              <Dialog.Content asChild aria-describedby={undefined}>
-                <motion.div
-                  className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-border bg-surface shadow-2xl md:hidden"
-                  style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
-                  initial={{ y: '100%' }}
-                  animate={{ y: 0 }}
-                  exit={{ y: '100%' }}
-                  transition={{ type: 'spring', stiffness: 320, damping: 36 }}
-                  drag="y"
-                  dragConstraints={{ top: 0 }}
-                  dragElastic={{ top: 0, bottom: 0.5 }}
-                  onDragEnd={(_, info) => {
-                    if (info.offset.y > 100 || info.velocity.y > 500) {
-                      setToolsOpen(false);
-                    }
-                  }}
-                >
-                  <div className="flex justify-center pb-1 pt-3">
-                    <span className="h-1.5 w-12 rounded-full bg-text-soft/40" />
-                  </div>
-                  <div className="px-5 pb-2">
-                    <Dialog.Title className="display text-display-sm">{t('nav.sectionTools')}</Dialog.Title>
-                    <Dialog.Description className="mt-0.5 text-sm text-text-muted">
-                      Tes outils de pratique
-                    </Dialog.Description>
-                  </div>
-                  <div className="px-3 pb-3 pt-2">
-                    {TOOLS.map((tool) => {
-                      const active = location.pathname === tool.to;
-                      return (
-                        <button
-                          key={tool.to}
-                          type="button"
-                          onClick={() => handleToolPick(tool.to)}
-                          className={clsx(
-                            'flex w-full items-center gap-4 rounded-xl border px-4 py-3 text-left transition-colors',
-                            active
-                              ? 'border-gold bg-gold/10'
-                              : 'border-transparent hover:bg-surface-2'
-                          )}
-                        >
-                          <span
-                            className={clsx(
-                              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
-                              active
-                                ? 'border-gold-soft bg-gold/10 text-gold'
-                                : 'border-border bg-surface-2 text-text-muted'
-                            )}
-                          >
-                            {tool.icon}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span
-                              className={clsx(
-                                'block text-sm font-semibold',
-                                active ? 'text-gold' : 'text-text'
-                              )}
-                            >
-                              {t(`nav.${tool.labelKey}`)}
-                            </span>
-                            <span className="block text-xs text-text-muted">
-                              {tool.description}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Langue + Auth — bottom du sheet, juste au-dessus du safe area */}
-                  <div className="space-y-2 border-t border-border px-3 pb-2 pt-3">
-                    <div className="label-small px-1">{t('settings.language')}</div>
-                    <LanguageSwitcher />
-                    <AuthMenu />
-                  </div>
-                </motion.div>
-              </Dialog.Content>
-            </Dialog.Portal>
-          )}
-        </AnimatePresence>
-      </Dialog.Root>
-    </>
-  );
-}
-
-function NavItem({ to, label, icon }: { to: string; label: string; icon: React.ReactNode }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        clsx(
-          'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
-          isActive ? 'text-gold' : 'text-text-soft hover:text-text'
-        )
-      }
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-md md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {icon}
-      <span>{label}</span>
-    </NavLink>
+      <div className="grid grid-cols-5">
+        {/* Home — flamme logo RiffLab. Animation flicker active toujours,
+            opacity réduite quand inactif pour rester reconnaissable
+            comme nav (le "tab actif" doit ressortir). */}
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            clsx(
+              'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
+              isActive ? 'text-gold' : 'text-text-soft hover:text-text'
+            )
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <span
+                className={clsx(
+                  'flex h-5 w-5 items-center justify-center transition-opacity',
+                  isActive ? 'opacity-100' : 'opacity-60'
+                )}
+              >
+                <RiffLabLogo size={20} />
+              </span>
+              <span>Home</span>
+            </>
+          )}
+        </NavLink>
+
+        {ITEMS.map((it) => {
+          const active =
+            location.pathname === it.to ||
+            (it.matchPrefixes
+              ? it.matchPrefixes.some((p) =>
+                  p.endsWith('/') ? location.pathname.startsWith(p) : location.pathname === p || location.pathname.startsWith(p + '/')
+                )
+              : false);
+          return (
+            <NavLink
+              key={it.to}
+              to={it.to}
+              className={clsx(
+                'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
+                active ? 'text-gold' : 'text-text-soft hover:text-text'
+              )}
+            >
+              {it.icon}
+              <span>{it.label}</span>
+            </NavLink>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
