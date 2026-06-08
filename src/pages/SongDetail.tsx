@@ -14,6 +14,7 @@ import { useAudio } from '@/hooks/useAudio';
 import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2, Gauge, Share2 } from 'lucide-react';
 import { encodeSong, buildShareUrl } from '@/lib/share';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
+import { SongDetailSkeleton } from '@/components/ui/Skeleton';
 import clsx from 'clsx';
 
 export function SongDetail() {
@@ -58,14 +59,7 @@ export function SongDetail() {
   };
 
   if (!song) {
-    return (
-      <>
-        <Link to="/songs" className="text-sm text-text-muted hover:text-gold">
-          ← Retour aux sons
-        </Link>
-        <p className="mt-6 text-text-muted">Son introuvable.</p>
-      </>
-    );
+    return <SongDetailSkeleton />;
   }
 
   // Unique chord names across all sections

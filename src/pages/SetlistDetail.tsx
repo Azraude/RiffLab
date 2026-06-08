@@ -15,6 +15,7 @@ import {
 import { encodeSetlist, buildShareUrl } from '@/lib/share';
 import { exportSetlistToPdf } from '@/lib/setlistPdf';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
+import { SongDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowDown,
   ArrowUp,
@@ -47,14 +48,7 @@ export function SetlistDetail() {
   const [shareOpen, setShareOpen] = useState(false);
 
   if (!setlist) {
-    return (
-      <>
-        <Link to="/setlists" className="text-sm text-text-muted hover:text-gold">
-          ← Setlists
-        </Link>
-        <p className="mt-6 text-text-muted">Setlist introuvable.</p>
-      </>
-    );
+    return <SongDetailSkeleton />;
   }
 
   // Mutations
