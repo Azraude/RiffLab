@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Sheet } from '@/components/ui/Sheet';
 import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Card } from '@/components/ui/Card';
 import {
   db,
   listSetlists,
@@ -52,17 +53,15 @@ export function Setlists() {
           ))}
         </div>
       ) : setlists.length === 0 ? (
-        <Card className="text-center py-12">
-          <ListMusic size={32} className="mx-auto mb-3 text-gold-soft" strokeWidth={1.5} />
-          <p className="text-text-muted">Pas encore de setlist.</p>
-          <button
-            type="button"
-            onClick={() => setNewOpen(true)}
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
-          >
-            Créer ma première setlist
-          </button>
-        </Card>
+        <EmptyState
+          icon={ListMusic}
+          title="Crée ta première setlist"
+          description="Groupe tes morceaux dans l'ordre pour ta répèt ou ton prochain bar. Exporte un chord chart PDF imprimable en 1 clic."
+          primaryAction={{
+            label: '+ Créer ma première setlist',
+            onClick: () => setNewOpen(true),
+          }}
+        />
       ) : (
         <StaggerGrid className="grid gap-5 sm:grid-cols-2 md:grid-cols-3" stagger={0.05}>
           {setlists.map((sl) => (

@@ -5,8 +5,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { SongTileSkeleton } from '@/components/ui/Skeleton';
 import { StaggerGrid, StaggerItem } from '@/components/ui/AnimatedSection';
-import { countRecordingsBySong, db, type Song } from '@/lib/db';
-import { Dices, Mic, Plus } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { countRecordingsBySong, db, seedIfEmpty, type Song } from '@/lib/db';
+import { Dices, Mic, Music2, Plus } from 'lucide-react';
 
 export function Songs() {
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().toArray(), []);
@@ -80,15 +81,20 @@ export function Songs() {
           ))}
         </div>
       ) : songs.length === 0 ? (
-        <Card className="text-center py-12">
-          <p className="text-text-muted">Aucun son pour l'instant.</p>
-          <Link
-            to="/songs/new"
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
-          >
-            Ajouter ton premier son
-          </Link>
-        </Card>
+        <EmptyState
+          icon={Music2}
+          title="Ta première chanson n'attend que toi"
+          description="Note tes covers, tes compos, tes idées de riffs. Accords + paroles + sections, le tout local, sans pub, sans compte."
+          primaryAction={{
+            label: '+ Ajouter mon premier morceau',
+            onClick: () => navigate('/songs/new'),
+          }}
+          secondaryAction={{
+            label: 'Charger 3 morceaux d\'exemple',
+            onClick: () => void seedIfEmpty(),
+            sublabel: 'Wonderwall, Smoke on the Water, Knockin\' on Heaven\'s Door',
+          }}
+        />
       ) : (
         <StaggerGrid className="grid gap-5 sm:grid-cols-2 md:grid-cols-3" stagger={0.04}>
           {songs.map((s) => (
