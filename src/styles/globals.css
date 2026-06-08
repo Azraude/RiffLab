@@ -111,6 +111,28 @@
     --scrollbar-thumb-hover: 88 56 122;
   }
 
+  /* Retro Arcade — débloqué via Konami code ↑↑↓↓←→←→BA (sess 24).
+     Néon cyan/magenta sur noir profond, vibe Pac-Man / arcade années 80. */
+  :root[data-theme='retro-arcade'] {
+    color-scheme: dark;
+    --bg: 0 0 12;
+    --surface: 8 8 24;
+    --surface-2: 16 16 40;
+    --border: 32 32 64;
+    --text: 224 255 255;
+    --text-muted: 150 220 240;
+    --text-soft: 96 160 200;
+    --gold: 0 255 255;
+    --gold-bright: 64 255 255;
+    --gold-soft: 0 192 200;
+    --gold-glow: 255 0 220;
+    --success: 80 255 100;
+    --danger: 255 64 128;
+    --scrollbar-track: 0 0 12;
+    --scrollbar-thumb: 32 32 64;
+    --scrollbar-thumb-hover: 0 192 200;
+  }
+
   *,
   *::before,
   *::after {

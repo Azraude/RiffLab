@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
+import { KonamiProvider } from '@/hooks/useKonamiCode';
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -15,6 +16,7 @@ export function Layout() {
 
   return (
     <KeyboardShortcutsProvider>
+    <KonamiProvider>
     <div className="min-h-screen bg-bg">
       <a href="#main-content" className="skip-link">
         Aller au contenu principal
@@ -53,6 +55,7 @@ export function Layout() {
       </div>
       <MobileNav />
     </div>
+    </KonamiProvider>
     </KeyboardShortcutsProvider>
   );
 }

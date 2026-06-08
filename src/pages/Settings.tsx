@@ -182,7 +182,7 @@ export function Settings() {
             Switch instantané — toutes les couleurs s'adaptent (sauf le manche, qui a son propre skin ci-dessous).
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {THEMES.map((theme) => (
+            {THEMES.filter((t) => !t.secret || prefs.unlockedSecretTheme).map((theme) => (
               <ThemeOption
                 key={theme.id}
                 theme={theme}

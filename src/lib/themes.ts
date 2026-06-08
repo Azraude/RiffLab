@@ -10,7 +10,8 @@ export type ThemeId =
   | 'sunset'
   | 'studio-blue'
   | 'pure-white'
-  | 'neon-synthwave';
+  | 'neon-synthwave'
+  | 'retro-arcade';
 
 export type Theme = {
   id: ThemeId;
@@ -26,6 +27,9 @@ export type Theme = {
   };
   /** Marqueur premium (Phase 5 — cosmetics shop). */
   premium?: boolean;
+  /** Marqueur "secret" — invisible dans le sélecteur tant que pas débloqué.
+   *  Ex: retro-arcade débloqué via Konami code. */
+  secret?: boolean;
 };
 
 export const THEMES: Theme[] = [
@@ -89,6 +93,19 @@ export const THEMES: Theme[] = [
       text: '#fde8ff',
     },
     premium: true,
+  },
+  {
+    id: 'retro-arcade',
+    label: '🕹 Retro Arcade',
+    description: 'Cyan néon + magenta sur noir. Cheat code activé.',
+    preview: {
+      bg: '#00000c',
+      surface: '#080818',
+      accent: '#00ffff',
+      accentBright: '#40ffff',
+      text: '#e0ffff',
+    },
+    secret: true,
   },
 ];
 
