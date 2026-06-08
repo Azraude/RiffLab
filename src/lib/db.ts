@@ -132,6 +132,28 @@ export type QuizResult = {
   takenAt: number;
 };
 
+/** Riff créé par l'user via l'éditeur Phase 4 (sess 27). */
+export type UserRiff = {
+  /** id stable (user-xxxxx) */
+  id: string;
+  title: string;
+  artist?: string;
+  /** BPM */
+  bpm: number;
+  /** Tonalité ex 'E' ou 'Am' */
+  key: string;
+  /** Tab structuré (mesures × notes string/fret/duration/startBeat) — clone du
+   *  format Tab existant mais qui vit dans Dexie */
+  tabJson: string;
+  tags: string[];
+  techniques: string[];
+  description?: string;
+  /** beginner / intermediate / advanced / expert — calculée auto */
+  level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  createdAt: number;
+  updatedAt: number;
+};
+
 /** Riff marqué comme maîtrisé par l'user via mode "Apprendre" (sess 27 Phase 2). */
 export type MasteredRiff = {
   /** id du community riff (cr-smoke, cr-iron, ...) */
@@ -191,6 +213,7 @@ class RiffLabDB extends Dexie {
   quizResults!: Table<QuizResult, string>;
   fretboardLearnerStats!: Table<FretboardLearnerStats, number>;
   masteredRiffs!: Table<MasteredRiff, string>;
+  userRiffs!: Table<UserRiff, string>;
 
   constructor() {
     super('rifflab');
@@ -325,6 +348,24 @@ class RiffLabDB extends Dexie {
       quizResults: 'nodeId, takenAt',
       fretboardLearnerStats: '++id, date, level',
       masteredRiffs: 'id, masteredAt',
+    });
+    // v13 : userRiffs (éditeur création sess 27 Phase 4)
+    this.version(13).stores({
+      songs: 'id, title, artist, key, updatedAt, status',
+      sessions: '++id, date, completed',
+      setlists: 'id, name, updatedAt',
+      recordings: 'id, songId, createdAt',
+      practiceProgress: 'id, completedAt',
+      riffLikes: 'id, likedAt',
+      riffBookmarks: 'id, bookmarkedAt',
+      riffRatings: 'id, ratedAt',
+      interactions: 'key, type, itemId, interactedAt',
+      dailyChallenges: 'date, completedAt',
+      customProgressions: 'id, createdAt, key, mode',
+      quizResults: 'nodeId, takenAt',
+      fretboardLearnerStats: '++id, date, level',
+      masteredRiffs: 'id, masteredAt',
+      userRiffs: 'id, createdAt, updatedAt',
     });
   }
 }
@@ -486,6 +527,28 @@ export async function aggregateFretboardLearnerStats(): Promise<{
     favoriteLevel,
     daily,
   };
+}
+
+// ─── User riffs (éditeur création sess 27 Phase 4) ────────────────
+
+export function newUserRiffId(): string {
+  return `user-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export async function saveUserRiff(riff: UserRiff): Promise<void> {
+  await db.userRiffs.put({ ...riff, updatedAt: Date.now() });
+}
+
+export async function listUserRiffs(): Promise<UserRiff[]> {
+  return db.userRiffs.orderBy('createdAt').reverse().toArray();
+}
+
+export async function getUserRiff(id: string): Promise<UserRiff | undefined> {
+  return db.userRiffs.get(id);
+}
+
+export async function deleteUserRiff(id: string): Promise<void> {
+  await db.userRiffs.delete(id);
 }
 
 // ─── Mastered riffs (mode "Apprendre ce riff" sess 27 Phase 2) ───

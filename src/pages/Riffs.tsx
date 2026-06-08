@@ -20,14 +20,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, SlidersHorizontal } from 'lucide-react';
 import clsx from 'clsx';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Sheet } from '@/components/ui/Sheet';
 import { RiffCard } from '@/components/riffs/RiffCard';
 import { RiffFilters, EMPTY_FILTERS, activeFilterCount, type RiffFilterState } from '@/components/riffs/RiffFilters';
 import { RiffTabModal } from '@/components/riffs/RiffTabModal';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { RiffOfTheDayHero } from '@/components/riffs/RiffOfTheDayHero';
 import { CollectionsCarousel } from '@/components/riffs/CollectionsCarousel';
+import { RiffEditor } from '@/components/riffs/RiffEditor';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
@@ -301,32 +300,14 @@ export function Riffs() {
         }}
       />
 
-      {/* "Partager mon riff" placeholder — Phase 4 sera le vrai éditeur */}
-      <Sheet
+      {/* === Éditeur de création (Phase 4) === */}
+      <RiffEditor
         open={shareOpen}
-        onOpenChange={setShareOpen}
-        title="Partager mon riff"
-        description="L'éditeur de création arrive en Phase 4 — bientôt tu pourras notes ton propre tab et le publier."
-      >
-        <div className="py-6 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-3xl text-gold">
-            🎸
-          </div>
-          <h3 className="display mt-4 text-display-sm">Éditeur de riff en chantier</h3>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-text-muted">
-            Tu pourras bientôt notes ton propre riff (mesures, frettes, techniques)
-            et le publier dans le feed.
-          </p>
-          {/* Trick : on ferme + on récupère le focus */}
-          <button
-            type="button"
-            onClick={() => setShareOpen(false)}
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright"
-          >
-            OK, j'attendrai
-          </button>
-        </div>
-      </Sheet>
+        onClose={() => setShareOpen(false)}
+        onPublished={() => {
+          // Future : navigate vers /riffs/perso ou refresh feed
+        }}
+      />
 
       {/* Mode Apprendre full-screen */}
       <LearnRiffMode
