@@ -12,7 +12,8 @@ import { getChord, getDefaultVoicing } from '@/lib/chordDatabase';
 import { suggestCapo, OPEN_CHORD_SHAPES } from '@/lib/capoSuggest';
 import { useAudio } from '@/hooks/useAudio';
 import { Play, Music2, Lightbulb, ArrowRight, Check, X, Trash2, Gauge, Share2 } from 'lucide-react';
-import { encodeSong, buildShareUrl, copyShareUrl } from '@/lib/share';
+import { encodeSong, buildShareUrl } from '@/lib/share';
+import { ShareDrawer } from '@/components/share/ShareDrawer';
 import clsx from 'clsx';
 
 export function SongDetail() {
@@ -23,6 +24,7 @@ export function SongDetail() {
   const [activeChord, setActiveChord] = useState<string | null>(null);
   const [showCapoSuggestion, setShowCapoSuggestion] = useState(false);
   const [trainerSection, setTrainerSection] = useState<Section | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!song) return;
@@ -98,17 +100,19 @@ export function SongDetail() {
         </div>
         <button
           type="button"
-          onClick={async () => {
-            const url = buildShareUrl(encodeSong(song));
-            const ok = await copyShareUrl(url);
-            if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
-          }}
+          onClick={() => setShareOpen(true)}
           className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-xl border border-border bg-surface px-3 text-sm text-text-muted hover:border-gold-soft hover:text-text md:self-end"
           aria-label="Partager ce son"
         >
           <Share2 size={14} /> Partager
         </button>
       </div>
+
+      <ShareDrawer
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        item={{ title: song.title || 'Mon son', url: buildShareUrl(encodeSong(song)), type: 'song' }}
+      />
 
       {/* Chord palette */}
       <div className="mt-8">

@@ -12,8 +12,9 @@ import {
   type Setlist,
   type Song,
 } from '@/lib/db';
-import { encodeSetlist, buildShareUrl, copyShareUrl } from '@/lib/share';
+import { encodeSetlist, buildShareUrl } from '@/lib/share';
 import { exportSetlistToPdf } from '@/lib/setlistPdf';
+import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   ArrowDown,
   ArrowUp,
@@ -43,6 +44,7 @@ export function SetlistDetail() {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInkSaver, setPdfInkSaver] = useState(true);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (!setlist) {
     return (
@@ -112,9 +114,7 @@ export function SetlistDetail() {
     }
   };
 
-  const handleShare = async () => {
-    // Encode setlist + full songs (le destinataire n'a pas nos IDs dans sa
-    // DB locale). Le payload reste raisonnable : ~2kB par song.
+  const handleShare = () => {
     const orderedSongs = setlist.songIds
       .map((sid) => songsById.get(sid))
       .filter(Boolean) as Song[];
@@ -122,11 +122,17 @@ export function SetlistDetail() {
       alert('Ajoute au moins un son avant de partager.');
       return;
     }
-    const encoded = encodeSetlist(setlist, orderedSongs);
-    const url = buildShareUrl(encoded);
-    const ok = await copyShareUrl(url);
-    if (ok) alert('Lien de partage copié — colle-le dans WhatsApp/Discord/etc.');
+    setShareOpen(true);
   };
+
+  // Construit l'URL de partage à la volée (le contenu peut changer entre 2 ouvertures du drawer)
+  const shareUrl = (() => {
+    const orderedSongs = setlist.songIds
+      .map((sid) => songsById.get(sid))
+      .filter(Boolean) as Song[];
+    if (orderedSongs.length === 0) return '';
+    return buildShareUrl(encodeSetlist(setlist, orderedSongs));
+  })();
 
   const ordered = setlist.songIds.map((id) => songsById.get(id)).filter(Boolean);
   const availableSongs = (songs ?? []).filter((s) => !setlist.songIds.includes(s.id));
@@ -295,6 +301,13 @@ export function SetlistDetail() {
           </button>
         </div>
       </div>
+
+      {/* ShareDrawer — partage WhatsApp / Discord / X / clipboard */}
+      <ShareDrawer
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        item={{ title: setlist.name, url: shareUrl, type: 'setlist' }}
+      />
 
       {/* Sheet "Ajouter un son" */}
       <AddSongSheet
