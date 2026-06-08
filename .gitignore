@@ -49,3 +49,9 @@ public/models/*.glb
 !public/models/guitar-fender-classic.glb
 !public/models/guitar-fender-rose.glb
 !public/models/amp.glb
+
+# Screenshots — les placeholders légers (~ kB chacun) sont committés pour
+# éviter les 404 dans le README GitHub. Quand Melvin lance scripts/
+# screenshots.mjs avant le ship, les vrais PNG haute-res écrasent les
+# placeholders. Si ces vrais PNG dépassent 1 MB chacun, retire-les ou
+# convertis en WebP avant commit.
