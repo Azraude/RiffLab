@@ -5,6 +5,7 @@ import { MobileNav } from './MobileNav';
 import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
 import { KonamiProvider } from '@/hooks/useKonamiCode';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
+import { ToastViewport } from '@/hooks/useToast';
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -56,6 +57,7 @@ export function Layout() {
       </div>
       <MobileNav />
       <FeedbackButton />
+      <ToastViewport />
     </div>
     </KonamiProvider>
     </KeyboardShortcutsProvider>
