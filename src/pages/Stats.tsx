@@ -158,7 +158,7 @@ export function Stats() {
           className="overflow-visible"
         >
           {/* Baseline */}
-          <line x1="0" y1="76" x2="300" y2="76" stroke="#2a2a2a" strokeWidth="0.5" />
+          <line x1="0" y1="76" x2="300" y2="76" stroke="rgb(var(--border))" strokeWidth="0.5" />
 
           {(days ?? []).map((d, i) => {
             const x = (i / 29) * 300;
@@ -171,7 +171,7 @@ export function Stats() {
                   y1={76}
                   x2={x}
                   y2={y}
-                  stroke={d.count > 0 ? '#d4b76a' : '#2a2a2a'}
+                  stroke={d.count > 0 ? 'rgb(var(--gold))' : 'rgb(var(--border))'}
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   vectorEffect="non-scaling-stroke"
