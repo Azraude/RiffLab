@@ -299,6 +299,211 @@ const SEMITONE_LABELS: Record<number, string> = {
   11: '7',
 };
 
+// ─── Studio : suggestion lock-progressive ──────────────────────────
+
+export type SuggestionFit = 'natural' | 'colorful' | 'surprising';
+
+export type ChordSuggestion = {
+  /** Nom de l'accord candidat (ex: "Cmaj7", "Am") */
+  chord: string;
+  /** Score brut 0-100 */
+  score: number;
+  /** Catégorie d'usage */
+  fit: SuggestionFit;
+  /** Phrase pédagogique courte expliquant le choix */
+  reason: string;
+  /** Degré roman si applicable (ex: "V", "vi", "bVI") */
+  roman?: string;
+};
+
+/** Convertit un nom d'accord → degré roman dans le contexte key/mode. */
+function chordToRoman(chord: string, key: NoteName, mode: 'major' | 'minor'): string | undefined {
+  const parsed = parseChordName(chord);
+  if (!parsed) return undefined;
+  const keyIdx = NOTE_NAMES.indexOf(key);
+  const rootIdx = NOTE_NAMES.indexOf(parsed.root);
+  const interval = ((rootIdx - keyIdx) % 12 + 12) % 12;
+  const reduced = reduceQuality(parsed.quality);
+  const diatonic = mode === 'major' ? DIATONIC_MAJOR : DIATONIC_MINOR;
+  for (const [roman, deg] of Object.entries(diatonic)) {
+    if (deg.offset === interval && deg.quality === reduced) return roman;
+  }
+  return undefined;
+}
+
+/**
+ * Suggère les meilleurs accords pour remplir le prochain slot d'une
+ * progression en cours de construction. Approche scoring multi-critères :
+ *
+ *  1. Diatonic match           (+40) — l'accord est dans la tonalité
+ *  2. Cadence harmonique       (+10 à +30) — V→I, IV→V, ii→V, vi→IV, etc.
+ *  3. Style match              (+15) — l'accord est typique d'un PROGRESSION_TEMPLATES style
+ *  4. Variety bonus            (+10) — pas le même que les 2 précédents
+ *  5. Surprise factor          (+5 à +20) — emprunts, dominantes secondaires
+ *
+ *  Catégorisation `fit` :
+ *   - score ≥ 70 : 'natural' (💚)
+ *   - score 50-69 : 'colorful' (💛)
+ *   - score < 50 : 'surprising' (💜)
+ *
+ * Retourne le top `count` candidats avec reason pédagogique.
+ */
+export function suggestNextChord(
+  locked: string[],
+  key: NoteName,
+  mode: 'major' | 'minor',
+  styles: string[] = [],
+  count: number = 5,
+): ChordSuggestion[] {
+  const prev = locked[locked.length - 1];
+  const prevPrev = locked[locked.length - 2];
+  const prevRoman = prev ? chordToRoman(prev, key, mode) : undefined;
+
+  // Candidates : génère via suggestChordCandidates (large set) + scoring custom
+  const candidates = suggestChordCandidates(key, mode);
+
+  const stylePool = new Set<string>();
+  for (const s of styles) {
+    const templates = PROGRESSION_TEMPLATES[s as ProgressionStyle];
+    if (!templates) continue;
+    for (const romanArr of [...(templates.major ?? []), ...(templates.minor ?? [])]) {
+      for (const roman of romanArr) {
+        const chord = romanToChord(roman, key, mode);
+        stylePool.add(chord);
+      }
+    }
+  }
+
+  const scored: ChordSuggestion[] = candidates.map(({ chord, rating, reason: baseReason }) => {
+    let score = 0;
+    let reasonParts: string[] = [];
+
+    // 1. Diatonic
+    if (rating === 'great') {
+      score += 40;
+    } else if (rating === 'good') {
+      score += 20;
+    } else if (rating === 'risky') {
+      score += 5;
+    }
+
+    // 2. Cadence (need prev roman)
+    const candidateRoman = chordToRoman(chord, key, mode);
+    if (prevRoman && candidateRoman) {
+      const c = cadenceBonus(prevRoman, candidateRoman, mode);
+      if (c.score > 0) {
+        score += c.score;
+        reasonParts.push(c.label);
+      }
+    }
+
+    // 3. Style match
+    if (stylePool.has(chord)) {
+      score += 15;
+      if (styles.length > 0) reasonParts.push(`typique ${styles[0]}`);
+    }
+
+    // 4. Variety (pas répété)
+    if (chord === prev || chord === prevPrev) {
+      score -= 10;
+    } else {
+      score += 5;
+    }
+
+    // 5. Surprise factor pour rating 'good' (emprunts)
+    if (rating === 'good' && !prev) {
+      score += 5; // léger boost si début de prog
+    } else if (rating === 'good') {
+      // baseReason contient déjà "bVI emprunté", "V/V", etc.
+      reasonParts.push(baseReason.split('—')[0].trim());
+    }
+
+    // Build final reason — prends la 1ère explication forte
+    const reason =
+      reasonParts.length > 0
+        ? reasonParts[0]
+        : rating === 'great' && candidateRoman
+          ? `Degré ${candidateRoman} naturel`
+          : baseReason;
+
+    // Fit categorization
+    const fit: SuggestionFit =
+      score >= 70 ? 'natural' : score >= 50 ? 'colorful' : 'surprising';
+
+    return {
+      chord,
+      score: Math.max(0, Math.min(100, score)),
+      fit,
+      reason,
+      roman: candidateRoman,
+    };
+  });
+
+  // Sort by score desc, take top count
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, count);
+}
+
+/** Bonus de cadence basé sur la transition prevRoman → nextRoman. */
+function cadenceBonus(
+  prev: string,
+  next: string,
+  _mode: 'major' | 'minor',
+): { score: number; label: string } {
+  // Normalize for matching
+  const p = prev.replace('°', '').replace(/[bs]/g, '');
+  const n = next.replace('°', '').replace(/[bs]/g, '');
+  const key = `${p}→${n}`;
+
+  const CADENCES: Record<string, { score: number; label: string }> = {
+    'V→I': { score: 30, label: 'Cadence parfaite (V→I) : résolution puissante' },
+    'V→i': { score: 30, label: 'Cadence parfaite mineure (V→i)' },
+    'V7→I': { score: 30, label: 'Cadence parfaite dom7→I' },
+    'IV→V': { score: 25, label: 'Cadence imparfaite (IV→V), prépare la résolution' },
+    'ii→V': { score: 25, label: 'Cadence ii→V (jazz), tension préparée' },
+    'vi→IV': { score: 20, label: 'Cadence deceptive (vi→IV)' },
+    'IV→I': { score: 18, label: 'Cadence plagale (IV→I), amen' },
+    'I→IV': { score: 15, label: 'Sous-dominante (I→IV), ouvre l\'espace' },
+    'I→V': { score: 15, label: 'I→V, départ vers la tension' },
+    'I→vi': { score: 15, label: 'I→vi, relative mineure' },
+    'vi→V': { score: 12, label: 'vi→V, montée chromatique potentielle' },
+    'vi→ii': { score: 12, label: 'vi→ii, descente en quintes' },
+    'iii→vi': { score: 15, label: 'iii→vi, cycle des quintes' },
+    'i→iv': { score: 18, label: 'i→iv, sous-dominante mineure' },
+    'i→V': { score: 20, label: 'i→V, dominante harmonique (mode mineur)' },
+    'iv→V': { score: 22, label: 'iv→V, montée vers la tension' },
+    'iv→i': { score: 18, label: 'iv→i, plagale mineure' },
+    'i→VII': { score: 18, label: 'i→bVII, modal mineur (rock)' },
+    'i→VI': { score: 15, label: 'i→bVI, emprunt sombre' },
+  };
+
+  return CADENCES[key] ?? { score: 0, label: '' };
+}
+
+/**
+ * Génère une progression complète en remplissant les slots vides.
+ * Garde les slots déjà lockés, calcule la meilleure suite via
+ * suggestNextChord en cascade.
+ */
+export function generateFullProgression(
+  locked: (string | null)[],
+  key: NoteName,
+  mode: 'major' | 'minor',
+  styles: string[] = [],
+): string[] {
+  const result: string[] = [];
+  for (let i = 0; i < locked.length; i++) {
+    const slot = locked[i];
+    if (slot) {
+      result.push(slot);
+    } else {
+      const suggestions = suggestNextChord(result, key, mode, styles, 1);
+      result.push(suggestions[0]?.chord ?? romanToChord('I', key, mode));
+    }
+  }
+  return result;
+}
+
 /**
  * Liste des accords candidats pour un ChordPicker, groupés par rating.
  * Pour chaque combinaison root × quality (parmi un set restreint), évalue
