@@ -110,19 +110,46 @@ git push origin main
 
 ---
 
-## ⏸ Status à la fin de cette session
+## ✅ Action prise — Merge fast-forward worktree → main
 
-- **0 ligne de code écrite** (volontaire — éviter le re-travail destructif)
-- **0 commit** créé (sauf ce log si Melvin valide)
-- Ce log écrit pour documenter le diagnostic
+Melvin a confirmé l'**Option B** : merge la branche dans main maintenant +
+règle "merge fin de session" pour les sessions futures.
+
+### Étapes exécutées
+
+1. `npm run build` PASS (1m 14s, exit 0, ✓ built, précache 3.55 MB)
+2. Vérifié fast-forward possible : `git merge-base --is-ancestor main HEAD` ✓
+3. `git push origin claude/trusting-moore-b4036b:main` → fast-forward :
+   - `86bfcdc..cd9be89  claude/trusting-moore-b4036b -> main`
+   - **66 commits + 131 fichiers + 19761 lignes** maintenant sur main
+4. Sync local : `git fetch origin && git update-ref refs/heads/main origin/main`
+5. Vérifié alignment : main local = origin/main = HEAD = `cd9be89`
+
+### Nouvelle règle dans CLAUDE.md
+
+Ajouté section "⚠️ Règle workflow Git — MERGE FIN DE SESSION (obligatoire)"
+en bas du CLAUDE.md. Précise :
+- Quand : avant le wrap-up final, après que `npm run build` passe
+- Comment : `git push origin claude/trusting-moore-b4036b:main` (fast-forward
+  cas normal worktree) + `git update-ref` pour sync local
+- Quoi noter : "✅ Mergé dans main (SHA)" ou "❌ Pas mergé parce que [raison]"
+  en dernière ligne du log de session
 
 ## Recommandation Melvin — au retour
 
-1. **Ne pas demander à un nouvel agent de "rattraper" ces features** : elles existent toutes sur la branche worktree.
-2. **Confirmer le dossier** depuis lequel tu lances `npm run dev`. Si c'est `C:\Users\melvi\OneDrive\Desktop\Projets\RiffLab\` (main, pas worktree) → tu vois la version sess 19 figée, normal.
-3. **Décider de l'action** :
-   - Si tu veux récupérer les features en prod : merge worktree → main (option A ou B)
-   - Si tu veux garder le travail isolé pour le moment : run `npm run dev` depuis le worktree (`cd .claude/worktrees/trusting-moore-b4036b`)
-4. **Si tu confirmes que ces features existent vraiment dans la branche worktree** : on peut passer à la **session 29** vraie (nouvelles features, polish post-merge, ou ship-day).
+1. **Pull main dans le repo principal** pour récupérer toutes les features :
+   ```bash
+   cd C:\Users\melvi\OneDrive\Desktop\Projets\RiffLab
+   git pull origin main
+   ```
+2. **Re-lance `npm run dev`** depuis le repo principal → tu devrais voir
+   toutes les features (auth, Composer, FretboardLearner, About, hubs,
+   Riffs refondue, etc.)
+3. **Vérifie Vercel** : si la prod déploie depuis main, prochain push
+   triggera un deploy avec toutes les features sess 20-27.
+4. **Tag v1.0.0-ship-ready** existe déjà sur origin (sess 24) — pas besoin
+   de re-tag.
+5. **Prochaine session** : nouveau brief (vraies nouvelles features, ou
+   polish, ou ship-day). Plus de "rattrapage" — c'est fait.
 
-Si tu veux que je merge la branche moi-même maintenant, dis-le et je le fais (build pass check + push origin/main).
+## ✅ Mergé dans main (cd9be89df46883cc2d4f0f8c57539f2a9feb8e1)

@@ -223,3 +223,31 @@ npm run lint         # eslint
 - Le user (Melvin) est francophone — réponses en FR par défaut, code en anglais.
 - Quand il valide un design / une approche, c'est définitif — ne pas re-débattre dans les PRs suivants.
 - Tout ce qui touche au manche / accords doit être lisible **en répèt sur téléphone à 50 cm de distance** : tailles généreuses, contraste fort, pas de truc qui demande de zoomer.
+
+---
+
+## ⚠️ Règle workflow Git — MERGE FIN DE SESSION (obligatoire)
+
+**Contexte** : on travaille en worktree sur `claude/trusting-moore-b4036b`. Sans merge explicite, `main` reste figé et Vercel prod / `npm run dev` depuis le repo principal voient l'ancienne version. Symptôme constaté sess 28 : 66 commits sess 20-27 vivaient sur la branche worktree sans jamais arriver dans main.
+
+**Règle systématique pour CHAQUE session** :
+
+1. **Pendant la session** : commit + push sur la branche worktree comme d'habitude.
+2. **AVANT le wrap-up final** : `npm run build` doit passer.
+3. **Fin de session** : merge la branche dans `main` :
+   ```bash
+   # Si fast-forward possible (cas normal worktree) :
+   git push origin claude/trusting-moore-b4036b:main
+
+   # Sinon (rare, divergence) :
+   git checkout main && git pull origin main
+   git merge --no-ff claude/trusting-moore-b4036b
+   git push origin main
+   ```
+4. **Sync local main** :
+   ```bash
+   git fetch origin && git update-ref refs/heads/main origin/main
+   ```
+5. **Dernière ligne du log de session** : "✅ Mergé dans main (SHA)" ou "❌ Pas mergé parce que [raison]".
+
+**Si tu zappes cette étape, le brief suivant peut faussement croire que ton travail est absent → re-travail destructif possible.**
