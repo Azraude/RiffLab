@@ -27,6 +27,7 @@ import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { RiffEditor } from '@/components/riffs/RiffEditor';
 import { BadgesStrip } from '@/components/riffs/BadgesStrip';
 import { RiffsSidebarRight } from '@/components/riffs/RiffsSidebarRight';
+import { MobileRiffsHero } from '@/components/riffs/MobileRiffsHero';
 import { EditorPickBanner } from '@/components/riffs/EditorPickBanner';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
@@ -175,15 +176,47 @@ export function Riffs() {
 
   return (
     <>
-      {/* === Page header sticky === */}
+      {/* === Header sticky mobile-first ===
+          - Mobile (<md) : titre + bouton filtres + bouton + tous visibles compact
+          - Desktop : titre + sous-titre + "Partager mon riff" plein */}
       <div className="sticky top-0 z-20 -mx-5 mb-5 border-b border-border/40 bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:px-12">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="display text-display-md leading-tight">Riffs</h1>
             <p className="hidden text-xs text-text-muted sm:block">
               Le feed des riffs — joue, like, sauve, apprends
             </p>
           </div>
+          {/* Mobile : 2 boutons icônes compacts */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              aria-label="Filtrer"
+              className={clsx(
+                'flex h-11 w-11 items-center justify-center rounded-full border transition-colors',
+                activeFilters > 0
+                  ? 'border-gold bg-gold/15 text-gold'
+                  : 'border-border bg-surface text-text-muted'
+              )}
+            >
+              <SlidersHorizontal size={16} />
+              {activeFilters > 0 && (
+                <span className="absolute mt-7 ml-7 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gold px-1 font-mono text-[9px] font-bold text-bg">
+                  {activeFilters}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              aria-label="Partager mon riff"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong"
+            >
+              <Plus size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+          {/* Desktop : "Partager mon riff" plein */}
           <button
             type="button"
             onClick={() => setShareOpen(true)}
@@ -194,16 +227,25 @@ export function Riffs() {
         </div>
       </div>
 
-      {/* === Layout 3 colonnes (sess 29 magazine social) ===
-          Mobile : 1 col stack vertical (sidebar right en bas)
-          xl ≥1280px : 2 cols : feed + sidebar right
-          La sidebar gauche vit dans <Layout> (sidebar nav globale). */}
+      {/* === Layout mobile-first ===
+          - Mobile (<xl) : empilement vertical, hero sections en carrousels
+            puis feed full-width (RiffCard sans compact)
+          - Desktop xl ≥1280px : 2 cols feed + sidebar droite */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-8">
         {/* === Main feed === */}
         <main className="min-w-0">
-          {/* Tabs underline + bouton filtres */}
-          <div className="mb-5 flex items-end justify-between border-b border-border">
-            <div className="-mb-px flex gap-1 overflow-x-auto">
+          {/* === Hero mobile : carrousels (Riff du jour / Top semaine /
+              Collections / À suivre / Battle) — caché xl+ === */}
+          <div className="mb-6 xl:hidden">
+            <MobileRiffsHero />
+          </div>
+
+          {/* Editor's pick banner (sticky en haut si active) */}
+          <EditorPickBanner />
+
+          {/* Tabs underline */}
+          <div className="mb-4 border-b border-border">
+            <div className="-mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <UnderlineTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>
                 Pour toi
               </UnderlineTab>
@@ -217,36 +259,17 @@ export function Riffs() {
                 Récents
               </UnderlineTab>
             </div>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(true)}
-              className={clsx(
-                'mb-2 inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors',
-                activeFilters > 0
-                  ? 'border-gold bg-gold/15 text-gold'
-                  : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-              )}
-            >
-              <SlidersHorizontal size={13} />
-              Filtrer
-              {activeFilters > 0 && (
-                <span className="ml-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 font-mono text-[10px] font-bold text-bg">
-                  {activeFilters}
-                </span>
-              )}
-            </button>
           </div>
-
-          {/* Editor's pick banner (sticky en haut si active) */}
-          <EditorPickBanner />
 
           {/* Badges strip (juste au-dessus du feed) */}
           <div className="mb-4">
             <BadgesStrip />
           </div>
 
-          {/* Feed — grille 2 cols desktop, 1 col mobile */}
-          <div className="grid gap-4 pb-24 md:grid-cols-2 md:pb-12">
+          {/* Feed — mobile: 1 col full-width / desktop xl: 2 cols.
+              Le mode `compact` ne s'active QU'EN desktop xl (grille 2 cols).
+              Sur mobile, on prend toute la largeur avec le mode `full`. */}
+          <div className="grid gap-4 pb-24 xl:grid-cols-2 xl:pb-12">
             <AnimatePresence mode="popLayout">
               {visible.map((r) => {
                 const tab = getTab(r.tabId);
@@ -260,17 +283,32 @@ export function Riffs() {
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.25 }}
                   >
-                    <RiffCard
-                      riff={r}
-                      tab={tab}
-                      compact
-                      masteredAt={masteredMap.get(r.id) ?? null}
-                      onListen={() => void handleListen(r)}
-                      onViewTab={() => setTabModalRiff(r)}
-                      onLearn={() => handleLearn(r)}
-                      onOpenDetail={() => handleOpenDetail(r)}
-                      onShare={() => setShareDrawerRiff(r)}
-                    />
+                    {/* Mobile/tablet : full mode (large card) / xl : compact */}
+                    <div className="xl:hidden">
+                      <RiffCard
+                        riff={r}
+                        tab={tab}
+                        masteredAt={masteredMap.get(r.id) ?? null}
+                        onListen={() => void handleListen(r)}
+                        onViewTab={() => setTabModalRiff(r)}
+                        onLearn={() => handleLearn(r)}
+                        onOpenDetail={() => handleOpenDetail(r)}
+                        onShare={() => setShareDrawerRiff(r)}
+                      />
+                    </div>
+                    <div className="hidden xl:block">
+                      <RiffCard
+                        riff={r}
+                        tab={tab}
+                        compact
+                        masteredAt={masteredMap.get(r.id) ?? null}
+                        onListen={() => void handleListen(r)}
+                        onViewTab={() => setTabModalRiff(r)}
+                        onLearn={() => handleLearn(r)}
+                        onOpenDetail={() => handleOpenDetail(r)}
+                        onShare={() => setShareDrawerRiff(r)}
+                      />
+                    </div>
                   </motion.div>
                 );
               })}
@@ -278,7 +316,7 @@ export function Riffs() {
 
             {/* Empty state Suivis */}
             {sort === 'following' && visible.length === 0 && (
-              <div className="md:col-span-2 rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center">
+              <div className="rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center xl:col-span-2">
                 <p className="text-sm text-text-muted">
                   Tu ne suis personne pour l'instant. Va explorer les profils
                   via les onglets « Pour toi » ou « Trending » et clique sur
@@ -289,7 +327,7 @@ export function Riffs() {
 
             {/* Empty state filtres */}
             {sort !== 'following' && visible.length === 0 && (
-              <div className="md:col-span-2 rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center">
+              <div className="rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center xl:col-span-2">
                 <p className="text-sm text-text-muted">
                   Aucun riff ne correspond à tes filtres.
                 </p>
