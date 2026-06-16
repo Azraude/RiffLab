@@ -1,42 +1,42 @@
 /**
- * /profile — placeholder Phase 5.1.
+ * /profile — édition propre du profil utilisateur (sess 29 enrichi).
  *
- * Affiche les infos de base du user connecté (email, date inscription)
- * + form édit username/bio (persisté dans la table `profiles` Supabase
- * via le trigger handle_new_user au signup).
- *
- * La vraie page profil avec avatar upload + stats publiques sera Phase 5.3
- * quand le sync Dexie↔Postgres sera livré.
+ * Modifs sess 29 :
+ *  - Suppression colonnes `tier` / `language` qui n'existent pas dans le
+ *    schéma social (juste id, username, display_name, bio, avatar_url)
+ *  - Ajout display_name + avatar upload via socialApi.uploadAvatar
+ *  - Lien vers /u/:username pour voir le profil public
+ *  - Stats : XP + niveau riffeur via xpSystem
  */
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
-import { LogOut, Save, User as UserIcon, Mail, Calendar, Shield } from 'lucide-react';
-
-type ProfileRow = {
-  id: string;
-  username: string | null;
-  bio: string | null;
-  tier: 'free' | 'pro';
-  language: string | null;
-  created_at: string;
-};
+import { LogOut, Save, User as UserIcon, Mail, Calendar, ExternalLink, Upload } from 'lucide-react';
+import { getProfile, updateProfile, uploadAvatar, getUserXP, type Profile as ProfileRow } from '@/lib/socialApi';
+import { computeLevel } from '@/lib/xpSystem';
+import { useToast } from '@/hooks/useToast';
 
 export function Profile() {
   const user = useAuth((s) => s.user);
   const loading = useAuth((s) => s.loading);
   const signOut = useAuth((s) => s.signOut);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [xp, setXp] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const level = useMemo(() => computeLevel(xp), [xp]);
 
   // Redirect Landing si pas loggé (une fois le bootstrap résolu)
   useEffect(() => {
@@ -48,20 +48,20 @@ export function Profile() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, bio, tier, language, created_at')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data, error } = await getProfile(user.id);
       if (cancelled) return;
       if (error) {
         setFetchError(error.message);
         return;
       }
       if (data) {
-        setProfile(data as ProfileRow);
-        setUsername(data.username ?? '');
+        setProfile(data);
+        setUsername(data.username);
+        setDisplayName(data.display_name ?? '');
         setBio(data.bio ?? '');
+        setAvatarUrl(data.avatar_url);
+        const x = await getUserXP(user.id);
+        if (!cancelled) setXp(x);
       }
     })();
     return () => {
@@ -73,21 +73,41 @@ export function Profile() {
     if (!user) return;
     setSaving(true);
     setFetchError(null);
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        username: username.trim() || null,
-        bio: bio.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+    const { error } = await updateProfile(user.id, {
+      username: username.trim(),
+      display_name: displayName.trim() || null,
+      bio: bio.trim() || null,
+    });
     setSaving(false);
     if (error) {
       setFetchError(error.message);
+      toast.error(error.message);
     } else {
       setSavedAt(Date.now());
+      toast.success('Profil mis à jour');
       window.setTimeout(() => setSavedAt(null), 2500);
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image trop lourde (max 2 MB)');
+      return;
+    }
+    setUploading(true);
+    const { data: url, error } = await uploadAvatar(user.id, file);
+    if (error || !url) {
+      toast.error(error?.message ?? 'Upload échoué');
+      setUploading(false);
+      return;
+    }
+    // Persist le nouveau avatar_url dans profiles
+    await updateProfile(user.id, { avatar_url: url });
+    setAvatarUrl(url);
+    setUploading(false);
+    toast.success('Avatar mis à jour');
   };
 
   const handleSignOut = async () => {
@@ -114,16 +134,45 @@ export function Profile() {
     <>
       <PageHeader
         title="Mon profil"
-        subtitle="Tes infos de compte. La sync de tes données (sons, sessions, stats) arrive en Phase 5.2."
-      />
+        subtitle="Édite tes infos publiques et upload ton avatar."
+      >
+        {profile && (
+          <Link
+            to={`/u/${profile.username}`}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-3 text-xs hover:border-gold-soft"
+          >
+            <ExternalLink size={13} /> Voir profil public
+          </Link>
+        )}
+      </PageHeader>
 
       <div className="grid gap-5 md:grid-cols-3">
         {/* Avatar + identité */}
         <Card className="md:col-span-1">
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-gold/40 bg-gold/10 font-mono text-3xl font-bold text-gold">
-              {(user.email?.[0] ?? '?').toUpperCase()}
+            <div className="relative">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-gold/40 bg-gold/10 font-mono text-3xl font-bold text-gold">
+                {avatarUrl ? (
+                  // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (user.email?.[0] ?? '?').toUpperCase()
+                )}
+              </div>
+              <label className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-surface text-text-muted hover:border-gold hover:text-gold">
+                <Upload size={14} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => void handleAvatarUpload(e)}
+                />
+              </label>
             </div>
+            {uploading && (
+              <div className="mt-2 text-xs text-text-soft">Upload en cours…</div>
+            )}
             <div className="mt-4 flex items-center gap-2 text-sm text-text-muted">
               <Mail size={13} />
               <span className="font-mono break-all">{user.email}</span>
@@ -133,8 +182,7 @@ export function Profile() {
               Inscrit le {createdLabel}
             </div>
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gold">
-              <Shield size={10} />
-              Tier {profile?.tier ?? 'free'}
+              ⚡ Niveau {level.level} · {level.name}
             </div>
           </div>
 
@@ -152,21 +200,38 @@ export function Profile() {
         <Card className="md:col-span-2">
           <h3 className="display text-display-sm">Édite ton profil</h3>
           <p className="mt-1 text-sm text-text-muted">
-            Ces infos seront utilisées pour ton profil public guitariste (Phase 5.3).
+            Ces infos sont publiques sur ta page /u/{profile?.username ?? '…'}.
           </p>
 
           <div className="mt-5 space-y-4">
             <div>
               <label htmlFor="profile-username" className="label-small mb-1.5 flex items-center gap-1.5">
-                <UserIcon size={11} /> Pseudo
+                <UserIcon size={11} /> Username (unique)
               </label>
               <input
                 id="profile-username"
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                 placeholder="ex: melvinguitar"
                 maxLength={40}
+                className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-text-soft">
+                Lettres minuscules, chiffres, _ et - uniquement.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="profile-display" className="label-small mb-1.5">
+                Nom affiché
+              </label>
+              <input
+                id="profile-display"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="ex: Melvin G."
+                maxLength={60}
                 className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
               />
             </div>
@@ -201,7 +266,7 @@ export function Profile() {
               <button
                 type="button"
                 onClick={() => void handleSave()}
-                disabled={saving}
+                disabled={saving || !username.trim()}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 text-sm font-semibold text-bg hover:bg-gold-bright disabled:opacity-60"
               >
                 <Save size={14} />

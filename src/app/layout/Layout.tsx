@@ -7,6 +7,7 @@ import { KonamiProvider } from '@/hooks/useKonamiCode';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { ToastViewport } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
+import { NotificationBell } from '@/components/social/NotificationBell';
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -63,6 +64,14 @@ export function Layout() {
       {/* Scroll-to-top à la navigation + restauration de la position au
           retour (back/forward). Comportement « app » attendu sur mobile. */}
       <ScrollRestoration />
+      {/* NotificationBell floating top-right (cohabite avec FeedbackButton bottom-right).
+          Le composant se rend self-null si pas auth + Supabase configuré. */}
+      <div
+        className="fixed right-4 top-4 z-30 md:right-6 md:top-6"
+        style={{ top: 'calc(env(safe-area-inset-top) + 16px)' }}
+      >
+        <NotificationBell />
+      </div>
     </div>
     </KonamiProvider>
     </KeyboardShortcutsProvider>

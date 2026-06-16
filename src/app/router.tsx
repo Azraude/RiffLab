@@ -32,6 +32,11 @@ import { ToolsHub } from '@/pages/hubs/ToolsHub';
 import { FretboardLearner } from '@/pages/FretboardLearner';
 import { RiffDetail } from '@/pages/RiffDetail';
 import { RiffCollection } from '@/pages/RiffCollection';
+import { UserProfile } from '@/pages/UserProfile';
+import { Leaderboard } from '@/pages/Leaderboard';
+import { Battle } from '@/pages/Battle';
+import { RiffsByTag } from '@/pages/RiffsByTag';
+import { EditorPicks } from '@/pages/EditorPicks';
 
 export const router = createBrowserRouter([
   {
@@ -63,6 +68,8 @@ export const router = createBrowserRouter([
       { path: 'setlists/:id/play', element: <SetlistPlay /> },
       { path: 'riffs', element: <Riffs /> },
       { path: 'riffs/collections/:slug', element: <RiffCollection /> },
+      { path: 'riffs/editor-picks', element: <EditorPicks /> },
+      { path: 'riffs/tag/:tag', element: <RiffsByTag /> },
       { path: 'riffs/:id', element: <RiffDetail /> },
       { path: 'riff-of-the-week', element: <RiffOfTheWeek /> },
 
@@ -93,6 +100,11 @@ export const router = createBrowserRouter([
       { path: 'share/:encoded', element: <SharePreview /> },
       { path: 'settings', element: <Settings /> },
       { path: 'profile', element: <Profile /> },
+
+      // ─── Profils publics (sess 29) ─────────────────────────────
+      { path: 'u/:username', element: <UserProfile /> },
+      { path: 'leaderboard', element: <Leaderboard /> },
+      { path: 'battle', element: <Battle /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
