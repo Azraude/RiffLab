@@ -11,8 +11,7 @@ import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { useToast } from '@/hooks/useToast';
-import { Check, Lock, Volume2, GraduationCap, Compass, Globe, Sparkles } from 'lucide-react';
+import { Check, Lock, Volume2, GraduationCap, Compass, Globe } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
@@ -32,17 +31,6 @@ export function Settings() {
     navigate('/dashboard');
   };
   const { strum } = useAudio();
-  const toast = useToast();
-
-  const toggleAudioQuality = () => {
-    const next = prefs.audioQuality === 'studio' ? 'synth' : 'studio';
-    prefs.setAudioQuality(next);
-    if (next === 'studio') {
-      toast.info('Qualité studio activée — samples haute qualité.');
-    } else {
-      toast.info('Mode synthèse activé — léger, offline, moins de bande passante.');
-    }
-  };
 
   const exportLib = async () => {
     const songs = await db.songs.toArray();
@@ -144,27 +132,6 @@ export function Settings() {
               <span className="text-sm">Afficher les noms de notes sur le manche</span>
               <Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />
             </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles size={16} className="text-gold" />
-            <h3 className="display text-display-sm">Qualité audio</h3>
-          </div>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="text-sm">Studio quality 🎙</div>
-              <p className="mt-0.5 text-xs text-text-soft">
-                Samples haute qualité (vraie guitare) = ~20 MB au load initial.
-                Désactive si tu joues offline ou en bande passante faible : le mode
-                synthèse est plus léger et marche immédiatement.
-              </p>
-            </div>
-            <Toggle
-              checked={prefs.audioQuality === 'studio'}
-              onChange={toggleAudioQuality}
-            />
           </div>
         </Card>
 
