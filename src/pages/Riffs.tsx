@@ -14,11 +14,11 @@
  * RiffDetailDrawer ancien gardé en fallback : sera remplacé par la page
  * détail /riffs/:id en Phase 3.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, SlidersHorizontal } from 'lucide-react';
+import { Plus, SlidersHorizontal, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 import { RiffCard } from '@/components/riffs/RiffCard';
 import { RiffFilters, EMPTY_FILTERS, activeFilterCount, type RiffFilterState } from '@/components/riffs/RiffFilters';
@@ -90,7 +90,41 @@ export function Riffs() {
   const { playMidi } = useAudio();
   const toast = useToast();
 
-  // Apply filtres + tri
+  /**
+   * Fix bug "posts qui bougent au like" (sess A Phase 1) :
+   *
+   * Avant : useMemo prenait likedIds + masteredIds dans son dep array.
+   * Chaque like → recompute → sortFeedRiffs re-shuffle l'ordre →
+   * les cards bougeaient visuellement. UX cassée style Twitter d'avant.
+   *
+   * Maintenant : pattern frozenList. La liste affichée est figée à
+   * l'arrivée. Elle ne se recalcule QUE quand :
+   *  - sort change (tab user click)
+   *  - filters change (Sheet filtres)
+   *  - l'user clique "Actualiser"
+   *  - bumpRefresh increment
+   *
+   * Les likes/bookmarks restent réactifs côté RiffCard (compteur +1
+   * via useLiveQuery interne), mais l'ORDRE de la liste est stable.
+   *
+   * Implémentation : useMemo SANS likedIds/masteredIds en deps. On
+   * lit ces vars via `useRef` pour le 1er sort, mais on les laisse
+   * stale ensuite (mise à jour intentionnelle uniquement).
+   */
+  const [refreshBump, setRefreshBump] = useState(0);
+
+  // Capture les ids "au moment du refresh" via ref — pas dans le dep array
+  const likedIdsRef = useRef<string[]>(likedIds);
+  const masteredIdsRef = useRef<string[]>(masteredIds);
+  const userLevelRef = useRef<typeof userLevelMapped>(userLevelMapped);
+  useEffect(() => {
+    // On met à jour les refs en arrière-plan, mais le tri n'est pas
+    // recompute (pas de deps trigger).
+    likedIdsRef.current = likedIds;
+    masteredIdsRef.current = masteredIds;
+    userLevelRef.current = userLevelMapped;
+  }, [likedIds, masteredIds, userLevelMapped]);
+
   const visible = useMemo(() => {
     let arr = [...COMMUNITY_RIFFS];
 
@@ -130,17 +164,20 @@ export function Riffs() {
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
 
     // 'following' tab : pas de seed local (les riffs Supabase users seront
-    // affichés en Phase 3 via getFeedFollowing). Pour l'instant, on
-    // affiche un empty state custom.
+    // affichés via getFeedFollowing). Pour l'instant empty state custom.
     if (sort === 'following') return arr.filter(() => false);
 
-    // 'relevance' → utilise sortFeedRiffs avec contexte enrichi (Phase 5)
-    return sortFeedRiffs(arr, sort, likedIds, {
-      masteredIds,
-      userLevel: userLevelMapped,
+    // 'relevance' → sortFeedRiffs avec contexte enrichi (Phase 5)
+    return sortFeedRiffs(arr, sort, likedIdsRef.current, {
+      masteredIds: masteredIdsRef.current,
+      userLevel: userLevelRef.current,
       exploreWeight: 25,
     });
-  }, [filters, sort, likedIds, masteredIds, userLevelMapped]);
+    // ⚠️ DEP ARRAY VOLONTAIREMENT SANS likedIds/masteredIds/userLevel :
+    // un like ne doit pas re-shuffle l'ordre. refreshBump force le
+    // recompute quand l'user clique "Actualiser".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sort, refreshBump]);
 
   const activeFilters = activeFilterCount(filters);
 
@@ -261,9 +298,20 @@ export function Riffs() {
             </div>
           </div>
 
-          {/* Badges strip (juste au-dessus du feed) */}
-          <div className="mb-4">
-            <BadgesStrip />
+          {/* Badges strip + bouton "Actualiser" (sess A Phase 1) */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <BadgesStrip />
+            </div>
+            <button
+              type="button"
+              onClick={() => setRefreshBump((b) => b + 1)}
+              aria-label="Actualiser l'ordre du feed"
+              title="Re-trier le feed selon les likes les plus récents"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-soft transition-colors hover:border-gold-soft hover:text-gold"
+            >
+              <RefreshCw size={14} />
+            </button>
           </div>
 
           {/* Feed — mobile: 1 col full-width / desktop xl: 2 cols.
