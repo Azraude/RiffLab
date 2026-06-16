@@ -32,6 +32,7 @@ import { ToolsHub } from '@/pages/hubs/ToolsHub';
 import { FretboardLearner } from '@/pages/FretboardLearner';
 import { RiffDetail } from '@/pages/RiffDetail';
 import { RiffCollection } from '@/pages/RiffCollection';
+import { UserProfile } from '@/pages/UserProfile';
 
 export const router = createBrowserRouter([
   {
@@ -93,6 +94,9 @@ export const router = createBrowserRouter([
       { path: 'share/:encoded', element: <SharePreview /> },
       { path: 'settings', element: <Settings /> },
       { path: 'profile', element: <Profile /> },
+
+      // ─── Profils publics (sess 29) ─────────────────────────────
+      { path: 'u/:username', element: <UserProfile /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
