@@ -291,4 +291,10 @@ min Recommended pour avoir du code soigné sur LA feature signature
 
 ---
 
-## ✅ Mergé dans main (à compléter)
+## ✅ Mergé dans main (bf17255)
+
+Merge commit avec Session hotfix (audio revert WebAudioFont + nav
+écran noir fix + tempo run cancellation token + ErrorBoundary). 16
+fichiers modifiés côté hotfix, zéro overlap avec mes 4 fichiers
+(progressionTheory.ts + Progressions.tsx + Sidebar.tsx + router.tsx).
+Merge auto réussi sans conflit.
