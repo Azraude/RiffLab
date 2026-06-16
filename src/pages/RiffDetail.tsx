@@ -100,12 +100,13 @@ export function RiffDetail() {
         <ArrowLeft size={14} /> Feed des riffs
       </Link>
 
-      <div className="mx-auto max-w-4xl space-y-8 pb-32 md:pb-12">
-        {/* === Hero === */}
+      <div className="mx-auto max-w-4xl pb-32 md:pb-12">
+        {/* === Hero compact === */}
         <motion.header
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
+          className="mb-5"
         >
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -122,14 +123,14 @@ export function RiffDetail() {
               </span>
             )}
           </div>
-          <h1 className="display mt-3 text-display-lg leading-tight md:text-display-xl">
+          <h1 className="display mt-3 text-display-md leading-tight md:text-display-xl">
             {tab.name}
           </h1>
           {tab.artist && (
-            <p className="mt-1 text-lg text-text-muted">{tab.artist}</p>
+            <p className="mt-1 text-base text-text-muted md:text-lg">{tab.artist}</p>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-text-muted">
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-muted md:text-sm">
             <div className="inline-flex items-center gap-2">
               <Avatar name={riff.contributor} />
               <span className="font-mono text-text">{riff.contributor}</span>
@@ -138,17 +139,42 @@ export function RiffDetail() {
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Metadata grid 2x2 mobile / 1x4 desktop */}
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Meta label="BPM" value={tab.tempo} />
             <Meta label="Tonalité" value={tab.key} />
             <Meta label="Mesures" value={tab.measures.length} />
             <Meta label="Difficulté" value={'⭐'.repeat(riff.difficulty)} />
           </div>
+
+          {/* Tags + techniques inline */}
+          {(riff.tags.length > 0 || riff.techniques?.length) && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {riff.tags.map((t) => (
+                <Link
+                  key={t}
+                  to={`/riffs/tag/${t}`}
+                  className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
+                >
+                  #{t}
+                </Link>
+              ))}
+              {riff.techniques?.map((t) => (
+                <Link
+                  key={`tech-${t}`}
+                  to={`/riffs/tag/${t}`}
+                  className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
+                >
+                  {TECHNIQUE_LABELS[t]}
+                </Link>
+              ))}
+            </div>
+          )}
         </motion.header>
 
-        {/* === Caption / annotations créateur === */}
+        {/* === Caption / annotation créateur (compact) === */}
         {riff.caption && (
-          <Card className="border-gold/30 bg-gradient-to-br from-gold/8 to-transparent">
+          <Card className="mb-5 border-gold/30 bg-gradient-to-br from-gold/8 to-transparent">
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold">
                 <Music2 size={15} />
@@ -161,31 +187,19 @@ export function RiffDetail() {
           </Card>
         )}
 
-        {/* === Tags + techniques === */}
-        {(riff.tags.length > 0 || riff.techniques?.length) && (
-          <div className="flex flex-wrap gap-2">
-            {riff.tags.map((t) => (
-              <span
-                key={t}
-                className="rounded-md bg-gold/10 px-2.5 py-1 font-mono text-xs text-gold-soft"
-              >
-                #{t}
-              </span>
-            ))}
-            {riff.techniques?.map((t) => (
-              <span
-                key={`tech-${t}`}
-                className="rounded-md border border-border bg-surface px-2.5 py-1 font-mono text-xs text-text-soft"
-              >
-                {TECHNIQUE_LABELS[t]}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* === Player synchronisé pleine largeur === */}
-        <section>
+        {/* === TAB AREA STICKY MOBILE ===
+            Le RiffPlayer wrap déjà le TabReader avec scroll-horizontal pur
+            (max-h-200 + overflow-x-auto + overflow-y-hidden). Ici on rend
+            le wrapper sticky-top-0 pour que la tab reste visible quand
+            l'user scroll les commentaires en dessous.
+            -mx-5 + bg-bg pour bleed full-width + masquer le contenu derrière
+            le sticky. md:relative pour désactiver le sticky desktop (le
+            layout 2-cols rend ça inutile). */}
+        <section className="sticky top-0 z-10 -mx-5 mb-5 bg-bg px-5 pt-2 pb-3 md:relative md:mx-0 md:px-0 md:pt-0 md:pb-0">
           <RiffPlayer tab={tab} />
+          <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
+            ← swipe pour voir la suite du tab →
+          </p>
         </section>
 
         {/* === Actions sociales === */}
