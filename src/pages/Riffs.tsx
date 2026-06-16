@@ -24,10 +24,9 @@ import { RiffCard } from '@/components/riffs/RiffCard';
 import { RiffFilters, EMPTY_FILTERS, activeFilterCount, type RiffFilterState } from '@/components/riffs/RiffFilters';
 import { RiffTabModal } from '@/components/riffs/RiffTabModal';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
-import { RiffOfTheDayHero } from '@/components/riffs/RiffOfTheDayHero';
-import { CollectionsCarousel } from '@/components/riffs/CollectionsCarousel';
 import { RiffEditor } from '@/components/riffs/RiffEditor';
 import { BadgesStrip } from '@/components/riffs/BadgesStrip';
+import { RiffsSidebarRight } from '@/components/riffs/RiffsSidebarRight';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
@@ -46,7 +45,7 @@ import { useToast } from '@/hooks/useToast';
 
 export function Riffs() {
   const navigate = useNavigate();
-  const [sort, setSort] = useState<FeedSort>('for-you');
+  const [sort, setSort] = useState<FeedSort | 'following'>('for-you');
   const [filters, setFilters] = useState<RiffFilterState>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -127,6 +126,12 @@ export function Riffs() {
     }
     if (filters.sort === 'popular') return arr.sort((a, b) => b.baseLikes - a.baseLikes);
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+
+    // 'following' tab : pas de seed local (les riffs Supabase users seront
+    // affichés en Phase 3 via getFeedFollowing). Pour l'instant, on
+    // affiche un empty state custom.
+    if (sort === 'following') return arr.filter(() => false);
+
     // 'relevance' → utilise sortFeedRiffs avec contexte enrichi (Phase 5)
     return sortFeedRiffs(arr, sort, likedIds, {
       masteredIds,
@@ -188,93 +193,116 @@ export function Riffs() {
         </div>
       </div>
 
-      {/* === Hero Riff du jour + Badges + Collections carousel === */}
-      <div className="mx-auto max-w-3xl space-y-8">
-        <RiffOfTheDayHero />
-        <BadgesStrip />
-        <CollectionsCarousel />
-      </div>
-
-      {/* === Tabs underline + bouton filtres === */}
-      <div className="mx-auto mt-8 max-w-3xl">
-        <div className="mb-5 flex items-end justify-between border-b border-border">
-          <div className="flex gap-1">
-            <UnderlineTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>
-              Pour toi
-            </UnderlineTab>
-            <UnderlineTab active={sort === 'trending'} onClick={() => setSort('trending')}>
-              Trending
-            </UnderlineTab>
-            <UnderlineTab active={sort === 'recent'} onClick={() => setSort('recent')}>
-              Récents
-            </UnderlineTab>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            className={clsx(
-              'mb-2 inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors',
-              activeFilters > 0
-                ? 'border-gold bg-gold/15 text-gold'
-                : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
-            )}
-          >
-            <SlidersHorizontal size={13} />
-            Filtrer
-            {activeFilters > 0 && (
-              <span className="ml-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 font-mono text-[10px] font-bold text-bg">
-                {activeFilters}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* === Feed === */}
-        <div className="space-y-6 pb-24 md:pb-12">
-          <AnimatePresence mode="popLayout">
-            {visible.map((r) => {
-              const tab = getTab(r.tabId);
-              if (!tab) return null;
-              return (
-                <motion.div
-                  key={r.id}
-                  layout
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <RiffCard
-                    riff={r}
-                    tab={tab}
-                    masteredAt={masteredMap.get(r.id) ?? null}
-                    onListen={() => void handleListen(r)}
-                    onViewTab={() => setTabModalRiff(r)}
-                    onLearn={() => handleLearn(r)}
-                    onOpenDetail={() => handleOpenDetail(r)}
-                    onShare={() => setShareDrawerRiff(r)}
-                  />
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-
-          {/* Empty state si filtres → 0 résultats */}
-          {visible.length === 0 && (
-            <div className="rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center">
-              <p className="text-sm text-text-muted">
-                Aucun riff ne correspond à tes filtres.
-              </p>
-              <button
-                type="button"
-                onClick={() => setFilters(EMPTY_FILTERS)}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-gold-soft px-4 text-sm font-medium text-gold hover:bg-gold/5"
-              >
-                Effacer les filtres
-              </button>
+      {/* === Layout 3 colonnes (sess 29 magazine social) ===
+          Mobile : 1 col stack vertical (sidebar right en bas)
+          xl ≥1280px : 2 cols : feed + sidebar right
+          La sidebar gauche vit dans <Layout> (sidebar nav globale). */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-8">
+        {/* === Main feed === */}
+        <main className="min-w-0">
+          {/* Tabs underline + bouton filtres */}
+          <div className="mb-5 flex items-end justify-between border-b border-border">
+            <div className="-mb-px flex gap-1 overflow-x-auto">
+              <UnderlineTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>
+                Pour toi
+              </UnderlineTab>
+              <UnderlineTab active={sort === 'following'} onClick={() => setSort('following')}>
+                Suivis
+              </UnderlineTab>
+              <UnderlineTab active={sort === 'trending'} onClick={() => setSort('trending')}>
+                Trending
+              </UnderlineTab>
+              <UnderlineTab active={sort === 'recent'} onClick={() => setSort('recent')}>
+                Récents
+              </UnderlineTab>
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className={clsx(
+                'mb-2 inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors',
+                activeFilters > 0
+                  ? 'border-gold bg-gold/15 text-gold'
+                  : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
+              )}
+            >
+              <SlidersHorizontal size={13} />
+              Filtrer
+              {activeFilters > 0 && (
+                <span className="ml-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 font-mono text-[10px] font-bold text-bg">
+                  {activeFilters}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Badges strip (juste au-dessus du feed) */}
+          <div className="mb-4">
+            <BadgesStrip />
+          </div>
+
+          {/* Feed — grille 2 cols desktop, 1 col mobile */}
+          <div className="grid gap-4 pb-24 md:grid-cols-2 md:pb-12">
+            <AnimatePresence mode="popLayout">
+              {visible.map((r) => {
+                const tab = getTab(r.tabId);
+                if (!tab) return null;
+                return (
+                  <motion.div
+                    key={r.id}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <RiffCard
+                      riff={r}
+                      tab={tab}
+                      compact
+                      masteredAt={masteredMap.get(r.id) ?? null}
+                      onListen={() => void handleListen(r)}
+                      onViewTab={() => setTabModalRiff(r)}
+                      onLearn={() => handleLearn(r)}
+                      onOpenDetail={() => handleOpenDetail(r)}
+                      onShare={() => setShareDrawerRiff(r)}
+                    />
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Empty state Suivis */}
+            {sort === 'following' && visible.length === 0 && (
+              <div className="md:col-span-2 rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center">
+                <p className="text-sm text-text-muted">
+                  Tu ne suis personne pour l'instant. Va explorer les profils
+                  via les onglets « Pour toi » ou « Trending » et clique sur
+                  les avatars pour suivre des riffeurs.
+                </p>
+              </div>
+            )}
+
+            {/* Empty state filtres */}
+            {sort !== 'following' && visible.length === 0 && (
+              <div className="md:col-span-2 rounded-2xl border border-border bg-surface-2 px-6 py-12 text-center">
+                <p className="text-sm text-text-muted">
+                  Aucun riff ne correspond à tes filtres.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-gold-soft px-4 text-sm font-medium text-gold hover:bg-gold/5"
+                >
+                  Effacer les filtres
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* === Sidebar droite (Riff du jour / Top semaine / Collections / À suivre / Battle) === */}
+        <RiffsSidebarRight />
       </div>
 
       {/* === Mobile FAB === */}

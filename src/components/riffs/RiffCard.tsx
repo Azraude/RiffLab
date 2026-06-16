@@ -39,6 +39,8 @@ interface RiffCardProps {
   onShare?: () => void;
   /** Badge "🏆 Maîtrisé" affiché si l'user a marqué ce riff comme maîtrisé. */
   masteredAt?: number | null;
+  /** Mode compact pour grille 2 cols (sess 29 layout magazine). */
+  compact?: boolean;
 }
 
 export function RiffCard({
@@ -50,6 +52,7 @@ export function RiffCard({
   onOpenDetail,
   onShare,
   masteredAt,
+  compact = false,
 }: RiffCardProps) {
   const level = difficultyToLevel(riff.difficulty);
   const liked = useLiveQuery(() => isRiffLiked(riff.id), [riff.id]) ?? false;
@@ -61,6 +64,115 @@ export function RiffCard({
     fn?.();
   };
 
+  // ─── Mode compact : grille magazine (sess 29 layout 3 cols) ───────
+  if (compact) {
+    return (
+      <article
+        className="group overflow-hidden rounded-xl border border-border bg-surface-2 transition-colors hover:border-gold/30"
+      >
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="block w-full text-left"
+          aria-label={`Ouvrir ${tab.name} en détail`}
+        >
+          <div className="px-3 pt-3">
+            {/* Header compact */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <SmallAvatar name={riff.contributor} />
+                <div className="min-w-0">
+                  <div className="truncate font-mono text-[11px] font-semibold text-text-muted">
+                    {riff.contributor}
+                  </div>
+                  <div className="text-[9px] text-text-soft">{formatRelativeDate(riff.addedAt)}</div>
+                </div>
+              </div>
+              <span
+                className={clsx(
+                  'shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider',
+                  LEVEL_COLORS[level]
+                )}
+              >
+                {LEVEL_LABELS[level].slice(0, 3)}
+              </span>
+            </div>
+
+            {/* Titre + artiste */}
+            <h3 className="display mt-2 truncate text-base leading-tight text-text">{tab.name}</h3>
+            {tab.artist && (
+              <div className="truncate text-[11px] text-text-muted">{tab.artist}</div>
+            )}
+
+            {/* 3 tags max */}
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {riff.tags.slice(0, 3).map((t) => (
+                <span
+                  key={t}
+                  className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[9px] text-gold-soft"
+                >
+                  #{t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Mini-preview tab — 2 mesures max grâce à max-h */}
+          <div className="relative mt-2 max-h-[70px] overflow-hidden px-2 opacity-80">
+            <TabReader tab={tab} lineHeight={10} beatWidth={9} />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-2 to-transparent"
+            />
+          </div>
+
+          {/* Mastered badge ribbon */}
+          {masteredAt && (
+            <div className="px-3 pb-1 pt-1">
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-gold">
+                🏆 Maîtrisé
+              </span>
+            </div>
+          )}
+        </button>
+
+        {/* Footer icons only */}
+        <div className="flex items-center justify-between border-t border-border px-2 py-1.5">
+          <div className="flex items-center gap-0">
+            <CompactBtn
+              label={liked ? 'Aimé' : "J'aime"}
+              active={liked}
+              activeColor="danger"
+              count={likeCount}
+              onClick={stopBubble(() => void toggleRiffLike(riff.id))}
+            >
+              <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+            </CompactBtn>
+            <CompactBtn
+              label="Commentaires"
+              count={riff.commentsCount ?? 0}
+              onClick={stopBubble(onOpenDetail)}
+            >
+              <MessageCircle size={14} />
+            </CompactBtn>
+            <CompactBtn
+              label={bookmarked ? 'Sauvegardé' : 'Sauver'}
+              active={bookmarked}
+              activeColor="gold"
+              onClick={stopBubble(() => void toggleRiffBookmark(riff.id))}
+            >
+              <Bookmark size={14} fill={bookmarked ? 'currentColor' : 'none'} />
+            </CompactBtn>
+          </div>
+          <CompactBtn label="Écouter" onClick={stopBubble(onListen)}>
+            <Play size={14} fill="currentColor" />
+          </CompactBtn>
+        </div>
+      </article>
+    );
+  }
+
+  // ─── Mode full (par défaut) ───────────────────────────────────────
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface-2 transition-colors hover:border-gold/30">
       {/* Header : avatar + user + meta */}
@@ -204,6 +316,52 @@ export function RiffCard({
 }
 
 // ─── Sous-composants ────────────────────────────────────────────────
+
+/** Avatar compact 28px pour le mode grille (sess 29). */
+function SmallAvatar({ name }: { name: string }) {
+  const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
+  return (
+    <div
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-[10px] font-bold text-gold"
+      aria-hidden="true"
+    >
+      {initial === '?' ? <User size={11} /> : initial}
+    </div>
+  );
+}
+
+/** Bouton footer compact (icône + count facultatif) pour le mode grille. */
+function CompactBtn({
+  children,
+  label,
+  count,
+  active,
+  activeColor = 'gold',
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  count?: number;
+  active?: boolean;
+  activeColor?: 'gold' | 'danger';
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={clsx(
+        'inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
+        active ? activeCls : 'text-text-muted hover:text-text'
+      )}
+    >
+      {children}
+      {count !== undefined && count > 0 && <span className="font-mono">{count}</span>}
+    </button>
+  );
+}
 
 function Avatar({ name }: { name: string }) {
   const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
