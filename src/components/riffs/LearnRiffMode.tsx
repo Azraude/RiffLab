@@ -1,19 +1,14 @@
 /**
- * LearnRiffMode — overlay focus plein écran pour apprendre un riff
- * (sess 27 Phase 2).
+ * LearnRiffMode — overlay focus plein écran pour apprendre un riff.
  *
- * Activée depuis le bouton "Apprendre" d'une RiffCard ou de la page
- * détail. Affiche :
- *  - Background sombre, distractions zéro
- *  - RiffPlayer géant avec loop activé par défaut
- *  - Compteur géant "Tu l'as joué Nx" (typo serif large)
- *  - Bouton "✓ Je le maîtrise" → save Dexie + confetti + toast
- *  - Bouton "Quitter" top-right
- *
- * Au unmount, le player s'arrête. Au quit avec un riff déjà marqué
- * maîtrisé, on ne re-save pas (no-op du markRiffMastered).
+ * Sess 27 P2 : base overlay + RiffPlayer loop + compteur + bouton master.
+ * Sess B P3 :
+ *  - Wake Lock API : l'écran reste allumé tant que le mode est ouvert
+ *    (chrome/edge/safari iOS 16.4+ ; firefox = no-op silencieux)
+ *  - Tap targets ≥56px sur les boutons primaires (close, master)
+ *  - hideStickyBar passé au RiffPlayer (pas de mini-player en overlay)
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -34,9 +29,14 @@ interface LearnRiffModeProps {
   tab: Tab | null;
 }
 
+// Screen Wake Lock API (chrome/edge/safari ; firefox no-op)
+type WakeLockSentinel = { release: () => Promise<void>; released: boolean };
+type WakeLockNav = Navigator & { wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinel> } };
+
 export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) {
   const [playCount, setPlayCount] = useState(0);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const toast = useToast();
 
   const masteredRow = useLiveQuery(
@@ -67,6 +67,49 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  /**
+   * Screen Wake Lock pendant le mode Apprendre (smartphone sur stand,
+   * répèt, on veut pas que l'écran s'éteigne). Re-request si l'app
+   * passe en background puis revient au foreground (visibilitychange).
+   * Silent no-op si pas supporté (firefox, vieux safari).
+   */
+  useEffect(() => {
+    if (!open) return;
+    const nav = navigator as WakeLockNav;
+    if (!nav.wakeLock) return;
+    let cancelled = false;
+
+    const acquire = async () => {
+      try {
+        const sentinel = await nav.wakeLock!.request('screen');
+        if (cancelled) {
+          void sentinel.release();
+          return;
+        }
+        wakeLockRef.current = sentinel;
+      } catch {
+        // Permission denied / Tab not visible
+      }
+    };
+    void acquire();
+
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && !wakeLockRef.current?.released) {
+        // Réacquérir si on revient au foreground (sentinel relâché auto)
+        void acquire();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
+      const sentinel = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (sentinel && !sentinel.released) void sentinel.release();
     };
   }, [open]);
 
@@ -117,9 +160,9 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
               type="button"
               onClick={onClose}
               aria-label="Quitter le mode apprendre"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-text-muted hover:border-danger/40 hover:text-danger"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors hover:border-danger/40 hover:text-danger active:scale-95"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </header>
 
@@ -169,9 +212,9 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
                   <button
                     type="button"
                     onClick={() => void handleMaster()}
-                    className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-bright to-gold px-8 text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px"
+                    className="inline-flex h-14 min-w-[220px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-bright to-gold px-8 text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
                   >
-                    <Check size={18} strokeWidth={3} />
+                    <Check size={20} strokeWidth={3} />
                     Je le maîtrise
                   </button>
                 )}
