@@ -105,9 +105,9 @@ export function RiffCard({
               <div className="truncate text-[11px] text-text-muted">{tab.artist}</div>
             )}
 
-            {/* 3 tags max — cliquables vers /riffs/tag/:tag */}
+            {/* 2 tags max compact (3 → 2 pour gain visuel sess A Phase 3) */}
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {riff.tags.slice(0, 3).map((t) => (
+              {riff.tags.slice(0, 2).map((t) => (
                 <Link
                   key={t}
                   to={`/riffs/tag/${t}`}
@@ -117,12 +117,21 @@ export function RiffCard({
                   #{t}
                 </Link>
               ))}
+              {riff.tags.length > 2 && (
+                <span className="rounded px-1 py-0.5 font-mono text-[9px] text-text-soft">
+                  +{riff.tags.length - 2}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Mini-preview tab — 2 mesures max grâce à max-h */}
+          {/* Mini-preview tab — overflow hidden STRICT + pointer-events-none
+              pour empêcher le scroll-x interne de conflicter avec scroll-y
+              du parent (cohérent avec mode full Phase 2). */}
           <div className="relative mt-2 max-h-[70px] overflow-hidden px-2 opacity-80">
-            <TabReader tab={tab} lineHeight={10} beatWidth={9} />
+            <div className="pointer-events-none">
+              <TabReader tab={tab} lineHeight={10} beatWidth={9} />
+            </div>
             <div
               aria-hidden
               className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-2 to-transparent"
@@ -175,19 +184,38 @@ export function RiffCard({
     );
   }
 
-  // ─── Mode full (par défaut) ───────────────────────────────────────
+  // ─── Mode full mobile-first (refonte sess A Phase 2) ──────────────
+  //
+  // Specs : padding interne UNIFORME 16px (pas de break md), gap 12px
+  // entre sections internes. Hit areas claires :
+  // - Avatar/username → /u/:username
+  // - Tags → /riffs/tag/:tag
+  // - Tab encart (titre + preview) → ouvre détail
+  // - Caption (zone vide) → ouvre détail
+  // - Boutons actions/footer → action dédiée
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface-2 transition-colors hover:border-gold/30">
-      {/* Header : avatar + user + meta */}
-      <header className="flex items-center justify-between gap-3 px-4 pt-4 md:px-6">
+      {/* === Header : avatar + meta + badge difficulté === */}
+      <header className="flex items-center justify-between gap-3 p-4 pb-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={riff.contributor} />
+          <Link
+            to={`/u/${riff.contributor.replace('@', '')}`}
+            aria-label={`Profil ${riff.contributor}`}
+            className="block shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Avatar name={riff.contributor} />
+          </Link>
           <div className="min-w-0 leading-tight">
-            <div className="truncate font-mono text-sm font-semibold text-text">
+            <Link
+              to={`/u/${riff.contributor.replace('@', '')}`}
+              onClick={(e) => e.stopPropagation()}
+              className="block truncate font-mono text-sm font-semibold text-text hover:text-gold"
+            >
               {riff.contributor}
-            </div>
+            </Link>
             <div className="mt-0.5 flex items-center gap-2 text-[10px] text-text-soft">
-              <span className="inline-flex items-center gap-0.5">
+              <span className="inline-flex items-center gap-0.5" aria-label={`${riff.difficulty} étoiles sur 5`}>
                 {'⭐'.repeat(riff.difficulty)}
               </span>
               <span>·</span>
@@ -205,19 +233,27 @@ export function RiffCard({
         </span>
       </header>
 
-      {/* Caption + tags */}
-      {riff.caption && (
-        <div className="px-4 pt-3 md:px-6">
-          <p className="text-sm leading-relaxed text-text">{riff.caption}</p>
-        </div>
-      )}
+      {/* === Caption + tags === Click sur la zone vide → ouvre détail */}
+      <button
+        type="button"
+        onClick={onOpenDetail}
+        className="block w-full px-4 pb-3 text-left"
+        aria-label={`Ouvrir ${tab.name} en détail`}
+      >
+        {riff.caption && (
+          <p className="line-clamp-3 text-sm leading-relaxed text-text">
+            {riff.caption}
+          </p>
+        )}
+      </button>
       {(riff.tags.length > 0 || riff.techniques?.length) && (
-        <div className="flex flex-wrap gap-1.5 px-4 pt-2 pb-1 md:px-6">
+        <div className="-mt-1 mb-3 flex flex-wrap gap-1.5 px-4">
           {riff.tags.map((t) => (
             <Link
               key={t}
               to={`/riffs/tag/${t}`}
-              className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[11px] text-gold-soft hover:bg-gold/20"
             >
               #{t}
             </Link>
@@ -226,7 +262,8 @@ export function RiffCard({
             <Link
               key={`tech-${t}`}
               to={`/riffs/tag/${t}`}
-              className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[11px] text-text-soft hover:border-gold-soft hover:text-text"
             >
               {t}
             </Link>
@@ -234,18 +271,23 @@ export function RiffCard({
         </div>
       )}
 
-      {/* Mini-encart du tab : titre + artiste + BPM + preview compact + 3 boutons */}
+      {/* === Mini-encart du tab cliquable ===
+          ⚠️ POINT CRITIQUE : le tab preview ne scroll PAS en interne.
+          - overflow: hidden strict (pas de geste scroll-x qui conflict
+            avec scroll-y du feed)
+          - Gradient fade right pour suggérer "y'a plus"
+          - max-h fixe pour pas dépasser visuellement */}
       <button
         type="button"
         onClick={onOpenDetail}
-        className="mx-4 mt-4 mb-3 block w-[calc(100%-2rem)] overflow-hidden rounded-xl border border-border bg-surface text-left transition-colors hover:border-gold-soft md:mx-6 md:w-[calc(100%-3rem)]"
+        className="mx-4 mb-3 block w-[calc(100%-2rem)] overflow-hidden rounded-xl border border-border bg-surface text-left transition-colors hover:border-gold-soft"
         aria-label={`Ouvrir ${tab.name} en détail`}
       >
-        <div className="flex items-center justify-between gap-2 px-4 pt-3.5">
+        <div className="flex items-center justify-between gap-2 px-3 pt-3">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-text">
               <Music size={14} className="shrink-0 text-gold" />
-              <span className="display truncate text-[17px] leading-tight">{tab.name}</span>
+              <span className="display truncate text-base leading-tight">{tab.name}</span>
             </div>
             {tab.artist && (
               <div className="mt-0.5 truncate text-xs text-text-muted">{tab.artist}</div>
@@ -257,10 +299,11 @@ export function RiffCard({
           </div>
         </div>
 
-        {/* Tab preview compact : 4 mesures max, scroll bloqué, opacité légère */}
-        <div className="relative -mx-1 mt-2 max-h-[112px] overflow-hidden px-1 opacity-90">
-          <TabReader tab={tab} lineHeight={14} beatWidth={12} />
-          {/* Gradient fade right pour indiquer "plus à voir" */}
+        {/* Tab preview : overflow: hidden STRICT, pas de scroll-x */}
+        <div className="relative mt-2 max-h-[80px] overflow-hidden">
+          <div className="pointer-events-none">
+            <TabReader tab={tab} lineHeight={12} beatWidth={11} />
+          </div>
           <div
             aria-hidden
             className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-surface to-transparent"
@@ -269,7 +312,7 @@ export function RiffCard({
 
         {/* Mastered badge */}
         {masteredAt && (
-          <div className="px-4 pb-2 pt-1">
+          <div className="px-3 pb-2 pt-1">
             <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
               🏆 Maîtrisé le {new Date(masteredAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
             </span>
@@ -277,16 +320,43 @@ export function RiffCard({
         )}
       </button>
 
-      {/* 3 boutons d'action — full width grid */}
-      <div className="grid grid-cols-3 gap-2 px-4 pb-3 md:px-6">
-        <ActionPrimary onClick={stopBubble(onListen)} icon={<Play size={14} fill="currentColor" />} label="Écouter" />
-        <ActionPrimary onClick={stopBubble(onViewTab)} icon={<BookOpen size={14} />} label="Voir le tab" />
-        <ActionPrimary onClick={stopBubble(onLearn)} icon={<Target size={14} />} label="Apprendre" highlight />
+      {/* === Actions row hiérarchisée : PRIMARY full + 2 secondaires === */}
+      <div className="space-y-2 px-4 pb-3">
+        {/* CTA principal : Écouter le riff */}
+        <button
+          type="button"
+          onClick={stopBubble(onListen)}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-sm font-semibold text-bg shadow-gold transition-all hover:-translate-y-px active:scale-[0.99]"
+        >
+          <Play size={16} fill="currentColor" />
+          Écouter le riff
+        </button>
+        {/* 2 secondaires en grille 2 cols */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={stopBubble(onViewTab)}
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface text-sm font-medium text-text transition-colors hover:border-gold-soft"
+          >
+            <BookOpen size={14} />
+            <span>Voir le tab</span>
+          </button>
+          <button
+            type="button"
+            onClick={stopBubble(onLearn)}
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20"
+          >
+            <Target size={14} />
+            <span>Apprendre</span>
+          </button>
+        </div>
       </div>
 
-      {/* Footer actions sociales */}
-      <div className="flex items-center justify-between border-t border-border px-3 py-2 md:px-4">
-        <div className="flex items-center gap-0">
+      {/* === Footer actions sociales mobile-safe ===
+          Tap zones 44×44, counts en format compact (1.2k pour 1200+),
+          Share isolé à droite avec shrink-0 pour éviter overflow. */}
+      <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1.5">
+        <div className="flex min-w-0 items-center">
           <SocialBtn
             label={liked ? 'Aimé' : "J'aime"}
             count={likeCount}
@@ -335,7 +405,11 @@ function SmallAvatar({ name }: { name: string }) {
   );
 }
 
-/** Bouton footer compact (icône + count facultatif) pour le mode grille. */
+/** Bouton footer compact (icône seule, count en title tooltip).
+ *  Mode `compact` desktop (grille xl 2-cols) — l'user voit l'icône
+ *  rapidement, le count en hover via title attribute. Évite la
+ *  surcharge visuelle d'avoir 4 chiffres tous visibles dans une card
+ *  étroite (280-320px). */
 function CompactBtn({
   children,
   label,
@@ -352,18 +426,26 @@ function CompactBtn({
   onClick: (e: React.MouseEvent) => void;
 }) {
   const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
+  const hasCount = count !== undefined && count > 0;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={hasCount ? `${label} (${count})` : label}
+      title={hasCount ? `${label} · ${formatCount(count!)}` : label}
       className={clsx(
-        'inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
+        'group inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
         active ? activeCls : 'text-text-muted hover:text-text'
       )}
     >
       {children}
-      {count !== undefined && count > 0 && <span className="font-mono">{count}</span>}
+      {/* Count caché par défaut, visible en hover/focus de la card.
+          Garde l'a11y via aria-label qui contient le nombre. */}
+      {hasCount && (
+        <span className="hidden font-mono tabular-nums group-hover:inline">
+          {formatCount(count!)}
+        </span>
+      )}
     </button>
   );
 }
@@ -410,6 +492,15 @@ function ActionPrimary({
   );
 }
 
+/** Format compact "1.2k" pour les grands compteurs (évite l'overflow
+ *  sur mobile 375px où chaque pixel compte au footer social). */
+function formatCount(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 10000) return `${(n / 1000).toFixed(1).replace('.0', '')}k`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`;
+}
+
 function SocialBtn({
   children,
   label,
@@ -432,13 +523,15 @@ function SocialBtn({
       onClick={onClick}
       aria-label={label}
       className={clsx(
-        'inline-flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-colors hover:bg-surface',
+        // h-11 = tap target 44px ≥ guideline iOS/Android.
+        // px-2 + gap-1.5 pour 4 boutons qui rentrent sur 343px (375 - 32).
+        'inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all hover:bg-surface active:scale-95',
         active ? activeCls : 'text-text-muted hover:text-text'
       )}
     >
       {children}
       {count !== undefined && count > 0 && (
-        <span className="font-mono text-xs">{count}</span>
+        <span className="font-mono text-xs tabular-nums">{formatCount(count)}</span>
       )}
     </button>
   );
