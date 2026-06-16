@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
-import { RiffPlayer } from '@/components/riffs/RiffPlayer';
+import { RiffPlayer, type RiffPlayerHandle } from '@/components/riffs/RiffPlayer';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import { CommentsSection } from '@/components/social/CommentsSection';
@@ -60,6 +60,7 @@ export function RiffDetail() {
   const [learnOpen, setLearnOpen] = useState(false);
   const tabAreaRef = useRef<HTMLElement | null>(null);
   const captionRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<RiffPlayerHandle | null>(null);
 
   const liked = useLiveQuery(() => (id ? isRiffLiked(id) : Promise.resolve(false)), [id]) ?? false;
   const bookmarked = useLiveQuery(() => (id ? isRiffBookmarked(id) : Promise.resolve(false)), [id]) ?? false;
@@ -98,8 +99,9 @@ export function RiffDetail() {
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
-  const scrollToTab = () => {
+  const handleListen = () => {
     tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    playerRef.current?.play();
   };
   const scrollToCaption = () => {
     captionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -242,7 +244,7 @@ export function RiffDetail() {
             id="tab-area"
             className="sticky top-[calc(env(safe-area-inset-top)+44px)] z-10 -mx-5 mb-4 bg-bg px-5 pt-2 pb-3 md:relative md:top-auto md:mx-0 md:px-0 md:pt-0 md:pb-0"
           >
-            <RiffPlayer tab={tab} />
+            <RiffPlayer ref={playerRef} tab={tab} />
             <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
               ← swipe pour voir la suite du tab →
             </p>
@@ -255,7 +257,7 @@ export function RiffDetail() {
           <section className="mb-5 space-y-2">
             <button
               type="button"
-              onClick={scrollToTab}
+              onClick={handleListen}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
               aria-label="Écouter le riff"
             >

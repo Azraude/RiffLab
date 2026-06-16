@@ -145,10 +145,12 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
                 </p>
               </div>
 
-              {/* Player synchronisé en loop */}
+              {/* Player synchronisé en loop (pas de sticky bar : on est
+                  déjà en overlay full-screen) */}
               <RiffPlayer
                 tab={tab}
                 autoLoop
+                hideStickyBar
                 onPlayCountChange={(n) => setPlayCount(n)}
               />
 
