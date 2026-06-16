@@ -168,7 +168,7 @@ export function PracticePlan() {
       {/* Sticky progress bar — sous le PageHeader, top de la page */}
       <div
         data-tutorial-id="plan-progress-bar"
-        className="sticky top-0 z-30 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:-mt-9 md:px-12"
+        className="sticky top-0 z-30 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/85 px-5 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-md md:-mx-12 md:-mt-9 md:px-12"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-text-muted">

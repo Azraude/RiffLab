@@ -73,17 +73,18 @@ export function MobileNav() {
           to="/dashboard"
           className={({ isActive }) =>
             clsx(
-              'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
+              'relative flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
               isActive ? 'text-gold' : 'text-text-soft hover:text-text'
             )
           }
         >
           {({ isActive }) => (
             <>
+              <ActiveIndicator active={isActive} />
               <span
                 className={clsx(
-                  'flex h-5 w-5 items-center justify-center transition-opacity',
-                  isActive ? 'opacity-100' : 'opacity-60'
+                  'flex h-5 w-5 items-center justify-center transition-all',
+                  isActive ? 'opacity-100 drop-shadow-[0_0_6px_rgb(var(--gold-glow)/0.55)]' : 'opacity-60'
                 )}
               >
                 <RiffLabLogo size={20} />
@@ -106,16 +107,38 @@ export function MobileNav() {
               key={it.to}
               to={it.to}
               className={clsx(
-                'flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
+                'relative flex flex-col items-center gap-1 py-3 text-[10px] uppercase tracking-wider transition-colors',
                 active ? 'text-gold' : 'text-text-soft hover:text-text'
               )}
             >
-              {it.icon}
+              <ActiveIndicator active={active} />
+              <span
+                className={clsx(
+                  'flex items-center justify-center transition-all',
+                  active && 'drop-shadow-[0_0_6px_rgb(var(--gold-glow)/0.55)]'
+                )}
+              >
+                {it.icon}
+              </span>
               <span>{it.label}</span>
             </NavLink>
           );
         })}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Barre-indicateur dorée en haut de l'onglet actif + glow. Donne le
+ * feedback « tab actif » d'une bottom nav d'app native (vs simple
+ * changement de couleur du texte, trop discret en répèt).
+ */
+function ActiveIndicator({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <span className="absolute inset-x-0 top-0 flex justify-center" aria-hidden>
+      <span className="h-0.5 w-8 rounded-full bg-gold shadow-[0_0_8px_rgb(var(--gold-glow)/0.6)]" />
+    </span>
   );
 }

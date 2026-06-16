@@ -98,7 +98,7 @@ export function SetlistPlay() {
   return (
     <>
       {/* Header sticky : progression + nav */}
-      <div className="sticky top-0 z-20 -mx-5 mb-6 border-b border-border bg-bg/95 px-5 py-3 backdrop-blur md:-mx-12 md:px-12">
+      <div className="sticky top-0 z-20 -mx-5 -mt-7 mb-6 border-b border-border bg-bg/95 px-5 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur md:-mx-12 md:-mt-9 md:px-12">
         <div className="flex items-center justify-between gap-3">
           <Link
             to={`/setlists/${setlist.id}`}

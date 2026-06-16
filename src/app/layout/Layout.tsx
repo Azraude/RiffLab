@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
@@ -61,6 +61,9 @@ export function Layout() {
       <FeedbackButton />
       <ToastViewport />
       <StickyPlayer />
+      {/* Scroll-to-top à la navigation + restauration de la position au
+          retour (back/forward). Comportement « app » attendu sur mobile. */}
+      <ScrollRestoration />
       {/* NotificationBell floating top-right (cohabite avec FeedbackButton bottom-right).
           Le composant se rend self-null si pas auth + Supabase configuré. */}
       <div

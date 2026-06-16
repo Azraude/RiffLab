@@ -17,7 +17,9 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
   ({ checked, onChange, disabled, className, label, ...props }, ref) => (
     <label
       className={clsx(
-        'relative inline-flex items-center cursor-pointer select-none',
+        // py-2.5/-my-2.5 : étend la zone tappable à 44px de haut (track 24px
+        // + 2×10px) sans décaler la mise en page (marge négative compensée).
+        'relative inline-flex items-center cursor-pointer select-none py-2.5 -my-2.5',
         disabled && 'cursor-not-allowed opacity-50',
         className
       )}

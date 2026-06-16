@@ -202,7 +202,7 @@ export function Jam() {
                   onClick={() => setKey(n)}
                   aria-pressed={key === n}
                   className={clsx(
-                    'inline-flex h-9 items-center justify-center rounded-lg border font-mono text-sm font-bold transition-colors',
+                    'inline-flex h-11 items-center justify-center rounded-lg border font-mono text-sm font-bold transition-colors',
                     key === n
                       ? 'border-gold bg-gold text-bg'
                       : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
@@ -224,7 +224,7 @@ export function Jam() {
                   onClick={() => setMode(m)}
                   aria-pressed={mode === m}
                   className={clsx(
-                    'inline-flex h-9 items-center justify-center rounded-lg border text-sm font-semibold transition-colors',
+                    'inline-flex h-11 items-center justify-center rounded-lg border text-sm font-semibold transition-colors',
                     mode === m
                       ? 'border-gold bg-gold text-bg'
                       : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
@@ -246,7 +246,7 @@ export function Jam() {
                   onClick={() => setMood(m)}
                   aria-pressed={mood === m}
                   className={clsx(
-                    'inline-flex h-9 items-center justify-center rounded-lg border text-xs font-semibold transition-colors',
+                    'inline-flex h-11 items-center justify-center rounded-lg border text-xs font-semibold transition-colors',
                     mood === m
                       ? 'border-gold bg-gold text-bg'
                       : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'

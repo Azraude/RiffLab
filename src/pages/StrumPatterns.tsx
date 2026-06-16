@@ -66,7 +66,7 @@ export function StrumPatterns() {
             onClick={() => setTagFilter(null)}
             aria-pressed={tagFilter === null}
             className={clsx(
-              'inline-flex h-8 items-center rounded-full border px-3 text-xs uppercase tracking-wider transition-colors',
+              'inline-flex h-9 items-center rounded-full border px-3.5 text-xs uppercase tracking-wider transition-colors',
               tagFilter === null
                 ? 'border-gold bg-gold text-bg'
                 : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
@@ -81,7 +81,7 @@ export function StrumPatterns() {
               onClick={() => setTagFilter(t)}
               aria-pressed={tagFilter === t}
               className={clsx(
-                'inline-flex h-8 items-center rounded-full border px-3 text-xs uppercase tracking-wider transition-colors',
+                'inline-flex h-9 items-center rounded-full border px-3.5 text-xs uppercase tracking-wider transition-colors',
                 tagFilter === t
                   ? 'border-gold bg-gold text-bg'
                   : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
