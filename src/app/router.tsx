@@ -23,7 +23,8 @@ import { SharePreview } from '@/pages/SharePreview';
 import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
-import { Composer } from '@/pages/Composer';
+// Composer fusionné dans Studio (sess PROG-STUDIO) — /composer redirige
+// vers /progressions (qui rend le Studio multi-tabs)
 import { About } from '@/pages/About';
 import { LibraryHub } from '@/pages/hubs/LibraryHub';
 import { ResourcesHub } from '@/pages/hubs/ResourcesHub';
@@ -81,7 +82,8 @@ export const router = createBrowserRouter([
       { path: 'strum-patterns', element: <StrumPatterns /> },
 
       // ─── Création ───────────────────────────────────────────────
-      { path: 'composer', element: <Composer /> },
+      // /composer redirige vers /progressions (Studio multi-tabs sess PROG-STUDIO)
+      { path: 'composer', element: <Navigate to="/progressions" replace /> },
 
       // ─── Outils (URLs canoniques /tools/* + anciennes en alias) ─
       // Le hub /tools liste ces 4. Les anciennes URLs restent valides

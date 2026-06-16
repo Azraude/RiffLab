@@ -8,6 +8,7 @@ import {
   Music2,
   BookOpen,
   Wand2,
+  Sparkles,
   Target,
   BarChart3,
   Wrench,
@@ -59,7 +60,7 @@ const items: NavItem[] = [
     label: 'Bibliothèque',
     icon: <BookOpen size={18} />,
     section: 'perso',
-    matchPrefixes: ['/chords', '/scales', '/progressions', '/strum-patterns'],
+    matchPrefixes: ['/chords', '/scales', '/strum-patterns'],
   },
 
   // Créer & apprendre
@@ -68,7 +69,16 @@ const items: NavItem[] = [
     label: 'Créer',
     icon: <Wand2 size={18} />,
     section: 'apprendre',
-    matchPrefixes: ['/composer', '/songs/new'],
+    matchPrefixes: ['/songs/new'],
+  },
+  // Studio (fusion ex-Progressions + ex-Composer sess PROG-STUDIO) —
+  // accès direct depuis sidebar, plus planqué dans Bibliothèque.
+  {
+    to: '/progressions',
+    label: 'Studio',
+    icon: <Sparkles size={18} />,
+    section: 'apprendre',
+    matchPrefixes: ['/progressions', '/composer'],
   },
   { to: '/plan', label: 'Mon plan', icon: <Target size={18} />, section: 'apprendre' },
   { to: '/stats', label: 'Stats', icon: <BarChart3 size={18} />, section: 'apprendre' },
