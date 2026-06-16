@@ -25,6 +25,7 @@ import { RiffPlayer } from '@/components/riffs/RiffPlayer';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { RiffCard } from '@/components/riffs/RiffCard';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
+import { CommentsSection } from '@/components/social/CommentsSection';
 import {
   COMMUNITY_RIFFS,
   difficultyToLevel,
@@ -266,16 +267,10 @@ export function RiffDetail() {
           </section>
         )}
 
-        {/* === Commentaires placeholder === */}
+        {/* === Commentaires (wired sess 30) === */}
         <section className="space-y-3">
           <h3 className="display text-display-sm">Commentaires</h3>
-          <Card className="text-center">
-            <MessageCircle size={28} className="mx-auto text-text-soft" strokeWidth={1.5} />
-            <p className="mt-2 text-sm text-text-muted">
-              Le système de commentaires sera dispo en Phase 5 (sess 27+).
-              Pour l'instant tu peux laisser un feedback via le bouton 💬 flottant.
-            </p>
-          </Card>
+          <CommentsSection riffId={riff.id} />
         </section>
       </div>
 
