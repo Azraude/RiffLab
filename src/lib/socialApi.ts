@@ -762,6 +762,149 @@ export async function getUnreadNotifCount(): Promise<number> {
   return count ?? 0;
 }
 
+// ─── Activity feed (sess 30 T4) ──────────────────────────────────────
+
+/**
+ * Type unifié activity event.
+ *  - publish : un user que je follow a publié un riff
+ *  - like : quelqu'un a liké un de mes riffs
+ *  - follow : quelqu'un m'a follow
+ *  - comment : quelqu'un a commenté un de mes riffs
+ */
+export type ActivityEvent = {
+  type: 'publish' | 'like' | 'follow' | 'comment';
+  created_at: string;
+  /** User à l'origine de l'event (publisher, liker, follower, commenter) */
+  actor?: Profile | null;
+  /** Riff concerné (sauf pour 'follow') */
+  riff?: PublicRiff | null;
+  /** Texte du commentaire (sauf pour autres) */
+  comment_text?: string;
+};
+
+/**
+ * Combine 4 queries pour construire l'activity feed du user :
+ *  - Publish : riffs publiés par mes follows
+ *  - Like : likes reçus sur mes riffs
+ *  - Comment : commentaires reçus sur mes riffs
+ *  - Follow : nouveaux followers
+ *
+ * Trié par created_at DESC, limit 20.
+ *
+ * Pas optimal (4 queries puis merge client-side), mais OK pour MVP.
+ * Optimisable plus tard avec une vue SQL `activity_feed` matérialisée.
+ */
+export async function getActivityFeed(
+  myUserId: string,
+  limit = 20
+): Promise<{ data: ActivityEvent[] | null; error: Error | null }> {
+  if (!isSupabaseConfigured) return notConfigured();
+
+  // 1. Mes follows pour le tab "publish"
+  const { data: follows } = await supabase
+    .from('follows')
+    .select('followed_id')
+    .eq('follower_id', myUserId);
+  const followedIds = (follows ?? []).map((f) => f.followed_id);
+
+  // 2. Mes riffs pour les tabs "like" et "comment"
+  const { data: myRiffs } = await supabase
+    .from('riffs_public')
+    .select('id, title, artist, author_id')
+    .eq('author_id', myUserId);
+  const myRiffIds = (myRiffs ?? []).map((r) => r.id);
+  const myRiffsMap = new Map((myRiffs ?? []).map((r) => [r.id, r]));
+
+  const events: ActivityEvent[] = [];
+
+  // Publish events (mes follows)
+  if (followedIds.length > 0) {
+    const { data: publishes } = await supabase
+      .from('riffs_public')
+      .select('*, author:profiles!riffs_public_author_id_fkey(*)')
+      .in('author_id', followedIds)
+      .order('published_at', { ascending: false })
+      .limit(limit);
+    for (const r of (publishes ?? []) as Array<PublicRiff & { author?: Profile }>) {
+      events.push({
+        type: 'publish',
+        created_at: r.published_at,
+        actor: r.author ?? null,
+        riff: r,
+      });
+    }
+  }
+
+  // Like events (sur mes riffs)
+  if (myRiffIds.length > 0) {
+    const { data: likes } = await supabase
+      .from('likes')
+      .select('user_id, riff_id, created_at, user:profiles!likes_user_id_fkey(*)')
+      .in('riff_id', myRiffIds)
+      .neq('user_id', myUserId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    for (const l of (likes ?? []) as unknown as Array<{
+      user_id: string;
+      riff_id: string;
+      created_at: string;
+      user?: Profile | Profile[] | null;
+    }>) {
+      const riff = myRiffsMap.get(l.riff_id);
+      const actor = Array.isArray(l.user) ? (l.user[0] ?? null) : (l.user ?? null);
+      events.push({
+        type: 'like',
+        created_at: l.created_at,
+        actor,
+        riff: (riff as unknown as PublicRiff) ?? null,
+      });
+    }
+
+    // Comments sur mes riffs
+    const { data: comments } = await supabase
+      .from('comments')
+      .select('*, author:profiles!comments_author_id_fkey(*)')
+      .in('riff_id', myRiffIds)
+      .neq('author_id', myUserId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    for (const c of (comments ?? []) as Array<Comment>) {
+      const riff = myRiffsMap.get(c.riff_id);
+      events.push({
+        type: 'comment',
+        created_at: c.created_at,
+        actor: c.author ?? null,
+        riff: (riff as unknown as PublicRiff) ?? null,
+        comment_text: c.text,
+      });
+    }
+  }
+
+  // Follow events (qui me follow)
+  const { data: followers } = await supabase
+    .from('follows')
+    .select('follower_id, created_at, follower:profiles!follows_follower_id_fkey(*)')
+    .eq('followed_id', myUserId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  for (const f of (followers ?? []) as unknown as Array<{
+    follower_id: string;
+    created_at: string;
+    follower?: Profile | Profile[] | null;
+  }>) {
+    const actor = Array.isArray(f.follower) ? (f.follower[0] ?? null) : (f.follower ?? null);
+    events.push({
+      type: 'follow',
+      created_at: f.created_at,
+      actor,
+    });
+  }
+
+  // Sort all events by date desc + limit
+  events.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return { data: events.slice(0, limit), error: null };
+}
+
 // ─── Leaderboards ───────────────────────────────────────────────────
 
 export type LeaderboardWindow = 'week' | 'month' | 'all';

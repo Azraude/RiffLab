@@ -37,6 +37,7 @@ import { Leaderboard } from '@/pages/Leaderboard';
 import { Battle } from '@/pages/Battle';
 import { RiffsByTag } from '@/pages/RiffsByTag';
 import { EditorPicks } from '@/pages/EditorPicks';
+import { Activity } from '@/pages/Activity';
 
 export const router = createBrowserRouter([
   {
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
       { path: 'u/:username', element: <UserProfile /> },
       { path: 'leaderboard', element: <Leaderboard /> },
       { path: 'battle', element: <Battle /> },
+      { path: 'activity', element: <Activity /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
