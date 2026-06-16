@@ -314,4 +314,9 @@ RiffDetail (page)
 
 ---
 
-## ✅ Mergé dans main (à compléter)
+## ✅ Mergé dans main (b900675)
+
+Merge commit avec Session D (Tone.Sampler HQ audio sampler — 5 commits
+indépendants sur audio.ts/strumSounds.ts/useAudio.ts/Settings.tsx +
+prefsStore.ts). Pas de conflit (Session B et Session D touchent des
+zones orthogonales).
