@@ -197,11 +197,23 @@
   }
 
   .card {
-    @apply rounded-2xl border border-border bg-surface p-6 transition-all duration-200 ease-out-quart;
+    /* Padding mobile-first : 20px à 375px (préserve l'espace horizontal),
+       24px ≥md. Les cartes qui passent un padding custom en className
+       (p-4, py-12…) gagnent toujours via la couche utilities. */
+    @apply rounded-2xl border border-border bg-surface p-5 transition-all duration-200 ease-out-quart md:p-6;
   }
 
+  /* Hover gaté sur les pointeurs fins (souris) uniquement : sur tactile le
+     hover « colle » après le tap (sticky hover) et la carte resterait
+     surélevée/dorée. On donne plutôt un feedback de tap (active:scale)
+     pour le rebond « natif ». */
   .card-hover {
-    @apply hover:-translate-y-0.5 hover:border-gold-soft;
+    @apply active:scale-[0.99];
+  }
+  @media (hover: hover) {
+    .card-hover {
+      @apply hover:-translate-y-0.5 hover:border-gold-soft active:scale-100;
+    }
   }
 
   .divider-gold {
