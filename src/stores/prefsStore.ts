@@ -5,7 +5,6 @@ import type { FretboardSkinId } from '@/lib/fretboardSkins';
 import type { PracticePlanData } from '@/lib/practicePlan';
 import type { ThemeId } from '@/lib/themes';
 import { migrateLegacyStrumId, type StrumSoundId } from '@/lib/strumSounds';
-import type { AudioQuality } from '@/lib/audio';
 
 export type PlayerLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -18,7 +17,6 @@ type PrefsState = {
   fretboardSkin: FretboardSkinId;
   theme: ThemeId;
   strumSound: StrumSoundId;
-  audioQuality: AudioQuality;
   effects3D: boolean;
   onboardingCompleted: boolean;
   tutorialCompleted: boolean;
@@ -35,7 +33,6 @@ type PrefsState = {
   setFretboardSkin: (id: FretboardSkinId) => void;
   setTheme: (id: ThemeId) => void;
   setStrumSound: (id: StrumSoundId) => void;
-  setAudioQuality: (q: AudioQuality) => void;
   toggleEffects3D: () => void;
   setOnboardingCompleted: (done: boolean) => void;
   setTutorialCompleted: (done: boolean) => void;
@@ -58,7 +55,6 @@ export const usePrefs = create<PrefsState>()(
       fretboardSkin: 'noir-mat',
       theme: 'dark-gold',
       strumSound: 'electric-clean',
-      audioQuality: 'studio',
       effects3D: true,
       onboardingCompleted: false,
       tutorialCompleted: false,
@@ -75,7 +71,6 @@ export const usePrefs = create<PrefsState>()(
       setFretboardSkin: (fretboardSkin) => set({ fretboardSkin }),
       setTheme: (theme) => set({ theme }),
       setStrumSound: (strumSound) => set({ strumSound }),
-      setAudioQuality: (audioQuality) => set({ audioQuality }),
       toggleEffects3D: () => set((s) => ({ effects3D: !s.effects3D })),
       setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
       setTutorialCompleted: (tutorialCompleted) => set({ tutorialCompleted }),
@@ -102,13 +97,13 @@ export const usePrefs = create<PrefsState>()(
     }),
     {
       name: 'rifflab-prefs',
-      version: 10,
+      version: 9,
       /**
-       * Migration v9 (session 21) : passage à WebAudioFont GM presets — les
-       * anciens IDs strum sont mappés via `migrateLegacyStrumId`.
-       * Migration v10 (session D) : ajout de `audioQuality` (default 'studio').
-       * Les IDs strum restent valides (mêmes 6 presets, moteur Tone.Sampler).
-       * Tout autre champ est préservé.
+       * Migration v9 (session 21) : passage à WebAudioFont GM presets.
+       * Les anciens IDs ('electric-real-sampled', 'electric-crunch',
+       * 'electric-lead', 'electric-metal', 'electric-blues', 'acoustic-warm',
+       * + les fallbacks synthés) sont mappés vers les nouveaux GM via
+       * `migrateLegacyStrumId`. Tout autre champ est préservé.
        */
       migrate: (persisted, version) => {
         const p = (persisted ?? {}) as Partial<PrefsState> & { strumSound?: string };
@@ -124,7 +119,6 @@ export const usePrefs = create<PrefsState>()(
           fretboardSkin: p.fretboardSkin ?? 'noir-mat',
           theme: p.theme ?? 'dark-gold',
           strumSound,
-          audioQuality: p.audioQuality ?? 'studio',
           effects3D: p.effects3D ?? true,
           onboardingCompleted: p.onboardingCompleted ?? true,
           tutorialCompleted: p.tutorialCompleted ?? true,

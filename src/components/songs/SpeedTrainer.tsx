@@ -28,7 +28,12 @@ export function SpeedTrainer({ section, originalTempo }: SpeedTrainerProps) {
   const [validated, setValidated] = useState<Set<Factor>>(new Set());
   const [playing, setPlaying] = useState(false);
   const [activeChordIdx, setActiveChordIdx] = useState<number | null>(null);
-  const cancelRef = useRef(false);
+  // Token d'annulation PAR-RUN (fix double-boucle, cf. RiffPlayer).
+  const runRef = useRef<{ cancelled: boolean } | null>(null);
+  // `strum` change d'identité au flip de `ready` → ref pour ne pas relancer
+  // la boucle (et créer une 2e boucle concurrente) en pleine lecture.
+  const strumRef = useRef(strum);
+  strumRef.current = strum;
 
   const targetBpm = Math.round(originalTempo * factor);
   const chords: ChordRef[] = section.chords;
@@ -36,7 +41,6 @@ export function SpeedTrainer({ section, originalTempo }: SpeedTrainerProps) {
   // Loop player — joue la section en continu tant que `playing` est true.
   useEffect(() => {
     if (!playing) {
-      cancelRef.current = true;
       setActiveChordIdx(null);
       return;
     }
@@ -44,15 +48,16 @@ export function SpeedTrainer({ section, originalTempo }: SpeedTrainerProps) {
       setPlaying(false);
       return;
     }
-    cancelRef.current = false;
+    const run = { cancelled: false };
+    runRef.current = run;
     const beatMs = 60000 / targetBpm;
     let idx = 0;
 
     (async () => {
-      while (!cancelRef.current) {
+      while (!run.cancelled) {
         const c = chords[idx % chords.length];
         setActiveChordIdx(idx % chords.length);
-        void strum(c.name, 'down');
+        void strumRef.current(c.name, 'down');
         await new Promise((r) => setTimeout(r, c.beats * beatMs));
         idx++;
         // Safety stop après 64 boucles (le user a oublié)
@@ -65,9 +70,9 @@ export function SpeedTrainer({ section, originalTempo }: SpeedTrainerProps) {
     })();
 
     return () => {
-      cancelRef.current = true;
+      run.cancelled = true;
     };
-  }, [playing, targetBpm, chords, strum]);
+  }, [playing, targetBpm, chords]);
 
   // Quand le palier change pendant la lecture, on relance la boucle
   // (cancel auto via le cleanup de l'effect ci-dessus, puis relance).

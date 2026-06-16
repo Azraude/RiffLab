@@ -25,20 +25,26 @@ export function TabPlayer({ tab, loop = false }: TabPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [tempo, setTempo] = useState(tab.tempo);
   const [activeBeat, setActiveBeat] = useState<number | null>(null);
-  const cancelRef = useRef(false);
+  // Token d'annulation PAR-RUN — voir RiffPlayer pour le détail du bug
+  // (booléen partagé → 2 boucles concurrentes = lecture ultra-rapide).
+  const runRef = useRef<{ cancelled: boolean } | null>(null);
+  // playMidi change d'identité au flip de `ready` → ref pour ne pas
+  // relancer la boucle en plein milieu de la lecture.
+  const playMidiRef = useRef(playMidi);
+  playMidiRef.current = playMidi;
 
   useEffect(() => {
     if (!playing) {
-      cancelRef.current = true;
       setActiveBeat(null);
       return;
     }
-    cancelRef.current = false;
     const flat = flattenTab(tab);
     if (flat.length === 0) {
       setPlaying(false);
       return;
     }
+    const run = { cancelled: false };
+    runRef.current = run;
     // beatMs = durée d'une 16e à ce tempo
     // tempo BPM = noires par minute → 1 noire = 60/BPM secondes
     // 1 noire = 4 doubles-croches → 1 16e = 60/(BPM*4) = 15000/BPM ms
@@ -48,29 +54,30 @@ export function TabPlayer({ tab, loop = false }: TabPlayerProps) {
       let cycleCount = 0;
       do {
         for (const note of flat) {
-          if (cancelRef.current) break;
+          if (run.cancelled) break;
           // Attendre jusqu'au startBeat absolu de la note
           // (gestion simple : on calcule le delta depuis la note précédente)
           setActiveBeat(note.absoluteBeat);
           const midi = tabNoteToMidi(note);
-          void playMidi(midi);
+          void playMidiRef.current(midi);
           // Wait note.duration en 16e avant la prochaine
           await new Promise((r) => setTimeout(r, note.duration * beatMs));
         }
         cycleCount++;
-      } while (loop && !cancelRef.current && cycleCount < 32);
-      if (!cancelRef.current) {
+      } while (loop && !run.cancelled && cycleCount < 32);
+      if (!run.cancelled) {
         setPlaying(false);
         setActiveBeat(null);
       }
     })();
 
     return () => {
-      cancelRef.current = true;
+      run.cancelled = true;
     };
-  }, [playing, tab, tempo, loop, playMidi]);
+  }, [playing, tab, tempo, loop]);
 
   const handleReset = () => {
+    if (runRef.current) runRef.current.cancelled = true;
     setPlaying(false);
     setActiveBeat(null);
   };
