@@ -33,6 +33,8 @@ import { FretboardLearner } from '@/pages/FretboardLearner';
 import { RiffDetail } from '@/pages/RiffDetail';
 import { RiffCollection } from '@/pages/RiffCollection';
 import { UserProfile } from '@/pages/UserProfile';
+import { Leaderboard } from '@/pages/Leaderboard';
+import { Battle } from '@/pages/Battle';
 
 export const router = createBrowserRouter([
   {
@@ -97,6 +99,8 @@ export const router = createBrowserRouter([
 
       // ─── Profils publics (sess 29) ─────────────────────────────
       { path: 'u/:username', element: <UserProfile /> },
+      { path: 'leaderboard', element: <Leaderboard /> },
+      { path: 'battle', element: <Battle /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
