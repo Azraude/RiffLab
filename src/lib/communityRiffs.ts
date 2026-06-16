@@ -46,6 +46,14 @@ export type CommunityRiff = {
   /** Techniques travaillées dans ce riff (filtre cible) — optionnel,
    *  fallback : array vide si pas renseigné. */
   techniques?: RiffTechnique[];
+  /**
+   * Voie B (session D) : URL d'un VRAI enregistrement audio du riff (MP3 /
+   * Opus, bucket Supabase `riff-audio`). Optionnel et additif — si présent,
+   * `playRiff()` (lib/audio.ts) joue le fichier réel au lieu de la synthèse
+   * note-à-note. Aucun riff n'en a encore : mécanisme préparé pour les
+   * uploads futurs (Melvin / contributeurs). Voir la migration SQL
+   * docs/SUPABASE-MIGRATIONS-SESSION-D.sql. */
+  audio_url?: string | null;
 };
 
 /** Mapping difficulty 1-5 → level nommé. Utilisé par les filtres + UI. */
