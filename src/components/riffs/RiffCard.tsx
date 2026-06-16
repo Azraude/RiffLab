@@ -105,9 +105,9 @@ export function RiffCard({
               <div className="truncate text-[11px] text-text-muted">{tab.artist}</div>
             )}
 
-            {/* 3 tags max — cliquables vers /riffs/tag/:tag */}
+            {/* 2 tags max compact (3 → 2 pour gain visuel sess A Phase 3) */}
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {riff.tags.slice(0, 3).map((t) => (
+              {riff.tags.slice(0, 2).map((t) => (
                 <Link
                   key={t}
                   to={`/riffs/tag/${t}`}
@@ -117,12 +117,21 @@ export function RiffCard({
                   #{t}
                 </Link>
               ))}
+              {riff.tags.length > 2 && (
+                <span className="rounded px-1 py-0.5 font-mono text-[9px] text-text-soft">
+                  +{riff.tags.length - 2}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Mini-preview tab — 2 mesures max grâce à max-h */}
+          {/* Mini-preview tab — overflow hidden STRICT + pointer-events-none
+              pour empêcher le scroll-x interne de conflicter avec scroll-y
+              du parent (cohérent avec mode full Phase 2). */}
           <div className="relative mt-2 max-h-[70px] overflow-hidden px-2 opacity-80">
-            <TabReader tab={tab} lineHeight={10} beatWidth={9} />
+            <div className="pointer-events-none">
+              <TabReader tab={tab} lineHeight={10} beatWidth={9} />
+            </div>
             <div
               aria-hidden
               className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-2 to-transparent"
@@ -396,7 +405,11 @@ function SmallAvatar({ name }: { name: string }) {
   );
 }
 
-/** Bouton footer compact (icône + count facultatif) pour le mode grille. */
+/** Bouton footer compact (icône seule, count en title tooltip).
+ *  Mode `compact` desktop (grille xl 2-cols) — l'user voit l'icône
+ *  rapidement, le count en hover via title attribute. Évite la
+ *  surcharge visuelle d'avoir 4 chiffres tous visibles dans une card
+ *  étroite (280-320px). */
 function CompactBtn({
   children,
   label,
@@ -413,18 +426,26 @@ function CompactBtn({
   onClick: (e: React.MouseEvent) => void;
 }) {
   const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
+  const hasCount = count !== undefined && count > 0;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={hasCount ? `${label} (${count})` : label}
+      title={hasCount ? `${label} · ${formatCount(count!)}` : label}
       className={clsx(
-        'inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
+        'group inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
         active ? activeCls : 'text-text-muted hover:text-text'
       )}
     >
       {children}
-      {count !== undefined && count > 0 && <span className="font-mono">{count}</span>}
+      {/* Count caché par défaut, visible en hover/focus de la card.
+          Garde l'a11y via aria-label qui contient le nombre. */}
+      {hasCount && (
+        <span className="hidden font-mono tabular-nums group-hover:inline">
+          {formatCount(count!)}
+        </span>
+      )}
     </button>
   );
 }
