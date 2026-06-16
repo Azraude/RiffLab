@@ -27,6 +27,7 @@ import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { RiffEditor } from '@/components/riffs/RiffEditor';
 import { BadgesStrip } from '@/components/riffs/BadgesStrip';
 import { RiffsSidebarRight } from '@/components/riffs/RiffsSidebarRight';
+import { EditorPickBanner } from '@/components/riffs/EditorPickBanner';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import {
   COMMUNITY_RIFFS,
@@ -235,6 +236,9 @@ export function Riffs() {
               )}
             </button>
           </div>
+
+          {/* Editor's pick banner (sticky en haut si active) */}
+          <EditorPickBanner />
 
           {/* Badges strip (juste au-dessus du feed) */}
           <div className="mb-4">

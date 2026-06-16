@@ -11,6 +11,7 @@
  * Mobile-first : padding 4 mobile / 6 desktop, tap targets ≥ 44px.
  */
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Bookmark, Share2, Music, Play, BookOpen, Target, User } from 'lucide-react';
 import clsx from 'clsx';
 import {
@@ -104,15 +105,17 @@ export function RiffCard({
               <div className="truncate text-[11px] text-text-muted">{tab.artist}</div>
             )}
 
-            {/* 3 tags max */}
+            {/* 3 tags max — cliquables vers /riffs/tag/:tag */}
             <div className="mt-1.5 flex flex-wrap gap-1">
               {riff.tags.slice(0, 3).map((t) => (
-                <span
+                <Link
                   key={t}
-                  className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[9px] text-gold-soft"
+                  to={`/riffs/tag/${t}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[9px] text-gold-soft hover:bg-gold/20"
                 >
                   #{t}
-                </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -211,20 +214,22 @@ export function RiffCard({
       {(riff.tags.length > 0 || riff.techniques?.length) && (
         <div className="flex flex-wrap gap-1.5 px-4 pt-2 pb-1 md:px-6">
           {riff.tags.map((t) => (
-            <span
+            <Link
               key={t}
-              className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft"
+              to={`/riffs/tag/${t}`}
+              className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
             >
               #{t}
-            </span>
+            </Link>
           ))}
           {riff.techniques?.map((t) => (
-            <span
+            <Link
               key={`tech-${t}`}
-              className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft"
+              to={`/riffs/tag/${t}`}
+              className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
             >
               {t}
-            </span>
+            </Link>
           ))}
         </div>
       )}
