@@ -163,4 +163,9 @@ n'explique PAS la majorité des pages. **Mais** :
 
 ---
 
-(ligne de merge ci-dessous)
+✅ Mergé dans main (55960b6). Merge --no-ff de origin/main (Session B
+RiffDetail) : conflit sur `RiffPlayer.tsx` résolu en gardant les ajouts
+Session B (forwardRef play/pause/stop, sticky mini-player, nav par mesure,
+scroll manuel) ET le fix double-boucle (token par-run + refs). `stop()` du
+handle impératif et le bouton X du sticky bar utilisent désormais le token
+par-run. Build final vert sur l'arbre mergé.
