@@ -5,9 +5,29 @@ import { MobileNav } from './MobileNav';
 import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
 import { KonamiProvider } from '@/hooks/useKonamiCode';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
-import { ToastViewport } from '@/hooks/useToast';
+import { ToastViewport, useToast } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
 import { NotificationBell } from '@/components/social/NotificationBell';
+import { useEffect } from 'react';
+
+/** Écoute l'event 'rifflab-badge-unlocked' émis par socialStreakStore +
+ *  affiche un toast pour chaque badge. Découplage : le store n'a pas
+ *  accès à useToast (hors composant). */
+function BadgeUnlockListener() {
+  const toast = useToast();
+  useEffect(() => {
+    const onUnlock = (e: Event) => {
+      const detail = (e as CustomEvent<{ labels: string[] }>).detail;
+      if (!detail?.labels) return;
+      detail.labels.forEach((label) => {
+        toast.success(`Badge débloqué : ${label}`, { duration: 6000 });
+      });
+    };
+    window.addEventListener('rifflab-badge-unlocked', onUnlock);
+    return () => window.removeEventListener('rifflab-badge-unlocked', onUnlock);
+  }, [toast]);
+  return null;
+}
 
 /**
  * Layout commun aux routes hors Landing. Wrap les pages dans
@@ -60,6 +80,7 @@ export function Layout() {
       <MobileNav />
       <FeedbackButton />
       <ToastViewport />
+      <BadgeUnlockListener />
       <StickyPlayer />
       {/* Scroll-to-top à la navigation + restauration de la position au
           retour (back/forward). Comportement « app » attendu sur mobile. */}

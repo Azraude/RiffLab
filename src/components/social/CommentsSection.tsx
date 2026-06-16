@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/stores/authStore';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
+import { useSocialStreak } from '@/stores/socialStreakStore';
 
 interface CommentsSectionProps {
   riffId: string;
@@ -68,6 +69,7 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
     }
     setText('');
     toast.success('💬 Commentaire posté');
+    useSocialStreak.getState().recordActivity();
     onActivity?.();
     void refresh();
   };

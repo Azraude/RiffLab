@@ -22,6 +22,7 @@ import type { CommunityRiff } from '@/lib/communityRiffs';
 import type { Tab } from '@/lib/tabsDatabase';
 import { checkAndUnlockBadges, isRiffMastered, markRiffMastered } from '@/lib/db';
 import { getBadgeMeta } from '@/lib/badges';
+import { useSocialStreak } from '@/stores/socialStreakStore';
 import { RiffPlayer } from './RiffPlayer';
 import { Confetti } from '@/components/ui/Confetti';
 import { useToast } from '@/hooks/useToast';
@@ -74,6 +75,8 @@ export function LearnRiffMode({ open, onClose, riff, tab }: LearnRiffModeProps) 
     await markRiffMastered(riff.id, playCount);
     setConfettiTrigger((t) => t + 1);
     toast.success(`🏆 ${tab?.name ?? 'Riff'} maîtrisé !`);
+    // Record streak social activity (sess 30)
+    useSocialStreak.getState().recordActivity();
     // Check les badges qui débloquent suite à un nouveau mastery
     const newBadges = await checkAndUnlockBadges();
     for (const slug of newBadges) {

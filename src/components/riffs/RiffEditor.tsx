@@ -32,6 +32,7 @@ import { getBadgeMeta } from '@/lib/badges';
 import { publishRiff } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
 import { useNavigate } from 'react-router-dom';
+import { useSocialStreak } from '@/stores/socialStreakStore';
 import { useToast } from '@/hooks/useToast';
 
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']; // top → bottom (high E first)
@@ -191,6 +192,7 @@ export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
     };
     // 1. Save Dexie local (toujours, même si pas connecté)
     await saveUserRiff(userRiff);
+    useSocialStreak.getState().recordActivity();
 
     // 2. Push Supabase si connecté (sess 30 wiring)
     let publishedPublicly = false;

@@ -11,6 +11,7 @@ import { UserPlus, UserCheck } from 'lucide-react';
 import { followUser, unfollowUser, isFollowing } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
 import { useToast } from '@/hooks/useToast';
+import { useSocialStreak } from '@/stores/socialStreakStore';
 
 interface FollowButtonProps {
   /** UUID du profil à suivre */
@@ -54,6 +55,8 @@ export function FollowButton({ userId, username, variant = 'primary' }: FollowBu
       toast.error(error.message);
     } else if (wantToFollow) {
       toast.success(`Tu suis ${username ? `@${username}` : 'ce riffeur'}`);
+      // Record streak social activity
+      useSocialStreak.getState().recordActivity();
     }
   };
 

@@ -17,7 +17,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
-import { Sparkles, Trophy, Library, Users, Swords, ChevronRight, User } from 'lucide-react';
+import { Sparkles, Trophy, Library, Users, Swords, ChevronRight, User, Flame } from 'lucide-react';
+import { useSocialStreak } from '@/stores/socialStreakStore';
 import clsx from 'clsx';
 import { COLLECTIONS } from '@/lib/riffCollections';
 import { getDailyRiff } from '@/lib/communityRiffs';
@@ -41,6 +42,8 @@ export function RiffsSidebarRight() {
   const me = useAuth((s) => s.user);
   const masteredRows = useLiveQuery(() => listMasteredRiffs(), []) ?? [];
   const masteredCount = masteredRows.length;
+  const currentStreak = useSocialStreak((s) => s.currentStreak);
+  const longestStreak = useSocialStreak((s) => s.longestStreak);
 
   // Live data Supabase (dégrade gracefully si pas configuré)
   const [topWeek, setTopWeek] = useState<Array<PublicRiff & { likes_count: number }>>([]);
@@ -139,6 +142,30 @@ export function RiffsSidebarRight() {
       {battle && battle.riff_a && battle.riff_b && (
         <Section icon={<Swords size={14} />} title="Battle de la semaine">
           <BattleMiniCard battle={battle} />
+        </Section>
+      )}
+
+      {/* === Streak social (sess 30) === */}
+      {currentStreak > 0 && (
+        <Section icon={<Flame size={14} />} title="Streak social" accent="gold">
+          <div className="rounded-xl border border-gold/30 bg-gradient-to-br from-gold/10 to-transparent p-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="display text-3xl text-gold">{currentStreak}</span>
+              <span className="text-xs text-text-soft">
+                jour{currentStreak > 1 ? 's' : ''} d'affilée
+              </span>
+            </div>
+            {longestStreak > currentStreak && (
+              <div className="mt-1 text-[10px] text-text-soft">
+                Record perso : <span className="font-mono text-gold">{longestStreak}j</span>
+              </div>
+            )}
+            {currentStreak >= 7 && (
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[9px] font-bold text-gold">
+                🔥 Badge Streak 7j débloqué
+              </div>
+            )}
+          </div>
         </Section>
       )}
 
