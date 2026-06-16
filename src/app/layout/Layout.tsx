@@ -8,6 +8,7 @@ import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { ToastViewport, useToast } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
 import { NotificationBell } from '@/components/social/NotificationBell';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useEffect } from 'react';
 
 /** Écoute l'event 'rifflab-badge-unlocked' émis par socialStreakStore +
@@ -71,7 +72,12 @@ export function Layout() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
               >
-                <Outlet />
+                {/* Boundary re-montée à chaque route (key pathname du parent) :
+                    une erreur de page ne fait plus écran noir, la sidebar
+                    reste utilisable, et un échec de chunk lazy reload auto. */}
+                <ErrorBoundary>
+                  <Outlet />
+                </ErrorBoundary>
               </motion.div>
             </AnimatePresence>
           </div>

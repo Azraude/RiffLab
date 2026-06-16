@@ -7,6 +7,7 @@ import { usePrefs } from '@/stores/prefsStore';
 import { applyTheme } from '@/lib/themes';
 import { rebuildVoices, setAudioQuality } from '@/lib/audio';
 import { PWAUpdateToast } from '@/components/pwa/PWAUpdateToast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import '@/i18n'; // setup i18next FR/EN AVANT le render
 import '@/styles/globals.css';
 
@@ -27,7 +28,11 @@ usePrefs.subscribe((state, prev) => {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    {/* Backstop global : si l'erreur survient hors des routes (Layout,
+        Sidebar, providers), on évite l'écran noir total. */}
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
     <PWAUpdateToast />
   </React.StrictMode>
 );

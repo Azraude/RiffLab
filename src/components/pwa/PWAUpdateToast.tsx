@@ -8,9 +8,10 @@ import { registerSW } from 'virtual:pwa-register';
  * version de l'app est disponible (Service Worker waiting), avec un
  * bouton "Recharger" pour activer la mise à jour immédiatement.
  *
- * Workbox `skipWaiting + clientsClaim` est déjà configuré côté SW (cf
- * vite.config.ts) — donc reloading.html fait l'affaire. On laisse juste
- * l'user décider du moment pour ne pas surprendre une session en cours.
+ * Le SW est en mode 'prompt' avec skipWaiting/clientsClaim FALSE (cf
+ * vite.config.ts, hotfix écran noir) : le nouveau SW reste en attente, et
+ * c'est le clic « Recharger » ci-dessous (`updateSW(true)`) qui l'active +
+ * reload. Tant que l'user ne clique pas, les anciens chunks restent valides.
  *
  * Bonus : affiche aussi un toast "RiffLab installé hors-ligne" la
  * première fois que le SW prend la main (clic offline-ready).

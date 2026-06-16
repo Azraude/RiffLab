@@ -7,7 +7,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (et NON 'autoUpdate') : le nouveau SW NE prend PAS le
+      // contrôle tout seul. Sinon (hotfix bug écran noir) skipWaiting +
+      // clientsClaim laissaient le nouveau SW purger les anciens chunks lazy
+      // 3D pendant que la vieille page tournait encore → un import() de chunk
+      // disparu throwait → écran noir. Ici on attend le clic « Recharger »
+      // du PWAUpdateToast (qui appelle updateSW(true)).
+      registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'RiffLab',
@@ -29,10 +35,14 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Skip waiting + claim clients : la nouvelle version SW prend le contrôle
-        // immédiatement (avec un toast côté React pour signaler le reload nécessaire).
-        skipWaiting: true,
-        clientsClaim: true,
+        // skipWaiting/clientsClaim FALSE : le SW entrant reste en "waiting"
+        // jusqu'au reload explicite (clic « Recharger » du toast). Évite la
+        // purge des anciens chunks sous les pieds de la page courante → fin
+        // de l'écran noir à la nav après déploiement.
+        skipWaiting: false,
+        clientsClaim: false,
+        // Purge les précaches périmés à l'activation (= au reload), pas avant.
+        cleanupOutdatedCaches: true,
         // Cache global de tous les assets statics (CSS, JS, images, fonts).
         // Les .glb sont EXCLUS du precache (trop lourds : guitar-fender-rose
         // 22MB, amp 8.5MB) → ils passent par le runtimeCaching ci-dessous
