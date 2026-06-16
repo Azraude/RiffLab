@@ -1,29 +1,36 @@
 /**
- * /riffs/:id — page détail d'un riff (sess 27 Phase 3).
+ * /riffs/:id — page détail d'un riff.
  *
- * Hero énorme, RiffPlayer pleine largeur, sections "Plus de @user",
- * "Riffs similaires", actions sticky bas mobile.
+ * Sess B (P1) — refonte mobile-first pleine page :
+ *  - Header sticky top compact (Back + Share + Bookmark + Like)
+ *  - Hero compact (Instagram-style) : avatar + @user + meta + tags inline
+ *  - Tab area sticky-top mobile (md:relative desktop)
+ *  - Actions row hiérarchisée : CTA "Écouter" primary full-width + grid
+ *    2-cols "Apprendre" + "Annotations"
+ *  - Sidebar droite lg+ : "Plus de @user" + "Riffs similaires"
+ *  - Sur <lg : sections empilées en bas (Plus de / Similaires / Comments)
+ *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Heart,
-  MessageCircle,
   Bookmark,
   Share2,
   Trophy,
   Target,
   Music2,
   User,
+  Play,
+  BookOpen,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
 import { RiffPlayer } from '@/components/riffs/RiffPlayer';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
-import { RiffCard } from '@/components/riffs/RiffCard';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import { CommentsSection } from '@/components/social/CommentsSection';
 import {
@@ -51,6 +58,8 @@ export function RiffDetail() {
   const data = id ? getCommunityRiff(id) : null;
   const [shareOpen, setShareOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
+  const tabAreaRef = useRef<HTMLElement | null>(null);
+  const captionRef = useRef<HTMLDivElement | null>(null);
 
   const liked = useLiveQuery(() => (id ? isRiffLiked(id) : Promise.resolve(false)), [id]) ?? false;
   const bookmarked = useLiveQuery(() => (id ? isRiffBookmarked(id) : Promise.resolve(false)), [id]) ?? false;
@@ -66,7 +75,7 @@ export function RiffDetail() {
     if (!data) return [];
     return COMMUNITY_RIFFS.filter(
       (r) => r.contributor === data.riff.contributor && r.id !== data.riff.id
-    ).slice(0, 3);
+    ).slice(0, 4);
   }, [data?.riff.id]);
 
   // Riffs similaires : même tag dominant ou même difficulté ±1
@@ -79,241 +88,362 @@ export function RiffDetail() {
       return tagOverlap && closeDifficulty;
     })
       .sort((a, b) => b.baseLikes - a.baseLikes)
-      .slice(0, 3);
+      .slice(0, 4);
   }, [data?.riff.id]);
 
   if (!data) {
-    // Si l'id est invalide → redirect vers le feed (pas un 404 dur)
     return <Navigate to="/riffs" replace />;
   }
   const { riff, tab } = data;
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
+  const scrollToTab = () => {
+    tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const scrollToCaption = () => {
+    captionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   return (
     <>
-      {/* Breadcrumb retour */}
-      <Link
-        to="/riffs"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold"
+      {/* === Header sticky compact mobile (Back + actions icons) ===
+          Au-dessus du contenu, fond bg-bg/95 avec blur pour rester
+          lisible quand on scroll le tab par-dessus. */}
+      <header
+        className="sticky top-0 z-20 -mx-5 -mt-6 flex items-center justify-between gap-2 border-b border-border/60 bg-bg/90 px-3 py-2 backdrop-blur-md md:relative md:mx-0 md:mt-0 md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none"
       >
-        <ArrowLeft size={14} /> Feed des riffs
-      </Link>
-
-      <div className="mx-auto max-w-4xl pb-32 md:pb-12">
-        {/* === Hero compact === */}
-        <motion.header
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-5"
+        <Link
+          to="/riffs"
+          aria-label="Retour au feed"
+          className="inline-flex h-11 items-center gap-1.5 rounded-xl px-2 text-sm text-text-muted hover:text-gold md:h-9 md:px-3"
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={clsx(
-                'rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
-                LEVEL_COLORS[level]
-              )}
-            >
-              {LEVEL_LABELS[level]}
-            </span>
-            {mastered && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2.5 py-0.5 text-[10px] font-bold text-gold">
-                <Trophy size={11} /> Maîtrisé
-              </span>
-            )}
-          </div>
-          <h1 className="display mt-3 text-display-md leading-tight md:text-display-xl">
-            {tab.name}
-          </h1>
-          {tab.artist && (
-            <p className="mt-1 text-base text-text-muted md:text-lg">{tab.artist}</p>
-          )}
+          <ArrowLeft size={18} />
+          <span className="hidden md:inline">Feed des riffs</span>
+        </Link>
+        <div className="flex items-center gap-1 md:hidden">
+          <IconBtn
+            onClick={() => void toggleRiffLike(riff.id)}
+            label={liked ? 'Retirer du favoris' : "J'aime"}
+            active={liked}
+            activeColor="danger"
+          >
+            <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+          </IconBtn>
+          <IconBtn
+            onClick={() => void toggleRiffBookmark(riff.id)}
+            label={bookmarked ? 'Retirer du sauvegardés' : 'Sauvegarder'}
+            active={bookmarked}
+            activeColor="gold"
+          >
+            <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
+          </IconBtn>
+          <IconBtn onClick={() => setShareOpen(true)} label="Partager">
+            <Share2 size={18} />
+          </IconBtn>
+        </div>
+      </header>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-muted md:text-sm">
-            <div className="inline-flex items-center gap-2">
+      {/* === Layout main + sidebar desktop ===
+          <lg : 1 col stack. lg+ : grid main + sidebar 320px right. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+        {/* ───────── MAIN COLUMN ───────── */}
+        <div className="pb-24 md:pb-8 lg:pb-12">
+          {/* === Hero compact === */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mt-3 mb-4 md:mt-0 md:mb-5"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={clsx(
+                  'rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
+                  LEVEL_COLORS[level]
+                )}
+              >
+                {LEVEL_LABELS[level]}
+              </span>
+              {mastered && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2.5 py-0.5 text-[10px] font-bold text-gold">
+                  <Trophy size={11} /> Maîtrisé
+                </span>
+              )}
+            </div>
+            <h1 className="display mt-2 text-display-sm leading-tight md:text-display-lg">
+              {tab.name}
+            </h1>
+            {tab.artist && (
+              <p className="mt-0.5 text-sm text-text-muted md:text-base">{tab.artist}</p>
+            )}
+
+            {/* Avatar + meta line (Instagram-style header) */}
+            <div className="mt-3 flex items-center gap-2 text-xs text-text-muted md:text-sm">
               <Avatar name={riff.contributor} />
-              <span className="font-mono text-text">{riff.contributor}</span>
+              <Link
+                to={`/u/${riff.contributor.replace('@', '')}`}
+                className="font-mono text-text hover:text-gold"
+              >
+                {riff.contributor}
+              </Link>
               <span className="text-text-soft">·</span>
               <span>{formatRelativeDate(riff.addedAt)}</span>
             </div>
-          </div>
 
-          {/* Metadata grid 2x2 mobile / 1x4 desktop */}
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Meta label="BPM" value={tab.tempo} />
-            <Meta label="Tonalité" value={tab.key} />
-            <Meta label="Mesures" value={tab.measures.length} />
-            <Meta label="Difficulté" value={'⭐'.repeat(riff.difficulty)} />
-          </div>
+            {/* Metadata pills inline mobile / cards md+ */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs md:hidden">
+              <InlineMeta label="BPM" value={tab.tempo} />
+              <span className="text-text-soft">·</span>
+              <InlineMeta label="Tonalité" value={tab.key} />
+              <span className="text-text-soft">·</span>
+              <InlineMeta label="Mesures" value={tab.measures.length} />
+            </div>
+            <div className="mt-4 hidden grid-cols-4 gap-2 md:grid">
+              <Meta label="BPM" value={tab.tempo} />
+              <Meta label="Tonalité" value={tab.key} />
+              <Meta label="Mesures" value={tab.measures.length} />
+              <Meta label="Difficulté" value={'⭐'.repeat(riff.difficulty)} />
+            </div>
 
-          {/* Tags + techniques inline */}
-          {(riff.tags.length > 0 || riff.techniques?.length) && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {riff.tags.map((t) => (
-                <Link
-                  key={t}
-                  to={`/riffs/tag/${t}`}
-                  className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
-                >
-                  #{t}
-                </Link>
-              ))}
-              {riff.techniques?.map((t) => (
-                <Link
-                  key={`tech-${t}`}
-                  to={`/riffs/tag/${t}`}
-                  className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
-                >
-                  {TECHNIQUE_LABELS[t]}
-                </Link>
-              ))}
+            {/* Tags + techniques inline */}
+            {(riff.tags.length > 0 || riff.techniques?.length) && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {riff.tags.map((t) => (
+                  <Link
+                    key={t}
+                    to={`/riffs/tag/${t}`}
+                    className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
+                  >
+                    #{t}
+                  </Link>
+                ))}
+                {riff.techniques?.map((t) => (
+                  <Link
+                    key={`tech-${t}`}
+                    to={`/riffs/tag/${t}`}
+                    className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
+                  >
+                    {TECHNIQUE_LABELS[t]}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </motion.section>
+
+          {/* === TAB AREA STICKY MOBILE ===
+              Le RiffPlayer wrap déjà le TabReader avec scroll-x pur.
+              Ici on rend le wrapper sticky-top-0 pour que la tab reste
+              visible quand l'user scroll les comments. Bleed -mx-5 +
+              bg-bg pour masquer le contenu derrière le sticky.
+              md:relative pour désactiver sticky desktop. */}
+          <section
+            ref={tabAreaRef}
+            id="tab-area"
+            className="sticky top-[calc(env(safe-area-inset-top)+44px)] z-10 -mx-5 mb-4 bg-bg px-5 pt-2 pb-3 md:relative md:top-auto md:mx-0 md:px-0 md:pt-0 md:pb-0"
+          >
+            <RiffPlayer tab={tab} />
+            <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
+              ← swipe pour voir la suite du tab →
+            </p>
+          </section>
+
+          {/* === ACTIONS PRIMARY (hiérarchisées) ===
+              CTA "Écouter" PRIMARY full-width + grid 2-cols secondaires.
+              Sur mobile le CTA scroll-into-view sur le tab + tape sur
+              le play interne du RiffPlayer (Phase 2 connectera direct). */}
+          <section className="mb-5 space-y-2">
+            <button
+              type="button"
+              onClick={scrollToTab}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
+              aria-label="Écouter le riff"
+            >
+              <Play size={18} fill="currentColor" />
+              Écouter le riff
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setLearnOpen(true)}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20 active:scale-[0.99]"
+              >
+                <Target size={16} />
+                Apprendre
+              </button>
+              <button
+                type="button"
+                onClick={scrollToCaption}
+                disabled={!riff.caption}
+                className={clsx(
+                  'inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition-colors active:scale-[0.99]',
+                  riff.caption
+                    ? 'border-border bg-surface text-text hover:border-gold-soft'
+                    : 'cursor-not-allowed border-border/40 bg-surface/40 text-text-soft'
+                )}
+                aria-label={riff.caption ? 'Voir les annotations' : 'Pas d\'annotations'}
+              >
+                <BookOpen size={16} />
+                Annotations
+              </button>
+            </div>
+          </section>
+
+          {/* === Caption / annotation créateur === */}
+          {riff.caption && (
+            <div ref={captionRef} className="mb-5 scroll-mt-24">
+              <Card className="border-gold/30 bg-gradient-to-br from-gold/8 to-transparent">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold">
+                    <Music2 size={15} />
+                  </div>
+                  <div>
+                    <div className="eyebrow">Annotation du créateur</div>
+                    <p className="mt-1 text-sm leading-relaxed text-text">{riff.caption}</p>
+                  </div>
+                </div>
+              </Card>
             </div>
           )}
-        </motion.header>
 
-        {/* === Caption / annotation créateur (compact) === */}
-        {riff.caption && (
-          <Card className="mb-5 border-gold/30 bg-gradient-to-br from-gold/8 to-transparent">
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold">
-                <Music2 size={15} />
-              </div>
-              <div>
-                <div className="eyebrow">Annotation du créateur</div>
-                <p className="mt-1 text-sm leading-relaxed text-text">{riff.caption}</p>
-              </div>
+          {/* === Footer social (counts + share desktop) === */}
+          <section className="mb-5 hidden items-center justify-between gap-3 border-t border-b border-border py-3 md:flex">
+            <div className="flex items-center gap-1">
+              <SocialBtn
+                count={likeCount}
+                active={liked}
+                activeColor="danger"
+                label={liked ? 'Aimé' : "J'aime"}
+                onClick={() => void toggleRiffLike(riff.id)}
+              >
+                <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+              </SocialBtn>
+              <SocialBtn
+                active={bookmarked}
+                activeColor="gold"
+                label={bookmarked ? 'Sauvegardé' : 'Sauver'}
+                onClick={() => void toggleRiffBookmark(riff.id)}
+              >
+                <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
+              </SocialBtn>
             </div>
-          </Card>
-        )}
-
-        {/* === TAB AREA STICKY MOBILE ===
-            Le RiffPlayer wrap déjà le TabReader avec scroll-horizontal pur
-            (max-h-200 + overflow-x-auto + overflow-y-hidden). Ici on rend
-            le wrapper sticky-top-0 pour que la tab reste visible quand
-            l'user scroll les commentaires en dessous.
-            -mx-5 + bg-bg pour bleed full-width + masquer le contenu derrière
-            le sticky. md:relative pour désactiver le sticky desktop (le
-            layout 2-cols rend ça inutile). */}
-        <section className="sticky top-0 z-10 -mx-5 mb-5 bg-bg px-5 pt-2 pb-3 md:relative md:mx-0 md:px-0 md:pt-0 md:pb-0">
-          <RiffPlayer tab={tab} />
-          <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
-            ← swipe pour voir la suite du tab →
-          </p>
-        </section>
-
-        {/* === Actions sociales === */}
-        <section className="flex flex-wrap items-center justify-between gap-3 border-t border-b border-border py-4">
-          <div className="flex items-center gap-1">
-            <SocialBtn
-              count={likeCount}
-              active={liked}
-              activeColor="danger"
-              label={liked ? 'Aimé' : "J'aime"}
-              onClick={() => void toggleRiffLike(riff.id)}
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border px-4 text-sm text-text-muted hover:border-gold-soft hover:text-text"
             >
-              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-            </SocialBtn>
-            <SocialBtn count={riff.commentsCount ?? 0} label="Commentaires">
-              <MessageCircle size={18} />
-            </SocialBtn>
-            <SocialBtn
-              active={bookmarked}
-              activeColor="gold"
-              label={bookmarked ? 'Sauvegardé' : 'Sauver'}
-              onClick={() => void toggleRiffBookmark(riff.id)}
-            >
-              <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
-            </SocialBtn>
+              <Share2 size={14} /> Partager
+            </button>
+          </section>
+
+          {/* === Commentaires (wired sess 30) === */}
+          <section className="space-y-3">
+            <h3 className="display text-display-sm">
+              Commentaires
+              {(riff.commentsCount ?? 0) > 0 && (
+                <span className="ml-2 font-mono text-base text-text-soft">
+                  ({riff.commentsCount})
+                </span>
+              )}
+            </h3>
+            <CommentsSection riffId={riff.id} />
+          </section>
+
+          {/* === Sections "Plus de" + "Similaires" mobile/tablet === */}
+          {moreByUser.length > 0 && (
+            <section className="mt-8 space-y-3 lg:hidden">
+              <h3 className="display text-display-sm">Plus de {riff.contributor}</h3>
+              <div className="space-y-3">
+                {moreByUser.slice(0, 3).map((r) => {
+                  const t = getTab(r.tabId);
+                  if (!t) return null;
+                  return (
+                    <RelatedRiffRow
+                      key={r.id}
+                      riff={r}
+                      tabName={t.name}
+                      tabArtist={t.artist}
+                      bpm={t.tempo}
+                      masteredAt={masteredMap.get(r.id) ?? null}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          )}
+          {similar.length > 0 && (
+            <section className="mt-8 space-y-3 lg:hidden">
+              <h3 className="display text-display-sm">Riffs similaires</h3>
+              <div className="space-y-3">
+                {similar.slice(0, 3).map((r) => {
+                  const t = getTab(r.tabId);
+                  if (!t) return null;
+                  return (
+                    <RelatedRiffRow
+                      key={r.id}
+                      riff={r}
+                      tabName={t.name}
+                      tabArtist={t.artist}
+                      bpm={t.tempo}
+                      masteredAt={masteredMap.get(r.id) ?? null}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* ───────── SIDEBAR DESKTOP (lg+) ─────────
+            Sticky top, "Plus de @user" + "Similaires", cards compact. */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-6 space-y-6">
+            {moreByUser.length > 0 && (
+              <section className="space-y-2.5">
+                <h3 className="eyebrow">🎵 Plus de {riff.contributor}</h3>
+                <div className="space-y-2">
+                  {moreByUser.map((r) => {
+                    const t = getTab(r.tabId);
+                    if (!t) return null;
+                    return (
+                      <RelatedRiffRow
+                        key={r.id}
+                        riff={r}
+                        tabName={t.name}
+                        tabArtist={t.artist}
+                        bpm={t.tempo}
+                        masteredAt={masteredMap.get(r.id) ?? null}
+                        compact
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+            {similar.length > 0 && (
+              <section className="space-y-2.5">
+                <h3 className="eyebrow">🔥 Riffs similaires</h3>
+                <div className="space-y-2">
+                  {similar.map((r) => {
+                    const t = getTab(r.tabId);
+                    if (!t) return null;
+                    return (
+                      <RelatedRiffRow
+                        key={r.id}
+                        riff={r}
+                        tabName={t.name}
+                        tabArtist={t.artist}
+                        bpm={t.tempo}
+                        masteredAt={masteredMap.get(r.id) ?? null}
+                        compact
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border px-4 text-sm text-text-muted hover:border-gold-soft hover:text-text"
-          >
-            <Share2 size={14} /> Partager
-          </button>
-        </section>
-
-        {/* === Plus de @username === */}
-        {moreByUser.length > 0 && (
-          <section className="space-y-3">
-            <h3 className="display text-display-sm">Plus de {riff.contributor}</h3>
-            <div className="space-y-4">
-              {moreByUser.map((r) => {
-                const t = getTab(r.tabId);
-                if (!t) return null;
-                return (
-                  <RelatedRiffRow
-                    key={r.id}
-                    riff={r}
-                    tabName={t.name}
-                    tabArtist={t.artist}
-                    bpm={t.tempo}
-                    masteredAt={masteredMap.get(r.id) ?? null}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* === Riffs similaires === */}
-        {similar.length > 0 && (
-          <section className="space-y-3">
-            <h3 className="display text-display-sm">Riffs similaires</h3>
-            <div className="space-y-4">
-              {similar.map((r) => {
-                const t = getTab(r.tabId);
-                if (!t) return null;
-                return (
-                  <RelatedRiffRow
-                    key={r.id}
-                    riff={r}
-                    tabName={t.name}
-                    tabArtist={t.artist}
-                    bpm={t.tempo}
-                    masteredAt={masteredMap.get(r.id) ?? null}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* === Commentaires (wired sess 30) === */}
-        <section className="space-y-3">
-          <h3 className="display text-display-sm">Commentaires</h3>
-          <CommentsSection riffId={riff.id} />
-        </section>
-      </div>
-
-      {/* === Bottom sticky "Apprendre" mobile === */}
-      <div
-        className="fixed inset-x-0 z-30 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur-md md:hidden"
-        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
-      >
-        <button
-          type="button"
-          onClick={() => setLearnOpen(true)}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-sm font-semibold text-bg shadow-gold-strong"
-        >
-          <Target size={16} />
-          Apprendre ce riff
-        </button>
-      </div>
-
-      {/* Apprendre — bouton desktop dans le RiffPlayer ou sticky ? On met
-          un raccourci en bas du contenu pour desktop aussi */}
-      <div className="fixed right-6 z-30 hidden md:block" style={{ bottom: '32px' }}>
-        <button
-          type="button"
-          onClick={() => setLearnOpen(true)}
-          className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-bright to-gold px-6 text-sm font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px"
-        >
-          <Target size={16} />
-          Apprendre ce riff
-        </button>
+        </aside>
       </div>
 
       <ShareDrawer
@@ -350,12 +480,50 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
+function InlineMeta({ label, value }: { label: string; value: string | number }) {
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className="font-mono font-semibold text-gold">{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-text-soft">{label}</span>
+    </span>
+  );
+}
+
 function Meta({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-border bg-surface px-3 py-2.5 text-center">
       <div className="label-small">{label}</div>
       <div className="display mt-0.5 text-lg text-gold">{value}</div>
     </div>
+  );
+}
+
+function IconBtn({
+  children,
+  label,
+  active,
+  activeColor = 'gold',
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  active?: boolean;
+  activeColor?: 'gold' | 'danger';
+  onClick?: () => void;
+}) {
+  const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={clsx(
+        'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
+        active ? activeCls : 'text-text-muted hover:text-text'
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -387,7 +555,7 @@ function SocialBtn({
     >
       {children}
       {count !== undefined && count > 0 && (
-        <span className="font-mono">{count}</span>
+        <span className="font-mono tabular-nums">{formatCount(count)}</span>
       )}
     </button>
   );
@@ -399,36 +567,70 @@ function RelatedRiffRow({
   tabArtist,
   bpm,
   masteredAt,
+  compact = false,
 }: {
   riff: CommunityRiff;
   tabName: string;
   tabArtist?: string;
   bpm: number;
   masteredAt: number | null;
+  compact?: boolean;
 }) {
   return (
     <Link
       to={`/riffs/${riff.id}`}
-      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 transition-colors hover:border-gold-soft"
+      className={clsx(
+        'flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 transition-colors hover:border-gold-soft',
+        compact ? 'px-3 py-2.5' : 'px-4 py-3'
+      )}
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="display truncate text-base text-text">{tabName}</span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={clsx(
+              'display truncate text-text',
+              compact ? 'text-sm' : 'text-base'
+            )}
+          >
+            {tabName}
+          </span>
           {masteredAt && (
-            <Trophy size={12} className="shrink-0 text-gold" fill="currentColor" />
+            <Trophy
+              size={compact ? 10 : 12}
+              className="shrink-0 text-gold"
+              fill="currentColor"
+            />
           )}
         </div>
         {tabArtist && (
-          <div className="truncate text-xs text-text-muted">{tabArtist}</div>
+          <div
+            className={clsx(
+              'truncate text-text-muted',
+              compact ? 'text-[10px]' : 'text-xs'
+            )}
+          >
+            {tabArtist}
+          </div>
         )}
       </div>
       <div className="shrink-0 text-right">
-        <div className="font-mono text-sm font-bold text-gold">{bpm}</div>
+        <div
+          className={clsx(
+            'font-mono font-bold text-gold',
+            compact ? 'text-xs' : 'text-sm'
+          )}
+        >
+          {bpm}
+        </div>
         <div className="text-[9px] uppercase tracking-wider text-text-soft">BPM</div>
       </div>
     </Link>
   );
 }
 
-// Re-import non utilisé caché pour eviter unused warning
-void RiffCard;
+function formatCount(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 10000) return `${(n / 1000).toFixed(1).replace('.0', '')}k`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`;
+}
