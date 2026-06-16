@@ -184,4 +184,6 @@ créer à la main, l'`INSERT INTO storage.buckets` s'en charge).
 
 ---
 
-(ligne de merge ajoutée en fin de session ci-dessous)
+✅ Mergé dans main (519f012) — merge --no-ff de origin/main (Session A
+RiffCard, zéro conflit) puis push vers main. Build final vert sur l'arbre
+mergé.
