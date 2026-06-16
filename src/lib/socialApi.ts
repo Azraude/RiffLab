@@ -171,9 +171,12 @@ export async function uploadAvatar(
 // ─── Riffs publiés ──────────────────────────────────────────────────
 
 export async function publishRiff(
-  riff: Omit<PublicRiff, 'id' | 'published_at' | 'updated_at'>
+  riff: Omit<PublicRiff, 'published_at' | 'updated_at'> & { id?: string }
 ): Promise<{ data: PublicRiff | null; error: Error | null }> {
   if (!isSupabaseConfigured) return notConfigured();
+  // Accepte id optionnel côté client (sess 30 : partage UUID Dexie ↔
+  // Supabase pour que /riffs/:id résolve des 2 côtés). Sinon Postgres
+  // génère via gen_random_uuid().
   const { data, error } = await supabase
     .from('riffs_public')
     .insert(riff)

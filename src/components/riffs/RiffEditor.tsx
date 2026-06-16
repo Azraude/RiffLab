@@ -29,6 +29,9 @@ import { computeDifficulty } from '@/lib/riffDifficulty';
 import { RiffPlayer } from './RiffPlayer';
 import { checkAndUnlockBadges, newUserRiffId, saveUserRiff, type UserRiff } from '@/lib/db';
 import { getBadgeMeta } from '@/lib/badges';
+import { publishRiff } from '@/lib/socialApi';
+import { useAuth } from '@/stores/authStore';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/useToast';
 
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']; // top → bottom (high E first)
@@ -48,6 +51,8 @@ type Cell = { fret: number | null };
 
 export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
   const toast = useToast();
+  const me = useAuth((s) => s.user);
+  const navigate = useNavigate();
 
   // === Step 1 state ===
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -184,9 +189,55 @@ export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
+    // 1. Save Dexie local (toujours, même si pas connecté)
     await saveUserRiff(userRiff);
+
+    // 2. Push Supabase si connecté (sess 30 wiring)
+    let publishedPublicly = false;
+    if (me) {
+      const { error } = await publishRiff({
+        id, // shared UUID Dexie ↔ Supabase
+        author_id: me.id,
+        title: userRiff.title,
+        artist: userRiff.artist ?? null,
+        description: userRiff.description ?? null,
+        bpm: userRiff.bpm,
+        tuning: 'standard',
+        capo: 0,
+        key: userRiff.key,
+        difficulty: userRiff.level,
+        techniques: userRiff.techniques as string[],
+        tags: userRiff.tags,
+        tab_data: JSON.parse(userRiff.tabJson),
+        duration_ms: null,
+      });
+      if (error) {
+        console.error('[RiffEditor] publishRiff Supabase fail', error);
+        toast.warning(
+          `Riff sauvé local, partage public échoué : ${error.message}`,
+          { duration: 7000 }
+        );
+      } else {
+        publishedPublicly = true;
+      }
+    }
+
     setPublishing(false);
-    toast.success(`🎸 "${title}" publié dans tes riffs perso !`);
+
+    // 3. Toast final + redirect
+    if (publishedPublicly) {
+      toast.success(`🎸 Riff publié ! Disponible dans le feed.`);
+      window.setTimeout(() => navigate(`/riffs/${id}`), 800);
+    } else if (me) {
+      // Connecté mais push fail (déjà toast warning au-dessus)
+      toast.info(`Sauvé local sous "${title}".`);
+    } else {
+      toast.info(
+        `Riff sauvé localement. Connecte-toi pour le partager publiquement.`,
+        { duration: 7000 }
+      );
+    }
+
     // Badge "first-riff" unlock potentiel
     const newBadges = await checkAndUnlockBadges();
     for (const slug of newBadges) {

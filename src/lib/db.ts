@@ -558,7 +558,17 @@ export async function aggregateFretboardLearnerStats(): Promise<{
 // ─── User riffs (éditeur création sess 27 Phase 4) ────────────────
 
 export function newUserRiffId(): string {
-  return `user-${Math.random().toString(36).slice(2, 9)}`;
+  // UUID v4 — partagé Dexie local ↔ Supabase riffs_public (sess 30).
+  // crypto.randomUUID dispo dans tous browsers modernes + Node 19+.
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback (très rare) : pseudo-UUID basé sur Math.random
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export async function saveUserRiff(riff: UserRiff): Promise<void> {
