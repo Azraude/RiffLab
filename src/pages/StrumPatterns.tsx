@@ -168,7 +168,12 @@ function PatternPlayer({
   const [chord, setChord] = useState<ChordChoice>('Em');
   const [playing, setPlaying] = useState(false);
   const [activeCellIdx, setActiveCellIdx] = useState<number | null>(null);
-  const cancelRef = useRef(false);
+  // Token d'annulation PAR-RUN (fix double-boucle, cf. RiffPlayer).
+  const runRef = useRef<{ cancelled: boolean } | null>(null);
+  // `strum` change d'identité au flip de `ready` → ref pour ne pas relancer
+  // la boucle en pleine lecture (sinon 2 boucles concurrentes = trop rapide).
+  const strumRef = useRef(strum);
+  strumRef.current = strum;
 
   // Quand le pattern change, on stoppe la lecture et on ajuste le tempo
   useEffect(() => {
@@ -179,11 +184,11 @@ function PatternPlayer({
   // Player en boucle
   useEffect(() => {
     if (!playing) {
-      cancelRef.current = true;
       setActiveCellIdx(null);
       return;
     }
-    cancelRef.current = false;
+    const run = { cancelled: false };
+    runRef.current = run;
     // Durée d'une cellule = (60s / tempo) / (subdivisions / 4)
     // 4 = nombre de noires par mesure (4/4)
     // ex: tempo 100, sub 8 (croches) → cellMs = 600/2 = 300ms
@@ -193,10 +198,10 @@ function PatternPlayer({
     let idx = 0;
 
     (async () => {
-      while (!cancelRef.current) {
+      while (!run.cancelled) {
         const cell = pattern.cells[idx % pattern.cells.length];
         setActiveCellIdx(idx % pattern.cells.length);
-        triggerCell(cell, chord, strum);
+        triggerCell(cell, chord, strumRef.current);
         await new Promise((r) => setTimeout(r, cellMs));
         idx++;
         // Stop sécurité après 32 mesures
@@ -209,9 +214,9 @@ function PatternPlayer({
     })();
 
     return () => {
-      cancelRef.current = true;
+      run.cancelled = true;
     };
-  }, [playing, tempo, pattern, chord, strum]);
+  }, [playing, tempo, pattern, chord]);
 
   const handleCellClick = (i: number) => {
     if (!editable || !onChange) return;

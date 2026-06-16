@@ -46,8 +46,26 @@ export function RiffPlayer({ tab, autoLoop = false, onPlayCountChange, extraActi
   const [metronome, setMetronome] = useState(false);
   const [activeBeat, setActiveBeat] = useState<number | null>(null);
   const [playCount, setPlayCount] = useState(0);
-  const cancelRef = useRef(false);
+  /**
+   * Token d'annulation PAR-RUN (fix bug tempo « tarpin vite », hotfix).
+   * Un booléen partagé ne marchait pas : quand l'effet se relançait (ex.
+   * `ready` qui flip après l'init audio → `playMidi` change d'identité), la
+   * nouvelle run remettait le flag à false AVANT que l'ancienne boucle async
+   * ne le voie → 2 boucles concurrentes jouaient en même temps = lecture
+   * ultra-rapide. Chaque run a maintenant son propre token ; le cleanup
+   * n'annule QUE sa run. `runRef` permet aussi à handleReset d'annuler la
+   * run courante immédiatement. */
+  const runRef = useRef<{ cancelled: boolean } | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * Refs pour les callbacks volatils : `playMidi` change d'identité au flip
+   * de `ready` (init audio) et `onPlayCountChange` peut être inline côté
+   * parent. Les lire via ref évite de relancer la boucle (et donc le saut au
+   * beat 0) en plein milieu de la lecture. */
+  const playMidiRef = useRef(playMidi);
+  playMidiRef.current = playMidi;
+  const onPlayCountChangeRef = useRef(onPlayCountChange);
+  onPlayCountChangeRef.current = onPlayCountChange;
 
   // Tempo effectif (BPM × speed)
   const effectiveTempo = useMemo(() => tab.tempo * speed, [tab.tempo, speed]);
@@ -80,27 +98,28 @@ export function RiffPlayer({ tab, autoLoop = false, onPlayCountChange, extraActi
    */
   useEffect(() => {
     if (!playing) {
-      cancelRef.current = true;
       setActiveBeat(null);
       return;
     }
-    cancelRef.current = false;
     if (flat.length === 0) {
       setPlaying(false);
       return;
     }
+    // Token d'annulation propre à CETTE run.
+    const run = { cancelled: false };
+    runRef.current = run;
     const beatMs = 15000 / effectiveTempo; // 16e en ms
 
     (async () => {
       let cycle = 0;
       do {
         for (let i = 0; i < flat.length; i++) {
-          if (cancelRef.current) break;
+          if (run.cancelled) break;
           const note = flat[i];
           // Synchro visuelle + audio
           setActiveBeat(note.absoluteBeat);
           const midi = tabNoteToMidi(note);
-          void playMidi(midi);
+          void playMidiRef.current(midi);
           // Métronome click sur chaque temps fort (chaque noire = 4 × 16e)
           if (metronome && note.absoluteBeat % 4 === 0) {
             try {
@@ -121,21 +140,21 @@ export function RiffPlayer({ tab, autoLoop = false, onPlayCountChange, extraActi
           await new Promise((r) => setTimeout(r, note.duration * beatMs));
         }
         cycle++;
-        if (loop && !cancelRef.current) {
+        if (loop && !run.cancelled) {
           setPlayCount((c) => {
             const next = c + 1;
-            onPlayCountChange?.(next);
+            onPlayCountChangeRef.current?.(next);
             return next;
           });
         }
-      } while (loop && !cancelRef.current && cycle < 99);
-      if (!cancelRef.current) {
+      } while (loop && !run.cancelled && cycle < 99);
+      if (!run.cancelled) {
         setPlaying(false);
         setActiveBeat(null);
         if (!loop) {
           setPlayCount((c) => {
             const next = c + 1;
-            onPlayCountChange?.(next);
+            onPlayCountChangeRef.current?.(next);
             return next;
           });
         }
@@ -143,12 +162,12 @@ export function RiffPlayer({ tab, autoLoop = false, onPlayCountChange, extraActi
     })();
 
     return () => {
-      cancelRef.current = true;
+      run.cancelled = true;
     };
-  }, [playing, flat, effectiveTempo, loop, metronome, playMidi, onPlayCountChange]);
+  }, [playing, flat, effectiveTempo, loop, metronome]);
 
   const handleReset = useCallback(() => {
-    cancelRef.current = true;
+    if (runRef.current) runRef.current.cancelled = true;
     setPlaying(false);
     setActiveBeat(null);
   }, []);

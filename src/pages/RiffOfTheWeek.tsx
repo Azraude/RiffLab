@@ -176,23 +176,26 @@ function RiffPlayer({ riff }: { riff: WeeklyRiff }) {
   const { strum } = useAudio();
   const [playing, setPlaying] = useState(false);
   const [activeChordIdx, setActiveChordIdx] = useState<number | null>(null);
-  const cancelRef = useRef(false);
+  // Token d'annulation PAR-RUN (fix double-boucle, cf. components/riffs/RiffPlayer).
+  const runRef = useRef<{ cancelled: boolean } | null>(null);
+  const strumRef = useRef(strum);
+  strumRef.current = strum;
 
   useEffect(() => {
     if (!playing) {
-      cancelRef.current = true;
       setActiveChordIdx(null);
       return;
     }
-    cancelRef.current = false;
+    const run = { cancelled: false };
+    runRef.current = run;
     const beatMs = 60000 / riff.bpm;
     let idx = 0;
 
     (async () => {
-      while (!cancelRef.current) {
+      while (!run.cancelled) {
         const c = riff.chords[idx % riff.chords.length];
         setActiveChordIdx(idx % riff.chords.length);
-        void strum(c.name, 'down');
+        void strumRef.current(c.name, 'down');
         await new Promise((r) => setTimeout(r, c.beats * beatMs));
         idx++;
         if (idx > riff.chords.length * 8) {
@@ -204,9 +207,9 @@ function RiffPlayer({ riff }: { riff: WeeklyRiff }) {
     })();
 
     return () => {
-      cancelRef.current = true;
+      run.cancelled = true;
     };
-  }, [playing, riff, strum]);
+  }, [playing, riff]);
 
   const pattern = riff.strumPatternId ? getPattern(riff.strumPatternId) : undefined;
 
