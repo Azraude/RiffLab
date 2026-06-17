@@ -52,8 +52,8 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
       setLoading(false);
       return;
     }
-    // Riff seed (cr-iron, sw-stairway, etc.) → skip le query Supabase
-    // (riff_id UUID-only en DB, sinon 400 Bad Request en flood console).
+    // Riff seed (cr-iron, cr-sevennation, sw-stairway…) → skip le query
+    // Supabase (riff_id UUID-only en DB, sinon 400 Bad Request en flood).
     if (isSeed) {
       setComments([]);
       setLoading(false);
@@ -106,8 +106,8 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
     );
   }
 
-  // Riff seed (intégré au bundle, pas dans la DB) → message gracieux au
-  // lieu d'un input vide / loading infini. Lien vers /riffs feed UGC.
+  // Riff seed (intégré au bundle, pas dans la DB) → message gracieux au lieu
+  // d'un input vide / loading infini + lien vers le feed UGC.
   if (isSeed) {
     return (
       <Card className="border-gold/20 bg-gradient-to-br from-gold/5 to-transparent text-center">

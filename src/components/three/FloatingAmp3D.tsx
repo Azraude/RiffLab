@@ -13,7 +13,6 @@ import {
   GLBErrorBoundary,
   ensureTransparentScene,
   stripSkyboxes,
-  DisposeOnUnmount,
 } from './sceneHelpers';
 import { Scene3DFallback } from './sceneFallbacks';
 
@@ -74,7 +73,6 @@ export default function FloatingAmp3D() {
         onCreated={ensureTransparentScene}
         style={{ pointerEvents: 'none', background: 'transparent' }}
       >
-        <DisposeOnUnmount />
         <Suspense fallback={null}>
           <Scene />
         </Suspense>

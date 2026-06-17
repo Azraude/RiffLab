@@ -108,8 +108,8 @@ function notConfigured(): { data: null; error: Error } {
 
 /**
  * Détecte un UUID v4 strict. Les riffs publiés Supabase utilisent des UUIDs
- * (gen_random_uuid), les riffs "seed" intégrés dans le bundle utilisent des
- * slugs courts (cr-iron, sw-stairway, etc.).
+ * (gen_random_uuid), les riffs "seed" intégrés au bundle utilisent des slugs
+ * courts (cr-iron, sw-stairway, etc.).
  */
 function isUUID(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -117,18 +117,15 @@ function isUUID(id: string): boolean {
 
 /**
  * Identifie un riff "seed" (intégré au bundle, pas dans la DB Supabase).
- * Les tables likes/comments/bookmarks ont leur colonne riff_id en UUID,
- * donc tout query .eq('riff_id', 'cr-iron') retourne 400 Bad Request.
- *
- * Les fonctions socialApi qui prennent un riffId doivent early-return pour
- * les seeds — soit data vide (read), soit erreur SEED_RIFF_READ_ONLY (write).
+ * Les tables likes/comments/bookmarks ont leur colonne riff_id en UUID, donc
+ * tout query `.eq('riff_id', 'cr-iron')` renvoie 400 Bad Request. Les fonctions
+ * socialApi qui prennent un riffId doivent early-return pour les seeds.
  */
 export function isSeedRiff(id: string): boolean {
   return !isUUID(id);
 }
 
-/** Erreur sentinel pour les writes refusés sur les riffs seed (vs erreur
- *  réseau Supabase). La UI peut catch et afficher un message ad hoc. */
+/** Erreur sentinel pour les writes refusés sur les riffs seed. */
 export const SEED_RIFF_READ_ONLY = 'SEED_RIFF_READ_ONLY';
 function seedReadOnlyError(): { data: null; error: Error } {
   return { data: null, error: new Error(SEED_RIFF_READ_ONLY) };
@@ -217,8 +214,8 @@ export async function getRiff(
   id: string
 ): Promise<{ data: PublicRiffWithMeta | null; error: Error | null }> {
   if (!isSupabaseConfigured) return notConfigured();
-  // Riff seed (cr-iron, sw-stairway, etc.) → pas dans la DB Supabase,
-  // évite un 400 sur le WHERE id (UUID expected).
+  // Riff seed (cr-iron, sw-stairway…) → pas dans la DB, évite un 400 sur le
+  // WHERE id (UUID attendu).
   if (isSeedRiff(id)) return { data: null, error: null };
   const { data, error } = await supabase
     .from('riffs_public')
@@ -546,9 +543,9 @@ export async function getComments(
   riffId: string
 ): Promise<{ data: Comment[] | null; error: Error | null }> {
   if (!isSupabaseConfigured) return notConfigured();
-  // Riff seed → pas de comments DB (riff_id UUID-only). Bug fix : avant
-  // ce check, le query renvoyait 400 Bad Request en flood console à chaque
-  // ouverture d'un riff démo (cr-iron, sw-stairway, etc.).
+  // Riff seed → pas de comments DB (riff_id UUID-only). Sans ce check, le
+  // query renvoyait 400 Bad Request en flood console à chaque ouverture d'un
+  // riff démo (cr-iron, cr-sevennation, sw-stairway…).
   if (isSeedRiff(riffId)) return { data: [], error: null };
   const { data, error } = await supabase
     .from('comments')
