@@ -1,0 +1,3 @@
+# Artefacts générés par Playwright (rapports HTML, traces, captures)
+.report/
+.results/
