@@ -18,18 +18,6 @@ import { usePrefs } from '@/stores/prefsStore';
 let webglContextLost = false;
 const lossListeners = new Set<() => void>();
 let globalHandlerInstalled = false;
-/**
- * Fenêtre pendant laquelle une perte de contexte est INTENTIONNELLE (notre
- * teardown au démontage appelle `gl.forceContextLoss()`, qui dispatch lui-même
- * `webglcontextlost` — possiblement de façon async). On l'ignore alors, sinon
- * chaque navigation déclencherait le kill-switch et couperait tout le 3D.
- */
-let intentionalLossUntil = 0;
-
-/** Appelé juste avant un `forceContextLoss()` volontaire (cf. DisposeOnUnmount). */
-export function markIntentionalContextLoss(): void {
-  intentionalLossUntil = Date.now() + 800;
-}
 
 function installGlobalContextLossHandler(): void {
   if (globalHandlerInstalled || typeof window === 'undefined') return;
@@ -37,10 +25,7 @@ function installGlobalContextLossHandler(): void {
   window.addEventListener(
     'webglcontextlost',
     (e) => {
-      // Perte volontaire (démontage propre d'une page) → on n'y touche pas.
-      if (Date.now() < intentionalLossUntil) return;
-      // Vraie perte (saturation GPU) : preventDefault = pas de bruit, puis
-      // on coupe le 3D partout.
+      // preventDefault = on assume la perte (pas de comportement bruyant).
       try {
         e.preventDefault();
       } catch {
