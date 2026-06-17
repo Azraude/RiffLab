@@ -50,6 +50,7 @@ import {
   Music2,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { SEO } from '@/components/SEO';
 
 type StudioTab = 'compose' | 'classics';
 
@@ -70,6 +71,7 @@ export function Progressions() {
 
   return (
     <>
+      <SEO title="Studio progressions" description="Compose des progressions d'accords qui sonnent. 30+ progressions par mood/tonalité, mode LOCK-PROGRESSIVE, preview audio." />
       <PageHeader
         title={
           <span className="flex items-center gap-2">

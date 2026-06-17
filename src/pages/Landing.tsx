@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  Music2,
+  Target,
+  Wand2,
+  Users,
   Grid3x3,
-  Waves,
-  ListMusic,
-  Mic,
+  Drum,
   BarChart3,
   Sparkles,
   ArrowRight,
   LogIn,
+  Check,
+  Music2,
 } from 'lucide-react';
 import { HeroScene3DLazy } from '@/components/three/HeroScene3DLazy';
 import { useState } from 'react';
@@ -20,14 +22,18 @@ import { LoginModal } from '@/components/auth/LoginModal';
 /**
  * Landing publique de RiffLab.
  *
- * Refonte session 16 : la studio-scene 3D était posée en background au
- * top de la page (effet "OVNI"). Maintenant elle vit dans un conteneur
- * encadré SOUS le hero text, en showcase intégré. Le reste de la
- * landing utilise des glassy cards (backdrop-blur + bg semi-transparent
- * + border-gold-soft) pour matcher la vibe du Dashboard.
+ * Refonte session 2026-06-17 (copy + mobile-first) : la copy ne parle plus
+ * de "carnet du guitariste" générique. RiffLab est désormais positionné
+ * comme une plateforme guitare complète — studio de compo, feed de riffs
+ * communautaire, bibliothèques accords/gammes, pratique quotidienne trackée.
  *
- * Animations entrée + scroll via Framer Motion `whileInView` (stagger
- * sur enfants directs). Particules CSS dans le hero (pas de WebGL).
+ * Layout MOBILE-FIRST : hero plein écran (90vh) avec CTA above-the-fold,
+ * sections 1 colonne qui passent en grille ≥sm, glassy cards backdrop-blur.
+ * La scène 3D (HeroScene3DLazy) ne s'affiche que sur desktop capable —
+ * useCanRender3D renvoie le fallback gradient sur mobile / reduced-motion.
+ *
+ * Toutes les animations Framer Motion + les particules CSS respectent
+ * prefers-reduced-motion (useReducedMotion + media query dans FloatingDots).
  */
 export function Landing() {
   const { t } = useTranslation();
@@ -48,7 +54,7 @@ export function Landing() {
 
       {/* Header sticky */}
       <header className="relative z-20 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8 md:py-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-8 md:py-6">
           <Link to="/" className="flex items-center gap-2.5">
             <RiffLabLogo size={26} />
             <span className="display text-[22px] tracking-wide md:text-[26px]">RiffLab</span>
@@ -56,7 +62,7 @@ export function Landing() {
           <button
             type="button"
             onClick={() => setLoginOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-border-gold bg-surface/60 px-3 text-sm text-text backdrop-blur-md transition-all hover:bg-gold/10 md:h-11 md:px-4"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-border-gold bg-surface/60 px-4 text-sm text-text backdrop-blur-md transition-all hover:bg-gold/10"
           >
             <LogIn size={15} />
             {t('landing.signIn')}
@@ -65,82 +71,83 @@ export function Landing() {
       </header>
       <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
 
-      {/* 3D scene en BACKGROUND absolu de la moitié basse du hero —
-          plus de cadre rounded, plus de "carte vignette". Le contenu
-          texte est posé COMME UN POSTER sur un mur de studio avec
-          l'ampli derrière. */}
-      <div className="pointer-events-none absolute inset-x-0 top-[55%] bottom-0 z-0">
-        <HeroScene3DLazy />
-      </div>
-      {/* Halo gold radial sous l'ampli pour le faire "exister"
-          visuellement sans cadre */}
-      <div
-        className="pointer-events-none absolute left-1/2 bottom-0 z-[1] h-[60vh] w-[80%] -translate-x-1/2"
-        style={{
-          background:
-            'radial-gradient(ellipse at center, rgb(var(--gold-glow) / 0.08) 0%, transparent 60%)',
-        }}
-      />
-      {/* Gradient bottom fade pour empêcher la 3D de manger le footer */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-32 bg-gradient-to-t from-bg to-transparent" />
+      {/* ─── HERO ─── plein écran mobile, CTA above-the-fold ─────────────── */}
+      <section className="relative flex min-h-[88vh] flex-col md:min-h-[90vh]">
+        {/* 3D scene en background absolu de la moitié basse — desktop only
+            (useCanRender3D renvoie le fallback gradient sur mobile). Posée
+            comme un "poster sur un mur de studio" avec l'ampli derrière. */}
+        <div className="pointer-events-none absolute inset-x-0 top-[52%] bottom-0 z-0">
+          <HeroScene3DLazy />
+        </div>
+        {/* Halo gold radial sous l'ampli pour le faire "exister" sans cadre */}
+        <div
+          className="pointer-events-none absolute left-1/2 bottom-0 z-[1] h-[55vh] w-[85%] -translate-x-1/2"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, rgb(var(--gold-glow) / 0.08) 0%, transparent 60%)',
+          }}
+        />
+        {/* Gradient bottom fade pour empêcher la 3D de manger la section suivante */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-32 bg-gradient-to-t from-bg to-transparent" />
 
-      {/* Hero text — z-10 au-dessus de la 3D */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 pt-8 text-center md:px-8 md:pt-14">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="eyebrow mb-5 md:mb-7"
-        >
-          {t('landing.kicker')}
-        </motion.div>
-        <HeroTitle text={t('landing.headline')} />
+        {/* Hero text — z-10 au-dessus de la 3D, ancré dans le tiers haut */}
+        <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pt-6 text-center md:px-8 md:pt-12">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="eyebrow mb-4 md:mb-6"
+          >
+            {t('landing.kicker')}
+          </motion.div>
+          <HeroTitle text={t('landing.headline')} goldWord="guitare" />
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mx-auto mt-5 max-w-xl text-[15px] text-text-muted md:mt-7 md:text-lg"
-        >
-          Garde tes sons, accords et gammes en un seul endroit. Bibliothèques
-          intégrées, recorder, métronome, tuner, ear training — tout ce qu'il
-          faut pour progresser sans changer d'app.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.75 }}
-          className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center md:mt-10"
-        >
-          <Link
-            to="/dashboard"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold px-7 text-[15px] font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px hover:shadow-gold-strong"
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="mx-auto mt-5 max-w-xl text-base text-text-muted md:mt-7 md:text-lg"
           >
-            Commencer gratuitement
-            <ArrowRight size={16} />
-          </Link>
-          <Link
-            to="/riff-of-the-week"
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-border-gold bg-surface/40 px-7 text-[15px] text-text backdrop-blur-md transition-all hover:bg-gold/10"
+            Studio de compo, feed de riffs, accords &amp; gammes, mode jam,
+            pratique trackée.{' '}
+            <span className="text-text">Le tout sans pub.</span>
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.75 }}
+            className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
           >
-            Riff de la semaine
-          </Link>
-        </motion.div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.95 }}
-          className="mt-6 text-xs text-text-soft"
-        >
-          100 % local. Pas de compte requis pour démarrer.
-        </motion.p>
+            <Link
+              to="/dashboard"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold px-7 text-[15px] font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px"
+            >
+              Commencer — gratuit, sans inscription
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/riffs"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-border-gold bg-surface/40 px-7 text-[15px] text-text backdrop-blur-md transition-all hover:bg-gold/10"
+            >
+              Voir le feed de riffs
+            </Link>
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.95 }}
+            className="mt-6 text-xs text-text-soft"
+          >
+            100 % local par défaut. Tes données restent sur ton téléphone.
+          </motion.p>
+        </div>
+
+        {/* Spacer flex pour réserver la moitié basse du hero à la 3D */}
+        <div className="flex-1" aria-hidden />
       </section>
 
-      {/* Spacer pour laisser respirer le hero 3D avant les features */}
-      <div className="h-[40vh] md:h-[50vh]" />
-
-      {/* Features */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 pt-20 pb-20 md:px-8 md:pt-28 md:pb-28">
+      {/* ─── Ce que tu peux faire ─── */}
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pt-16 pb-16 md:px-8 md:pt-24 md:pb-24">
         <motion.h2
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -148,7 +155,7 @@ export function Landing() {
           transition={{ duration: 0.5 }}
           className="display mb-2 text-center text-display-md md:text-display-lg"
         >
-          Tout ton matos, dans une seule app.
+          Tout ce qu'il te faut, rien que tu paies en double.
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -157,8 +164,8 @@ export function Landing() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mx-auto mb-10 max-w-2xl text-center text-sm text-text-muted md:mb-14 md:text-base"
         >
-          Pensé mobile-first pour les répèts, le téléphone sur le stand.
-          Lisible à 50 cm, taps faciles au pouce, zéro friction.
+          Pensé pour le téléphone sur le stand : lisible à 50 cm, tout au pouce,
+          zéro friction.
         </motion.p>
         <motion.div
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
@@ -176,7 +183,75 @@ export function Landing() {
         </motion.div>
       </section>
 
-      {/* Bottom CTA — glassy */}
+      {/* ─── Pourquoi pas Ultimate Guitar / Songsterr / Yousician ─── */}
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
+        <motion.h2
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.5 }}
+          className="display mb-2 text-center text-display-md md:text-display-lg"
+        >
+          Pourquoi pas juste Ultimate Guitar&nbsp;?
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mx-auto mb-10 max-w-2xl text-center text-sm text-text-muted md:mb-14 md:text-base"
+        >
+          Pas de "on est meilleurs". Juste trois trucs qu'on a décidé de pas
+          faire.
+        </motion.p>
+        <motion.div
+          className="grid gap-3 sm:grid-cols-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
+          }}
+        >
+          {COMPARISON.map((c) => (
+            <ComparisonCard key={c.title} {...c} />
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ─── Sons & visuels ─── */}
+      <section className="relative z-10 mx-auto max-w-5xl px-5 pb-16 md:px-8 md:pb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-3xl border border-border-gold bg-surface/50 p-7 text-center backdrop-blur-md md:p-12"
+        >
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 0%, rgb(var(--gold-glow) / 0.10) 0%, transparent 70%)',
+            }}
+          />
+          <div className="relative">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
+              <Music2 size={22} strokeWidth={1.5} />
+            </div>
+            <h2 className="display text-display-md md:text-display-lg">
+              Des vraies guitares, pas des bips.
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-text-muted md:text-base">
+              Samples HQ de vraies guitares, 5 amplis modélisés, et un manche
+              interactif que tu peux lire à bout de bras en pleine répèt.
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ─── Footer CTA ─── glassy ─── */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -195,11 +270,11 @@ export function Landing() {
           <div className="relative">
             <Sparkles size={22} className="mx-auto mb-3 text-gold" />
             <h2 className="display text-display-md md:text-display-lg">
-              Prêt à monter ton carnet&nbsp;?
+              Prends ta guitare.
             </h2>
-            <p className="mt-3 text-sm text-text-muted md:text-base">
-              Le carnet démarre vide ou avec quelques exemples. Tout reste sur ton
-              téléphone — pas de cloud avant que tu décides.
+            <p className="mx-auto mt-3 max-w-md text-sm text-text-muted md:text-base">
+              Le carnet démarre vide ou avec quelques exemples. Tout reste sur
+              ton tél — pas de cloud tant que tu ne le décides pas.
             </p>
             <Link
               to="/dashboard"
@@ -215,9 +290,14 @@ export function Landing() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 text-xs text-text-soft md:px-8">
-          <span>RiffLab — v0.4 · local-first · open source</span>
+          <span className="flex items-center gap-2">
+            <RiffLabLogo size={16} />
+            RiffLab — v0.4 · local-first · open source
+          </span>
           <div className="flex items-center gap-4">
-            <Link to="/about" className="hover:text-text">À propos</Link>
+            <Link to="/about" className="hover:text-text">
+              À propos
+            </Link>
             <a
               href="https://github.com/Azraude/RiffLab"
               target="_blank"
@@ -235,14 +315,34 @@ export function Landing() {
 
 // ─── Hero title (split par lettre, stagger entrée) ───────────────────
 
-function HeroTitle({ text }: { text: string }) {
+function HeroTitle({ text, goldWord }: { text: string; goldWord: string }) {
+  const reduce = useReducedMotion();
   const letters = text.split('');
-  const goldWordStart = text.indexOf('Compose');
-  const goldWordEnd = goldWordStart + 'Compose'.length;
+  const goldWordStart = text.indexOf(goldWord);
+  const goldWordEnd =
+    goldWordStart === -1 ? -1 : goldWordStart + goldWord.length;
+
+  // Reduced-motion : titre statique, mot doré conservé, zéro animation.
+  if (reduce) {
+    return (
+      <h1 className="display text-display-lg md:text-display-xl">
+        {goldWordStart === -1 ? (
+          text
+        ) : (
+          <>
+            {text.slice(0, goldWordStart)}
+            <span className="text-gold text-gold-glow">{goldWord}</span>
+            {text.slice(goldWordEnd)}
+          </>
+        )}
+      </h1>
+    );
+  }
+
   return (
     <motion.h1
       className="display text-display-lg md:text-display-xl"
-      initial={{ letterSpacing: '0.18em' }}
+      initial={{ letterSpacing: '0.16em' }}
       animate={{ letterSpacing: '0.005em' }}
       transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
       aria-label={text}
@@ -256,7 +356,7 @@ function HeroTitle({ text }: { text: string }) {
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             transition={{
               duration: 0.5,
-              delay: 0.08 + i * 0.04,
+              delay: 0.08 + i * 0.035,
               ease: [0.25, 1, 0.5, 1],
             }}
             className={
@@ -276,34 +376,34 @@ function HeroTitle({ text }: { text: string }) {
 
 const FEATURES = [
   {
-    icon: <Music2 size={22} strokeWidth={1.5} />,
-    title: 'Carnet de sons',
-    text: "Toutes tes compos et reprises, organisées par section, tempo, tonalité, capo. Recorder intégré pour t'enregistrer.",
+    icon: <Target size={22} strokeWidth={1.5} />,
+    title: 'Pratique quotidienne',
+    text: 'Coche tes séances, regarde ta série grandir, repère les accords que tu fuis.',
+  },
+  {
+    icon: <Wand2 size={22} strokeWidth={1.5} />,
+    title: 'Studio de compo',
+    text: "Bloque un accord, l'algo propose la suite qui sonne. Des progressions sans prise de tête théorique.",
+  },
+  {
+    icon: <Users size={22} strokeWidth={1.5} />,
+    title: 'Feed de riffs',
+    text: 'Joue les riffs des autres, like ceux qui claquent, publie les tiens. Une commu, pas un catalogue.',
   },
   {
     icon: <Grid3x3 size={22} strokeWidth={1.5} />,
-    title: "Bibliothèque d'accords",
-    text: 'Tous les voicings indispensables — ouverts, barrés, jazz. Diagrammes propres, audio au clic, transpose en 1 clic.',
+    title: 'Accords & gammes',
+    text: 'Toute la bibliothèque sur un manche interactif. Voicings, gammes, transpose en un tap.',
   },
   {
-    icon: <Waves size={22} strokeWidth={1.5} />,
-    title: 'Gammes sur le manche',
-    text: "Visualise n'importe quelle gamme dans n'importe quelle tonalité. Skins de manche au choix, vue 3D décorative en bonus.",
-  },
-  {
-    icon: <ListMusic size={22} strokeWidth={1.5} />,
-    title: 'Setlists & mode lecture',
-    text: 'Compose tes setlists de répèt ou de scène. Mode lecture enchaînée avec transitions claires, prêt pour le live.',
-  },
-  {
-    icon: <Mic size={22} strokeWidth={1.5} />,
-    title: 'Outils intégrés',
-    text: "Tuner par micro avec détection YIN, métronome 40-220 BPM, mini-jeu ear training pour muscler l'oreille.",
+    icon: <Drum size={22} strokeWidth={1.5} />,
+    title: 'Mode jam',
+    text: "Batterie, basse et accords qui te suivent. Jamme comme si t'avais un groupe derrière.",
   },
   {
     icon: <BarChart3 size={22} strokeWidth={1.5} />,
     title: 'Stats & streak',
-    text: 'Coche tes séances, vois tes accords les plus pratiqués, garde ta série de jours d\'affilée. Le carnet qui te tient en haleine.',
+    text: 'Ton année de guitare en chiffres : temps joué, accords bossés, courbe de progression.',
   },
 ];
 
@@ -346,12 +446,50 @@ function FeatureCard({
   );
 }
 
+// ─── Comparison data ──────────────────────────────────────────────────
+
+const COMPARISON = [
+  {
+    title: 'Pas de pub qui clignote',
+    text: 'Tu lis tes accords, tu joues. Rien ne s’agite à l’écran, rien ne te coupe en plein riff.',
+  },
+  {
+    title: 'Pas de paywall sur les bases',
+    text: 'Accords, gammes, riffs, tuner, métronome : gratuits, et ça le reste. On ne te fait pas payer pour voir un Do majeur.',
+  },
+  {
+    title: 'Tes données restent chez toi',
+    text: 'Tout vit en local sur ton tél par défaut. Pas de compte obligatoire, pas de revente de données.',
+  },
+];
+
+// ─── Comparison card ──────────────────────────────────────────────────
+
+function ComparisonCard({ title, text }: { title: string; text: string }) {
+  return (
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 24 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] } },
+      }}
+      className="rounded-2xl border border-border bg-surface/50 p-5 backdrop-blur-md md:p-6"
+    >
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
+        <Check size={18} strokeWidth={2} />
+      </div>
+      <h3 className="text-base font-semibold text-text">{title}</h3>
+      <p className="mt-1.5 text-sm text-text-muted">{text}</p>
+    </motion.div>
+  );
+}
+
 // ─── Particules CSS flottantes ────────────────────────────────────────
 
 /**
  * 30 dots dorés qui flottent verticalement avec vitesses + délais
  * aléatoires. Pas de WebGL — pure CSS keyframe animation + style inline
- * pour les positions. Léger (no JS runtime).
+ * pour les positions. Léger (no JS runtime). Coupées en reduced-motion
+ * via media query dans le <style> inline.
  */
 function FloatingDots() {
   // Génère des positions déterministes (seed sur l'index) pour SSR-safe
@@ -392,6 +530,9 @@ function FloatingDots() {
           10% { opacity: var(--initial-opacity, 0.4); }
           90% { opacity: var(--initial-opacity, 0.4); }
           100% { transform: translateY(-110vh); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .float-dot { animation: none !important; opacity: 0 !important; }
         }
       `}</style>
     </div>
