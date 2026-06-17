@@ -11,9 +11,36 @@
  *
  * ⚠️ POLICY CLAUDE.md : Three.js décoratif uniquement.
  */
-import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef, type ReactNode } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
+import { markIntentionalContextLoss } from '@/hooks/useCanRender3D';
+
+// ─── Libération du contexte WebGL au démontage ───────────────────────
+/**
+ * À placer comme 1er enfant de chaque `<Canvas>`. Au démontage de la scène
+ * (= navigation), libère explicitement le contexte WebGL via `dispose()` +
+ * `forceContextLoss()`. Sans ça, le navigateur ne récupère pas les contextes
+ * assez vite et finit par saturer (~8-16 max) → `Context Lost` → écran noir.
+ *
+ * On `markIntentionalContextLoss()` juste avant pour que le kill-switch global
+ * (useCanRender3D) ne confonde pas ce teardown volontaire avec une vraie perte.
+ */
+export function DisposeOnUnmount() {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    return () => {
+      try {
+        markIntentionalContextLoss();
+        gl.dispose();
+        gl.forceContextLoss();
+      } catch {
+        /* noop */
+      }
+    };
+  }, [gl]);
+  return null;
+}
 
 // ─── Canvas transparency callback ────────────────────────────────────
 /**
