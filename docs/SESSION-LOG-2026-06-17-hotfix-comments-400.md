@@ -68,4 +68,7 @@ l'écran noir reste bien réglé avec leur approche.
 
 ---
 
-(ligne de merge finale ci-dessous)
+✅ Mergé dans main (2bcca30). SHA d'`origin/main` pullé avant merge : `6a2b05f`
+(qui avait la régression). Fix ré-appliqué par-dessus, build vert. Vérifié
+post-push : `git show origin/main:src/lib/socialApi.ts` contient bien les guards
+`isSeedRiff` (8 occurrences). Bug 400 comments de nouveau réglé sur main.
