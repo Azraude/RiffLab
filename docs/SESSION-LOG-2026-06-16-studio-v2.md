@@ -166,4 +166,8 @@ chord name fade + scale 0.92→1
 
 ---
 
-## ✅ Mergé dans main (à compléter)
+## ✅ Mergé dans main (03aaad7)
+
+Merge avec 3 commits hotfix 3D WebGL (kill-switch contexte perdu +
+libération au démontage). Zéro overlap avec Progressions.tsx (zones
+3D vs Studio).
