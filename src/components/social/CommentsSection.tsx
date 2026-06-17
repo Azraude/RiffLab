@@ -9,14 +9,13 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Send, Trash2, User, Sparkles } from 'lucide-react';
+import { MessageCircle, Send, Trash2, User } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
 import {
   getComments,
   postComment,
   deleteComment,
-  isSeedRiff,
   type Comment,
 } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
@@ -38,8 +37,6 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
 
-  const isSeed = isSeedRiff(riffId);
-
   const refresh = async () => {
     setLoading(true);
     const { data } = await getComments(riffId);
@@ -52,16 +49,9 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
       setLoading(false);
       return;
     }
-    // Riff seed (cr-iron, sw-stairway, etc.) → skip le query Supabase
-    // (riff_id UUID-only en DB, sinon 400 Bad Request en flood console).
-    if (isSeed) {
-      setComments([]);
-      setLoading(false);
-      return;
-    }
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [riffId, isSeed]);
+  }, [riffId]);
 
   const handlePost = async () => {
     if (!me) {
@@ -102,26 +92,6 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
         <p className="mt-2 text-sm text-text-muted">
           Les commentaires nécessitent Supabase configuré.
         </p>
-      </Card>
-    );
-  }
-
-  // Riff seed (intégré au bundle, pas dans la DB) → message gracieux au
-  // lieu d'un input vide / loading infini. Lien vers /riffs feed UGC.
-  if (isSeed) {
-    return (
-      <Card className="border-gold/20 bg-gradient-to-br from-gold/5 to-transparent text-center">
-        <Sparkles size={22} className="mx-auto text-gold-soft" strokeWidth={1.5} />
-        <p className="mt-2 text-sm leading-relaxed text-text-muted">
-          Les commentaires arrivent quand des utilisateurs partagent leurs propres
-          riffs. Celui-ci est un exemple intégré.
-        </p>
-        <Link
-          to="/riffs"
-          className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-4 text-xs font-semibold text-gold transition-colors hover:bg-gold/20"
-        >
-          Voir des riffs partagés
-        </Link>
       </Card>
     );
   }

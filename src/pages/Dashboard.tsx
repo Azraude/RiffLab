@@ -486,22 +486,24 @@ function DashboardGreeting({ name }: { name: string }) {
             { y: 10.4, w: 1, vibrate: false, delay: 0.2 }, // B
             { y: 12.2, w: 0.8, vibrate: false, delay: 0.25 }, // E aigu
           ].map((str, i) => (
-            <motion.line
+            // NOTE : on utilise motion.path au lieu de motion.line car
+            // Framer Motion `pathLength` n'est PAS supporté sur SVG <line>
+            // (uniquement sur <path>, <circle>, <rect>, <ellipse>). Le bug
+            // « <line> attribute y1/y2: Expected length, undefined » qui
+            // causait l'écran noir entre les nav vient de là.
+            <motion.path
               key={i}
-              x1="0"
-              y1={str.y}
-              x2="100"
-              y2={str.y}
+              d={`M 0 ${str.y} L 100 ${str.y}`}
               stroke="url(#guitar-string-grad)"
               strokeWidth={str.w}
               strokeLinecap="round"
-              initial={{ pathLength: 0, opacity: 0 }}
+              fill="none"
+              initial={{ pathLength: 0, opacity: 0, y: 0 }}
               animate={{
                 pathLength: 1,
                 opacity: 1,
                 ...(str.vibrate && {
-                  y1: [str.y, str.y + 0.4, str.y - 0.4, str.y],
-                  y2: [str.y, str.y + 0.4, str.y - 0.4, str.y],
+                  y: [0, 0.4, -0.4, 0],
                 }),
               }}
               transition={{
@@ -512,14 +514,7 @@ function DashboardGreeting({ name }: { name: string }) {
                 },
                 opacity: { duration: 0.2, delay: 0.4 + str.delay },
                 ...(str.vibrate && {
-                  y1: {
-                    duration: 0.18,
-                    delay: 1.2 + i * 0.4,
-                    repeat: Infinity,
-                    repeatType: 'reverse' as const,
-                    repeatDelay: 2.5,
-                  },
-                  y2: {
+                  y: {
                     duration: 0.18,
                     delay: 1.2 + i * 0.4,
                     repeat: Infinity,
