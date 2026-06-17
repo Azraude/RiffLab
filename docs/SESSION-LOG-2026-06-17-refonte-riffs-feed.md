@@ -100,6 +100,13 @@ le feed (« même RiffCard que le feed principal »).
 
 ---
 
-✅ Mergé dans main (82f7b04). Merge --no-ff de origin/main (hotfix comments
-400 : socialApi/CommentsSection — fichiers non touchés par moi, zéro conflit).
-Build final vert sur l'arbre mergé.
+✅ Mergé dans main (82f7b04).
+
+**Traçage merge (procédure fetch→merge→build→push)** :
+- SHA d'`origin/main` **pullé/mergé AVANT mon merge** : `91cc1f2`
+  (tip de la session hotfix comments 400 : commits 220e3a9 + 15d7153 +
+  91cc1f2, fichiers socialApi.ts / CommentsSection.tsx — non touchés par moi
+  → zéro conflit).
+- `git fetch origin` → `git merge --no-ff origin/main` → `npm run build` (vert)
+  → `git push origin <branche>:main`.
+- Résultat du push de la refonte : `82f7b04`. Doc finale : `b508f93`.
