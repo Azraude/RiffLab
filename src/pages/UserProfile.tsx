@@ -1,31 +1,26 @@
 /**
- * /u/:username — page profil public d'un riffeur (sess 29).
+ * /u/:username — page profil public d'un riffeur.
  *
- * Hero (avatar + display_name + bio + stats) + bouton Follow + 4 tabs :
- *  - Riffs publiés
- *  - Maîtrisés (Phase ultérieure : table public_mastered, pour l'instant
- *    on affiche un message "données locales, à venir")
- *  - Bookmarks (idem, pour l'instant message)
- *  - Badges (depuis user_badges Supabase si dispo, sinon badges locaux
- *    Dexie pour l'user connecté)
+ * Sess 29 : version originale 4 tabs avec hero simple.
+ * Sess PROFIL : refonte hero avec cover photo + bio + instruments +
+ * social links via ProfileHero + drawer édition ProfileEditDrawer.
+ * 3 tabs au lieu de 4 (Riffs / Progressions / Badges).
  *
- * Si pas connecté ou pas configuré Supabase : on affiche un état dégradé
- * (info "profils publics nécessitent Supabase configuré").
+ * Si pas connecté ou pas configuré Supabase : message dégradé.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, User, Calendar, Zap, Music2, BookmarkCheck, Award, Trophy } from 'lucide-react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Calendar, Zap, Music2, Award, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
-import { FollowButton } from '@/components/social/FollowButton';
+import { ProfileHero, type FullProfile } from '@/components/profile/ProfileHero';
+import { ProfileEditDrawer } from '@/components/profile/ProfileEditDrawer';
 import {
   getProfile,
   getUserRiffs,
   getFollowCounts,
   getUserXP,
   getUserBadges,
-  type Profile,
   type PublicRiff,
 } from '@/lib/socialApi';
 import { computeLevel } from '@/lib/xpSystem';
@@ -33,23 +28,25 @@ import { BADGE_CATALOG, getBadgeMeta } from '@/lib/badges';
 import { useAuth } from '@/stores/authStore';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
-type Tab = 'riffs' | 'mastered' | 'bookmarks' | 'badges';
+type Tab = 'riffs' | 'progressions' | 'badges';
 
 export function UserProfile() {
   const { username } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const me = useAuth((s) => s.user);
-  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [profile, setProfile] = useState<FullProfile | null | undefined>(undefined);
   const [riffs, setRiffs] = useState<PublicRiff[]>([]);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [xp, setXp] = useState(0);
   const [badges, setBadges] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('riffs');
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!username) return;
     void (async () => {
       const { data } = await getProfile(username);
-      setProfile(data);
+      setProfile(data as FullProfile | null);
       if (data) {
         const [r, c, x, b] = await Promise.all([
           getUserRiffs(data.id),
@@ -64,6 +61,18 @@ export function UserProfile() {
       }
     })();
   }, [username]);
+
+  // Auto-open drawer si ?edit=1 dans l'URL (entry point depuis /profile)
+  useEffect(() => {
+    if (profile && searchParams.get('edit') === '1' && me?.id === profile.id) {
+      setEditOpen(true);
+      // Cleanup search param pour pas relancer au reload
+      setSearchParams((sp) => {
+        sp.delete('edit');
+        return sp;
+      });
+    }
+  }, [profile, searchParams, setSearchParams, me?.id]);
 
   const level = useMemo(() => computeLevel(xp), [xp]);
 
@@ -105,7 +114,6 @@ export function UserProfile() {
   }
 
   const isMe = me?.id === profile.id;
-  const initial = (profile.username[0] ?? '?').toUpperCase();
 
   return (
     <>
@@ -113,65 +121,29 @@ export function UserProfile() {
         <ArrowLeft size={14} /> Feed des riffs
       </Link>
 
-      <motion.header
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mx-auto max-w-3xl"
-      >
-        <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          {/* Avatar */}
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-gold/30 bg-gold/10 font-mono text-2xl font-bold text-gold">
-            {profile.avatar_url ? (
-              // eslint-disable-next-line jsx-a11y/img-redundant-alt
-              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-            ) : initial === '?' ? (
-              <User size={40} />
-            ) : (
-              initial
-            )}
-          </div>
+      <div className="mx-auto max-w-3xl">
+        <ProfileHero
+          profile={profile}
+          isMe={isMe}
+          onEdit={() => setEditOpen(true)}
+        />
 
-          <div className="min-w-0 flex-1">
-            <h1 className="display text-display-lg leading-tight">
-              {profile.display_name || profile.username}
-            </h1>
-            <div className="mt-0.5 font-mono text-sm text-text-muted">@{profile.username}</div>
-            {profile.bio && (
-              <p className="mt-2 max-w-xl text-sm text-text">{profile.bio}</p>
-            )}
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-soft">
-              <Stat label="riffs" value={riffs.length} />
-              <Stat label="followers" value={counts.followers} />
-              <Stat label="following" value={counts.following} />
-              <Stat label={`${level.name}`} value={`⚡ ${xp} XP`} accent />
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              {!isMe && <FollowButton userId={profile.id} username={profile.username} />}
-              {isMe && (
-                <Link
-                  to="/profile"
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface-2 px-4 text-sm hover:border-gold-soft"
-                >
-                  Éditer mon profil
-                </Link>
-              )}
-            </div>
-          </div>
+        {/* Stats grid compact */}
+        <div className="mt-2 grid grid-cols-3 gap-2 px-5 md:px-6">
+          <StatCell label="Riffs" value={riffs.length} />
+          <StatCell label="Followers" value={counts.followers} />
+          <StatCell label="Following" value={counts.following} />
         </div>
-      </motion.header>
+      </div>
 
       {/* Tabs */}
-      <div className="mx-auto mt-8 max-w-3xl">
-        <div className="mb-5 flex gap-1 border-b border-border">
+      <div className="mx-auto mt-6 max-w-3xl">
+        <div className="-mx-2 mb-5 flex gap-1 overflow-x-auto border-b border-border px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabBtn active={tab === 'riffs'} onClick={() => setTab('riffs')} icon={<Music2 size={13} />}>
             Riffs <span className="font-mono text-text-soft">{riffs.length}</span>
           </TabBtn>
-          <TabBtn active={tab === 'mastered'} onClick={() => setTab('mastered')} icon={<Trophy size={13} />}>
-            Maîtrisés
-          </TabBtn>
-          <TabBtn active={tab === 'bookmarks'} onClick={() => setTab('bookmarks')} icon={<BookmarkCheck size={13} />}>
-            Bookmarks
+          <TabBtn active={tab === 'progressions'} onClick={() => setTab('progressions')} icon={<Sparkles size={13} />}>
+            Progressions
           </TabBtn>
           <TabBtn active={tab === 'badges'} onClick={() => setTab('badges')} icon={<Award size={13} />}>
             Badges <span className="font-mono text-text-soft">{badges.length}</span>
@@ -212,22 +184,12 @@ export function UserProfile() {
           </>
         )}
 
-        {tab === 'mastered' && (
+        {tab === 'progressions' && (
           <Card className="text-center">
-            <Trophy size={24} className="mx-auto mb-2 text-gold-soft" />
+            <Sparkles size={24} className="mx-auto mb-2 text-gold-soft" />
             <p className="text-sm text-text-muted">
-              Les riffs maîtrisés restent locaux pour l'instant (Dexie). Le
-              partage public arrivera Phase 5.2 sync cloud.
-            </p>
-          </Card>
-        )}
-
-        {tab === 'bookmarks' && (
-          <Card className="text-center">
-            <BookmarkCheck size={24} className="mx-auto mb-2 text-gold-soft" />
-            <p className="text-sm text-text-muted">
-              Les bookmarks sont privés. Tu peux les voir sur ton propre
-              profil seulement.
+              Les progressions publiées arrivent prochainement (backend
+              custom_progressions). En attendant : Studio dans la sidebar.
             </p>
           </Card>
         )}
@@ -295,27 +257,27 @@ export function UserProfile() {
           </div>
         )}
       </Card>
+
+      {/* Drawer édition (uniquement si c'est mon profil) */}
+      {isMe && (
+        <ProfileEditDrawer
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          profile={profile}
+          onSaved={(next) => setProfile(next)}
+        />
+      )}
     </>
   );
 }
 
 // ─── Sous-composants ────────────────────────────────────────────────
 
-function Stat({
-  label,
-  value,
-  accent = false,
-}: {
-  label: string;
-  value: string | number;
-  accent?: boolean;
-}) {
+function StatCell({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="inline-flex items-baseline gap-1">
-      <span className={clsx('font-mono text-sm font-bold', accent ? 'text-gold' : 'text-text')}>
-        {value}
-      </span>
-      <span>{label}</span>
+    <div className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-center">
+      <div className="font-mono text-lg font-bold text-gold">{value}</div>
+      <div className="text-[10px] uppercase tracking-wider text-text-soft">{label}</div>
     </div>
   );
 }
