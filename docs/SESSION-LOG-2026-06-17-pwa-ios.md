@@ -89,4 +89,4 @@ Nouveau composant (monté dans `src/main.tsx`) :
 
 ---
 
-✅ Mergé dans main (SHA à compléter après merge)
+✅ Mergé dans main (SHA 97f8955)
