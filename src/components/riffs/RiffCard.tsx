@@ -1,18 +1,22 @@
 /**
- * RiffCard — card du feed /riffs refonte sess 27 Phase 1.
+ * RiffCard — card du feed /riffs (refonte feed social, sess 2026-06-17).
  *
- * Hiérarchie claire :
- *  1. Header : avatar @user + difficulty + date relative
- *  2. Caption + tags
- *  3. Mini "encart" du tab : titre + artiste + BPM + tab preview compact
- *     + 3 actions principales (Écouter / Voir / Apprendre)
- *  4. Footer actions sociales (like, comment, save, share)
+ * Card TEASER de taille FIXE, cliquable en entier → page détail /riffs/:id.
+ * Pas de boutons "Voir le tab" / "Apprendre" : tout ça vit sur la page
+ * détail. La card sert juste à donner envie + actions sociales rapides.
  *
- * Mobile-first : padding 4 mobile / 6 desktop, tap targets ≥ 44px.
+ * Specs :
+ *  - Hauteur fixe : 320px mobile / 280px ≥sm (cohérent dans la grille)
+ *  - Toute la card est cliquable (onClick → onOpenDetail). Les boutons
+ *    internes (like/save/play, liens avatar/tags) font stopPropagation
+ *    pour ne PAS naviguer.
+ *  - Layout vertical : header → titre/BPM → tab preview (flex-1) → footer.
+ *
+ * Mobile-first : tap targets ≥ 44px, counts compacts ("1.2k").
  */
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Bookmark, Share2, Music, Play, BookOpen, Target, User } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Music, Play, User } from 'lucide-react';
 import clsx from 'clsx';
 import {
   difficultyToLevel,
@@ -28,181 +32,57 @@ import { isRiffBookmarked, isRiffLiked, toggleRiffBookmark, toggleRiffLike } fro
 interface RiffCardProps {
   riff: CommunityRiff;
   tab: Tab;
-  /** Click sur "Écouter" — déclenche le player principal (Phase 2 wiring). */
+  /** Click sur la card entière → page détail /riffs/:id. */
+  onOpenDetail: () => void;
+  /** Click sur ▶ → preview audio en place (joué par le parent). */
   onListen?: () => void;
-  /** Click sur "Voir le tab" — ouvre le modal full-screen. */
-  onViewTab: () => void;
-  /** Click sur "Apprendre" — ouvre le mode apprendre (Phase 2). */
-  onLearn?: () => void;
-  /** Click sur la card OU son titre — navigate vers page détail. */
-  onOpenDetail?: () => void;
-  /** Click sur "Partager" — ouvre ShareDrawer. */
-  onShare?: () => void;
-  /** Badge "🏆 Maîtrisé" affiché si l'user a marqué ce riff comme maîtrisé. */
+  /** Badge "🏆 Maîtrisé" si l'user a marqué ce riff maîtrisé. */
   masteredAt?: number | null;
-  /** Mode compact pour grille 2 cols (sess 29 layout magazine). */
+  /**
+   * Props legacy de l'ancienne card (avant la refonte feed) — désormais
+   * IGNORÉS. Gardés optionnels uniquement pour ne pas casser le build de
+   * RiffCollection / RiffsByTag qui partagent cette card et les passaient
+   * encore. Tout passe maintenant par la page détail /riffs/:id.
+   */
+  onViewTab?: () => void;
+  onLearn?: () => void;
+  onShare?: () => void;
   compact?: boolean;
 }
 
-export function RiffCard({
-  riff,
-  tab,
-  onListen,
-  onViewTab,
-  onLearn,
-  onOpenDetail,
-  onShare,
-  masteredAt,
-  compact = false,
-}: RiffCardProps) {
+export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: RiffCardProps) {
   const level = difficultyToLevel(riff.difficulty);
   const liked = useLiveQuery(() => isRiffLiked(riff.id), [riff.id]) ?? false;
   const bookmarked = useLiveQuery(() => isRiffBookmarked(riff.id), [riff.id]) ?? false;
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
-  const stopBubble = (fn?: () => void) => (e: React.MouseEvent) => {
+  const stop = (fn?: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn?.();
   };
 
-  // ─── Mode compact : grille magazine (sess 29 layout 3 cols) ───────
-  if (compact) {
-    return (
-      <article
-        className="group overflow-hidden rounded-xl border border-border bg-surface-2 transition-colors hover:border-gold/30"
-      >
-        <button
-          type="button"
-          onClick={onOpenDetail}
-          className="block w-full text-left"
-          aria-label={`Ouvrir ${tab.name} en détail`}
-        >
-          <div className="px-3 pt-3">
-            {/* Header compact */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <SmallAvatar name={riff.contributor} />
-                <div className="min-w-0">
-                  <div className="truncate font-mono text-[11px] font-semibold text-text-muted">
-                    {riff.contributor}
-                  </div>
-                  <div className="text-[9px] text-text-soft">{formatRelativeDate(riff.addedAt)}</div>
-                </div>
-              </div>
-              <span
-                className={clsx(
-                  'shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider',
-                  LEVEL_COLORS[level]
-                )}
-              >
-                {LEVEL_LABELS[level].slice(0, 3)}
-              </span>
-            </div>
-
-            {/* Titre + artiste */}
-            <h3 className="display mt-2 truncate text-base leading-tight text-text">{tab.name}</h3>
-            {tab.artist && (
-              <div className="truncate text-[11px] text-text-muted">{tab.artist}</div>
-            )}
-
-            {/* 2 tags max compact (3 → 2 pour gain visuel sess A Phase 3) */}
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {riff.tags.slice(0, 2).map((t) => (
-                <Link
-                  key={t}
-                  to={`/riffs/tag/${t}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[9px] text-gold-soft hover:bg-gold/20"
-                >
-                  #{t}
-                </Link>
-              ))}
-              {riff.tags.length > 2 && (
-                <span className="rounded px-1 py-0.5 font-mono text-[9px] text-text-soft">
-                  +{riff.tags.length - 2}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Mini-preview tab — overflow hidden STRICT + pointer-events-none
-              pour empêcher le scroll-x interne de conflicter avec scroll-y
-              du parent (cohérent avec mode full Phase 2). */}
-          <div className="relative mt-2 max-h-[70px] overflow-hidden px-2 opacity-80">
-            <div className="pointer-events-none">
-              <TabReader tab={tab} lineHeight={10} beatWidth={9} />
-            </div>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-2 to-transparent"
-            />
-          </div>
-
-          {/* Mastered badge ribbon */}
-          {masteredAt && (
-            <div className="px-3 pb-1 pt-1">
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-gold">
-                🏆 Maîtrisé
-              </span>
-            </div>
-          )}
-        </button>
-
-        {/* Footer icons only */}
-        <div className="flex items-center justify-between border-t border-border px-2 py-1.5">
-          <div className="flex items-center gap-0">
-            <CompactBtn
-              label={liked ? 'Aimé' : "J'aime"}
-              active={liked}
-              activeColor="danger"
-              count={likeCount}
-              onClick={stopBubble(() => void toggleRiffLike(riff.id))}
-            >
-              <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
-            </CompactBtn>
-            <CompactBtn
-              label="Commentaires"
-              count={riff.commentsCount ?? 0}
-              onClick={stopBubble(onOpenDetail)}
-            >
-              <MessageCircle size={14} />
-            </CompactBtn>
-            <CompactBtn
-              label={bookmarked ? 'Sauvegardé' : 'Sauver'}
-              active={bookmarked}
-              activeColor="gold"
-              onClick={stopBubble(() => void toggleRiffBookmark(riff.id))}
-            >
-              <Bookmark size={14} fill={bookmarked ? 'currentColor' : 'none'} />
-            </CompactBtn>
-          </div>
-          <CompactBtn label="Écouter" onClick={stopBubble(onListen)}>
-            <Play size={14} fill="currentColor" />
-          </CompactBtn>
-        </div>
-      </article>
-    );
-  }
-
-  // ─── Mode full mobile-first (refonte sess A Phase 2) ──────────────
-  //
-  // Specs : padding interne UNIFORME 16px (pas de break md), gap 12px
-  // entre sections internes. Hit areas claires :
-  // - Avatar/username → /u/:username
-  // - Tags → /riffs/tag/:tag
-  // - Tab encart (titre + preview) → ouvre détail
-  // - Caption (zone vide) → ouvre détail
-  // - Boutons actions/footer → action dédiée
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-surface-2 transition-colors hover:border-gold/30">
-      {/* === Header : avatar + meta + badge difficulté === */}
-      <header className="flex items-center justify-between gap-3 p-4 pb-3">
-        <div className="flex min-w-0 items-center gap-3">
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={onOpenDetail}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenDetail();
+        }
+      }}
+      aria-label={`Ouvrir ${tab.name} de ${riff.contributor}`}
+      className="group flex h-[320px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-surface-2 outline-none transition-all hover:border-gold-soft focus-visible:border-gold sm:h-[280px] sm:hover:scale-[1.01] sm:hover:shadow-gold active:scale-[0.98]"
+    >
+      {/* === Header : avatar + @user · date + badge niveau === */}
+      <header className="flex shrink-0 items-center justify-between gap-2 p-3 pb-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Link
             to={`/u/${riff.contributor.replace('@', '')}`}
-            aria-label={`Profil ${riff.contributor}`}
-            className="block shrink-0"
             onClick={(e) => e.stopPropagation()}
+            aria-label={`Profil ${riff.contributor}`}
+            className="shrink-0"
           >
             <Avatar name={riff.contributor} />
           </Link>
@@ -210,14 +90,12 @@ export function RiffCard({
             <Link
               to={`/u/${riff.contributor.replace('@', '')}`}
               onClick={(e) => e.stopPropagation()}
-              className="block truncate font-mono text-sm font-semibold text-text hover:text-gold"
+              className="block truncate font-mono text-xs font-semibold text-text hover:text-gold"
             >
               {riff.contributor}
             </Link>
-            <div className="mt-0.5 flex items-center gap-2 text-[10px] text-text-soft">
-              <span className="inline-flex items-center gap-0.5" aria-label={`${riff.difficulty} étoiles sur 5`}>
-                {'⭐'.repeat(riff.difficulty)}
-              </span>
+            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-text-soft">
+              <span aria-label={`${riff.difficulty} sur 5`}>{'⭐'.repeat(riff.difficulty)}</span>
               <span>·</span>
               <span>{formatRelativeDate(riff.addedAt)}</span>
             </div>
@@ -225,7 +103,7 @@ export function RiffCard({
         </div>
         <span
           className={clsx(
-            'shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
+            'shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider',
             LEVEL_COLORS[level]
           )}
         >
@@ -233,275 +111,116 @@ export function RiffCard({
         </span>
       </header>
 
-      {/* === Caption + tags === Click sur la zone vide → ouvre détail */}
-      <button
-        type="button"
-        onClick={onOpenDetail}
-        className="block w-full px-4 pb-3 text-left"
-        aria-label={`Ouvrir ${tab.name} en détail`}
-      >
-        {riff.caption && (
-          <p className="line-clamp-3 text-sm leading-relaxed text-text">
-            {riff.caption}
-          </p>
-        )}
-      </button>
-      {(riff.tags.length > 0 || riff.techniques?.length) && (
-        <div className="-mt-1 mb-3 flex flex-wrap gap-1.5 px-4">
-          {riff.tags.map((t) => (
+      {/* === Titre + artiste · BPM === */}
+      <div className="flex shrink-0 items-start justify-between gap-2 px-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <Music size={14} className="shrink-0 text-gold" />
+            <h3 className="display truncate text-lg leading-tight text-text">{tab.name}</h3>
+          </div>
+          {tab.artist && <div className="truncate text-xs text-text-muted">{tab.artist}</div>}
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="font-mono text-sm font-bold text-gold">{tab.tempo}</div>
+          <div className="text-[9px] uppercase tracking-wider text-text-soft">BPM</div>
+        </div>
+      </div>
+
+      {/* === Tags (2 max) === */}
+      {riff.tags.length > 0 && (
+        <div className="mt-2 flex shrink-0 flex-wrap gap-1 px-3">
+          {riff.tags.slice(0, 2).map((t) => (
             <Link
               key={t}
               to={`/riffs/tag/${t}`}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[11px] text-gold-soft hover:bg-gold/20"
+              className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
             >
               #{t}
             </Link>
           ))}
-          {riff.techniques?.map((t) => (
-            <Link
-              key={`tech-${t}`}
-              to={`/riffs/tag/${t}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[11px] text-text-soft hover:border-gold-soft hover:text-text"
-            >
-              {t}
-            </Link>
-          ))}
+          {riff.tags.length > 2 && (
+            <span className="px-1 py-0.5 font-mono text-[10px] text-text-soft">
+              +{riff.tags.length - 2}
+            </span>
+          )}
+          {masteredAt && (
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-gold">
+              🏆 Maîtrisé
+            </span>
+          )}
         </div>
       )}
 
-      {/* === Mini-encart du tab cliquable ===
-          ⚠️ POINT CRITIQUE : le tab preview ne scroll PAS en interne.
-          - overflow: hidden strict (pas de geste scroll-x qui conflict
-            avec scroll-y du feed)
-          - Gradient fade right pour suggérer "y'a plus"
-          - max-h fixe pour pas dépasser visuellement */}
-      <button
-        type="button"
-        onClick={onOpenDetail}
-        className="mx-4 mb-3 block w-[calc(100%-2rem)] overflow-hidden rounded-xl border border-border bg-surface text-left transition-colors hover:border-gold-soft"
-        aria-label={`Ouvrir ${tab.name} en détail`}
-      >
-        <div className="flex items-center justify-between gap-2 px-3 pt-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-text">
-              <Music size={14} className="shrink-0 text-gold" />
-              <span className="display truncate text-base leading-tight">{tab.name}</span>
-            </div>
-            {tab.artist && (
-              <div className="mt-0.5 truncate text-xs text-text-muted">{tab.artist}</div>
-            )}
-          </div>
-          <div className="shrink-0 text-right">
-            <div className="font-mono text-sm font-bold text-gold">{tab.tempo}</div>
-            <div className="text-[9px] uppercase tracking-wider text-text-soft">BPM</div>
-          </div>
+      {/* === Tab mini-preview — absorbe l'espace restant (hauteur fixe) ===
+          overflow hidden STRICT + pointer-events-none : pas de scroll-x
+          interne qui parasiterait le scroll vertical du feed. */}
+      <div className="relative mt-2 min-h-0 flex-1 overflow-hidden px-3">
+        <div className="pointer-events-none">
+          <TabReader tab={tab} lineHeight={11} beatWidth={10} />
         </div>
-
-        {/* Tab preview : overflow: hidden STRICT, pas de scroll-x */}
-        <div className="relative mt-2 max-h-[80px] overflow-hidden">
-          <div className="pointer-events-none">
-            <TabReader tab={tab} lineHeight={12} beatWidth={11} />
-          </div>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-surface to-transparent"
-          />
-        </div>
-
-        {/* Mastered badge */}
-        {masteredAt && (
-          <div className="px-3 pb-2 pt-1">
-            <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
-              🏆 Maîtrisé le {new Date(masteredAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-            </span>
-          </div>
-        )}
-      </button>
-
-      {/* === Actions row hiérarchisée : PRIMARY full + 2 secondaires === */}
-      <div className="space-y-2 px-4 pb-3">
-        {/* CTA principal : Écouter le riff */}
-        <button
-          type="button"
-          onClick={stopBubble(onListen)}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-sm font-semibold text-bg shadow-gold transition-all hover:-translate-y-px active:scale-[0.99]"
-        >
-          <Play size={16} fill="currentColor" />
-          Écouter le riff
-        </button>
-        {/* 2 secondaires en grille 2 cols */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={stopBubble(onViewTab)}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface text-sm font-medium text-text transition-colors hover:border-gold-soft"
-          >
-            <BookOpen size={14} />
-            <span>Voir le tab</span>
-          </button>
-          <button
-            type="button"
-            onClick={stopBubble(onLearn)}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20"
-          >
-            <Target size={14} />
-            <span>Apprendre</span>
-          </button>
-        </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-surface-2 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface-2 to-transparent"
+        />
       </div>
 
-      {/* === Footer actions sociales mobile-safe ===
-          Tap zones 44×44, counts en format compact (1.2k pour 1200+),
-          Share isolé à droite avec shrink-0 pour éviter overflow. */}
-      <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1.5">
-        <div className="flex min-w-0 items-center">
-          <SocialBtn
+      {/* === Footer actions sociales === */}
+      <footer className="flex shrink-0 items-center justify-between border-t border-border px-2 py-1.5">
+        <div className="flex items-center">
+          <ActionBtn
             label={liked ? 'Aimé' : "J'aime"}
             count={likeCount}
             active={liked}
             activeColor="danger"
-            onClick={stopBubble(() => void toggleRiffLike(riff.id))}
+            onClick={stop(() => void toggleRiffLike(riff.id))}
           >
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-          </SocialBtn>
-          <SocialBtn
+          </ActionBtn>
+          <ActionBtn
             label="Commentaires"
             count={riff.commentsCount ?? 0}
-            onClick={stopBubble(onOpenDetail)}
+            onClick={stop(onOpenDetail)}
           >
             <MessageCircle size={18} />
-          </SocialBtn>
-          <SocialBtn
+          </ActionBtn>
+          <ActionBtn
             label={bookmarked ? 'Sauvegardé' : 'Sauver'}
             active={bookmarked}
             activeColor="gold"
-            onClick={stopBubble(() => void toggleRiffBookmark(riff.id))}
+            onClick={stop(() => void toggleRiffBookmark(riff.id))}
           >
             <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
-          </SocialBtn>
+          </ActionBtn>
         </div>
-        <SocialBtn label="Partager" onClick={stopBubble(onShare)}>
-          <Share2 size={18} />
-        </SocialBtn>
-      </div>
+        <ActionBtn label="Écouter le riff" onClick={stop(onListen)}>
+          <Play size={18} fill="currentColor" />
+        </ActionBtn>
+      </footer>
     </article>
   );
 }
 
 // ─── Sous-composants ────────────────────────────────────────────────
 
-/** Avatar compact 28px pour le mode grille (sess 29). */
-function SmallAvatar({ name }: { name: string }) {
-  const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
-  return (
-    <div
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-[10px] font-bold text-gold"
-      aria-hidden="true"
-    >
-      {initial === '?' ? <User size={11} /> : initial}
-    </div>
-  );
-}
-
-/** Bouton footer compact (icône seule, count en title tooltip).
- *  Mode `compact` desktop (grille xl 2-cols) — l'user voit l'icône
- *  rapidement, le count en hover via title attribute. Évite la
- *  surcharge visuelle d'avoir 4 chiffres tous visibles dans une card
- *  étroite (280-320px). */
-function CompactBtn({
-  children,
-  label,
-  count,
-  active,
-  activeColor = 'gold',
-  onClick,
-}: {
-  children: React.ReactNode;
-  label: string;
-  count?: number;
-  active?: boolean;
-  activeColor?: 'gold' | 'danger';
-  onClick: (e: React.MouseEvent) => void;
-}) {
-  const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
-  const hasCount = count !== undefined && count > 0;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={hasCount ? `${label} (${count})` : label}
-      title={hasCount ? `${label} · ${formatCount(count!)}` : label}
-      className={clsx(
-        'group inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-surface',
-        active ? activeCls : 'text-text-muted hover:text-text'
-      )}
-    >
-      {children}
-      {/* Count caché par défaut, visible en hover/focus de la card.
-          Garde l'a11y via aria-label qui contient le nombre. */}
-      {hasCount && (
-        <span className="hidden font-mono tabular-nums group-hover:inline">
-          {formatCount(count!)}
-        </span>
-      )}
-    </button>
-  );
-}
-
 function Avatar({ name }: { name: string }) {
   const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
   return (
     <div
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-sm font-bold text-gold"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-sm font-bold text-gold"
       aria-hidden="true"
     >
-      {initial === '?' ? <User size={16} /> : initial}
+      {initial === '?' ? <User size={15} /> : initial}
     </div>
   );
 }
 
-function ActionPrimary({
-  onClick,
-  icon,
-  label,
-  highlight = false,
-}: {
-  onClick: (e: React.MouseEvent) => void;
-  icon: React.ReactNode;
-  label: string;
-  highlight?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'inline-flex h-11 items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition-all md:h-10',
-        highlight
-          ? 'bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold hover:-translate-y-px'
-          : 'border border-border bg-surface text-text hover:border-gold-soft'
-      )}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-      {/* Sur petit mobile, on garde juste l'icône — gain de place */}
-      <span className="sm:hidden">{label.split(' ')[0]}</span>
-    </button>
-  );
-}
-
-/** Format compact "1.2k" pour les grands compteurs (évite l'overflow
- *  sur mobile 375px où chaque pixel compte au footer social). */
-function formatCount(n: number): string {
-  if (n < 1000) return String(n);
-  if (n < 10000) return `${(n / 1000).toFixed(1).replace('.0', '')}k`;
-  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
-  return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`;
-}
-
-function SocialBtn({
+/** Bouton d'action footer — tap target 44px, count compact. */
+function ActionBtn({
   children,
   label,
   count,
@@ -521,10 +240,8 @@ function SocialBtn({
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={count !== undefined && count > 0 ? `${label} (${count})` : label}
       className={clsx(
-        // h-11 = tap target 44px ≥ guideline iOS/Android.
-        // px-2 + gap-1.5 pour 4 boutons qui rentrent sur 343px (375 - 32).
         'inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all hover:bg-surface active:scale-95',
         active ? activeCls : 'text-text-muted hover:text-text'
       )}
@@ -535,4 +252,12 @@ function SocialBtn({
       )}
     </button>
   );
+}
+
+/** Format compact "1.2k" pour les grands compteurs. */
+function formatCount(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 10000) return `${(n / 1000).toFixed(1).replace('.0', '')}k`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`;
 }
