@@ -106,6 +106,31 @@ function notConfigured(): { data: null; error: Error } {
   };
 }
 
+/**
+ * Détecte un UUID v4 strict. Les riffs publiés Supabase utilisent des UUIDs
+ * (gen_random_uuid), les riffs "seed" intégrés au bundle utilisent des slugs
+ * courts (cr-iron, sw-stairway, etc.).
+ */
+function isUUID(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+/**
+ * Identifie un riff "seed" (intégré au bundle, pas dans la DB Supabase).
+ * Les tables likes/comments/bookmarks ont leur colonne riff_id en UUID, donc
+ * tout query `.eq('riff_id', 'cr-iron')` renvoie 400 Bad Request. Les fonctions
+ * socialApi qui prennent un riffId doivent early-return pour les seeds.
+ */
+export function isSeedRiff(id: string): boolean {
+  return !isUUID(id);
+}
+
+/** Erreur sentinel pour les writes refusés sur les riffs seed. */
+export const SEED_RIFF_READ_ONLY = 'SEED_RIFF_READ_ONLY';
+function seedReadOnlyError(): { data: null; error: Error } {
+  return { data: null, error: new Error(SEED_RIFF_READ_ONLY) };
+}
+
 /** Compte likes pour un riff via head:true (rapide, juste count). */
 async function getLikesCount(riffId: string): Promise<number> {
   const { count } = await supabase
@@ -189,6 +214,9 @@ export async function getRiff(
   id: string
 ): Promise<{ data: PublicRiffWithMeta | null; error: Error | null }> {
   if (!isSupabaseConfigured) return notConfigured();
+  // Riff seed (cr-iron, sw-stairway…) → pas dans la DB, évite un 400 sur le
+  // WHERE id (UUID attendu).
+  if (isSeedRiff(id)) return { data: null, error: null };
   const { data, error } = await supabase
     .from('riffs_public')
     .select('*, author:profiles!riffs_public_author_id_fkey(*)')
@@ -361,6 +389,7 @@ export async function getTopOfWeek(
 
 export async function likeRiff(riffId: string) {
   if (!isSupabaseConfigured) return notConfigured();
+  if (isSeedRiff(riffId)) return seedReadOnlyError();
   const me = (await supabase.auth.getUser()).data.user;
   if (!me) return { data: null, error: new Error('Pas connecté') };
   const { error } = await supabase.from('likes').insert({ user_id: me.id, riff_id: riffId });
@@ -369,6 +398,7 @@ export async function likeRiff(riffId: string) {
 
 export async function unlikeRiff(riffId: string) {
   if (!isSupabaseConfigured) return notConfigured();
+  if (isSeedRiff(riffId)) return seedReadOnlyError();
   const me = (await supabase.auth.getUser()).data.user;
   if (!me) return { data: null, error: new Error('Pas connecté') };
   const { error } = await supabase
@@ -383,6 +413,7 @@ export async function unlikeRiff(riffId: string) {
 
 export async function bookmarkRiff(riffId: string) {
   if (!isSupabaseConfigured) return notConfigured();
+  if (isSeedRiff(riffId)) return seedReadOnlyError();
   const me = (await supabase.auth.getUser()).data.user;
   if (!me) return { data: null, error: new Error('Pas connecté') };
   const { error } = await supabase
@@ -393,6 +424,7 @@ export async function bookmarkRiff(riffId: string) {
 
 export async function unbookmarkRiff(riffId: string) {
   if (!isSupabaseConfigured) return notConfigured();
+  if (isSeedRiff(riffId)) return seedReadOnlyError();
   const me = (await supabase.auth.getUser()).data.user;
   if (!me) return { data: null, error: new Error('Pas connecté') };
   const { error } = await supabase
@@ -511,6 +543,10 @@ export async function getComments(
   riffId: string
 ): Promise<{ data: Comment[] | null; error: Error | null }> {
   if (!isSupabaseConfigured) return notConfigured();
+  // Riff seed → pas de comments DB (riff_id UUID-only). Sans ce check, le
+  // query renvoyait 400 Bad Request en flood console à chaque ouverture d'un
+  // riff démo (cr-iron, cr-sevennation, sw-stairway…).
+  if (isSeedRiff(riffId)) return { data: [], error: null };
   const { data, error } = await supabase
     .from('comments')
     .select('*, author:profiles!comments_author_id_fkey(*)')
@@ -524,6 +560,7 @@ export async function getComments(
 
 export async function postComment(riffId: string, text: string) {
   if (!isSupabaseConfigured) return notConfigured();
+  if (isSeedRiff(riffId)) return seedReadOnlyError();
   const me = (await supabase.auth.getUser()).data.user;
   if (!me) return { data: null, error: new Error('Pas connecté') };
   const { data, error } = await supabase
