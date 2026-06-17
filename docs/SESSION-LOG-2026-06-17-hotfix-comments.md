@@ -124,4 +124,7 @@ mégarde sur un seed reproduise le même symptôme.
 
 ---
 
-## ✅ Mergé dans main (à compléter)
+## ✅ Mergé dans main (220e3a9)
+
+Fast-forward direct, aucune divergence avec origin/main (la session
+refonte Riffs en parallèle n'a pas encore push). Pas de conflit.
