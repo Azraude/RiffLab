@@ -124,7 +124,26 @@ mégarde sur un seed reproduise le même symptôme.
 
 ---
 
-## ✅ Mergé dans main (220e3a9)
+## ✅ Mergé dans main (220e3a9 → 15d7153)
 
-Fast-forward direct, aucune divergence avec origin/main (la session
-refonte Riffs en parallèle n'a pas encore push). Pas de conflit.
+### Procédure suivie (rappel sync)
+1. `git fetch origin` AVANT push : `git log HEAD..origin/main` retourne vide
+   → main n'a PAS avancé depuis le dernier merge de cette branche (point
+   de départ `e332c7c` = dernier commit cette branche = même que main).
+2. `npm run build` : ✓ green
+3. `git push origin HEAD:claude/trusting-moore-b4036b` → 220e3a9
+4. `git push origin HEAD:main` → 220e3a9 (fast-forward direct, pas de
+   merge nécessaire vu qu'aucune divergence).
+5. Commit doc log final → 15d7153 → re-push branche + main.
+6. Re-check `git fetch origin` après push : HEAD = origin/main =
+   `15d7153`, aucune divergence. La session refonte Riffs parallèle
+   n'avait pas encore push entre temps.
+
+### SHAs traçabilité
+- **Point de départ branche** : `e332c7c` (= main = dernier commit
+  STUDIO-V2 doc)
+- **Pull avant merge** : `e332c7c` (aucun nouveau commit sur main entre
+  notre départ et notre push)
+- **Après fix** : `220e3a9` (commit technique)
+- **Après log final** : `15d7153` (commit doc)
+- **HEAD branche = origin/main au moment du check final** : `15d7153`
