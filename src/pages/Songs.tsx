@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -44,6 +45,7 @@ export function Songs() {
 
   return (
     <>
+      <SEO title="Mes songs" description="Ton carnet de sons personnel. Organise tes chansons avec accords, tonalité et sections." />
       <PageHeader
         title={t('songs.title')}
         subtitle={

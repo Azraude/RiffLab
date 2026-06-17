@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SEO } from '@/components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -28,6 +29,7 @@ export function Scales() {
 
   return (
     <>
+      <SEO title="Gammes & modes" description="Explore 11 gammes et modes sur le manche interactif SVG. Pentatonique, modes, blues et plus." />
       <PageHeader
         title={t('scales.title')}
         subtitle={t('scales.subtitle')}

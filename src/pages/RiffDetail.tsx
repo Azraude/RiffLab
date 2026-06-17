@@ -12,6 +12,7 @@
  *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
 import { useMemo, useRef, useState } from 'react';
+import { SEO } from '@/components/SEO';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -98,6 +99,15 @@ export function RiffDetail() {
   const { riff, tab } = data;
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
+  const schemaJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicComposition',
+    name: tab.name,
+    composer: { '@type': 'Person', name: riff.contributor },
+    musicalKey: tab.key,
+    url: `https://riff-lab-sigma.vercel.app/riffs/${riff.id}`,
+    description: riff.caption ?? undefined,
+  };
 
   const handleListen = () => {
     tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -109,6 +119,12 @@ export function RiffDetail() {
 
   return (
     <>
+      <SEO
+        title={`${tab.name} — ${riff.contributor}`}
+        description={riff.caption ?? `Apprends le riff "${tab.name}" (${tab.key}) sur RiffLab.`}
+        canonical={`https://riff-lab-sigma.vercel.app/riffs/${riff.id}`}
+        schemaJsonLd={schemaJsonLd}
+      />
       {/* === Header sticky compact mobile (Back + actions icons) ===
           Au-dessus du contenu, fond bg-bg/95 avec blur pour rester
           lisible quand on scroll le tab par-dessus. */}

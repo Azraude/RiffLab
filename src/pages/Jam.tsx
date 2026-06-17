@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { SEO } from '@/components/SEO';
 import * as Tone from 'tone';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -184,6 +185,7 @@ export function Jam() {
   // ─── Render ───────────────────────────────────────────────────
   return (
     <>
+      <SEO title="Jam" description="Mode jam libre — joue sur des progressions en boucle avec métronome, fretboard interactif et audio Tone.js." />
       <PageHeader
         title="Mode jam"
         subtitle="Génère une progression, lance la boucle, improvise sur la gamme du bas."
