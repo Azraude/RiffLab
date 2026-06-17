@@ -100,4 +100,6 @@ le feed (« même RiffCard que le feed principal »).
 
 ---
 
-(ligne de merge ci-dessous)
+✅ Mergé dans main (82f7b04). Merge --no-ff de origin/main (hotfix comments
+400 : socialApi/CommentsSection — fichiers non touchés par moi, zéro conflit).
+Build final vert sur l'arbre mergé.
