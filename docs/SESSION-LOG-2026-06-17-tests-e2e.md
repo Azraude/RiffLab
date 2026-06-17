@@ -73,3 +73,7 @@ snippet `e2e.yml` prêt à poser est dans `tests/README.md`.
 
 - Fichiers touchés : `tests/`, `playwright.config.ts`, `package.json`,
   `package-lock.json`, ce log. Aucun fichier `src/` modifié.
+- Merge `origin/main` (15 commits) résolu (conflit scripts `package.json`,
+  les deux conservés). `npm run build` OK post-merge, 30/30 E2E verts.
+
+✅ Mergé dans main (0289e4a)
