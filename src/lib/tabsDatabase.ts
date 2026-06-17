@@ -267,6 +267,443 @@ const moneyForNothing: Tab = {
   ],
 };
 
+// ─── Session data riffs (2026-06-17) — 22 nouveaux riffs curés ─────────
+
+/** Come As You Are — Nirvana. Riff chorus-laden cordes graves, débutant. */
+const comeAsYouAre: Tab = {
+  id: 'come-as-you-are',
+  name: 'Come As You Are',
+  artist: 'Nirvana',
+  tempo: 120,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 2, startBeat: 0 },
+      { string: 5, fret: 0, duration: 2, startBeat: 2 },
+      { string: 4, fret: 0, duration: 2, startBeat: 4 },
+      { string: 4, fret: 1, duration: 2, startBeat: 6 },
+      { string: 4, fret: 2, duration: 2, startBeat: 8 },
+      { string: 4, fret: 2, duration: 2, startBeat: 10 },
+      { string: 4, fret: 1, duration: 2, startBeat: 12 },
+      { string: 4, fret: 0, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Wish You Were Here (intro) — Pink Floyd. Lick Em7/G fingerpické. */
+const wishYouWereHere: Tab = {
+  id: 'wish-you-were-here',
+  name: 'Wish You Were Here (intro)',
+  artist: 'Pink Floyd',
+  tempo: 60,
+  key: 'G major',
+  measures: [
+    [
+      { string: 4, fret: 3, duration: 2, startBeat: 0 },
+      { string: 3, fret: 0, duration: 2, startBeat: 2 },
+      { string: 3, fret: 2, duration: 2, startBeat: 4 },
+      { string: 2, fret: 0, duration: 2, startBeat: 6 },
+      { string: 2, fret: 0, duration: 2, startBeat: 8 },
+      { string: 3, fret: 2, duration: 2, startBeat: 10 },
+      { string: 3, fret: 0, duration: 2, startBeat: 12 },
+      { string: 4, fret: 3, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Smells Like Teen Spirit — Nirvana. Roots des power chords F-Bb-Ab-Db. */
+const smellsLikeTeenSpirit: Tab = {
+  id: 'smells-like-teen-spirit',
+  name: 'Smells Like Teen Spirit',
+  artist: 'Nirvana',
+  tempo: 117,
+  key: 'F major',
+  measures: [
+    [
+      { string: 5, fret: 1, duration: 4, startBeat: 0 },
+      { string: 4, fret: 1, duration: 4, startBeat: 4 },
+      { string: 5, fret: 4, duration: 4, startBeat: 8 },
+      { string: 4, fret: 4, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Whole Lotta Love (riff) — Led Zeppelin. Figure E-D iconique de Page. */
+const wholeLottaLove: Tab = {
+  id: 'whole-lotta-love',
+  name: 'Whole Lotta Love',
+  artist: 'Led Zeppelin',
+  tempo: 90,
+  key: 'E major',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 2, startBeat: 0 },
+      { string: 5, fret: 0, duration: 2, startBeat: 2 },
+      { string: 4, fret: 2, duration: 2, startBeat: 4 },
+      { string: 5, fret: 3, duration: 2, startBeat: 6 },
+      { string: 5, fret: 0, duration: 2, startBeat: 8 },
+      { string: 4, fret: 2, duration: 2, startBeat: 10 },
+      { string: 4, fret: 0, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Pumped Up Kicks — Foster the People. Bassline pop iconique. */
+const pumpedUpKicks: Tab = {
+  id: 'pumped-up-kicks',
+  name: 'Pumped Up Kicks',
+  artist: 'Foster the People',
+  tempo: 128,
+  key: 'F minor',
+  measures: [
+    [
+      { string: 5, fret: 1, duration: 4, startBeat: 0 },
+      { string: 5, fret: 1, duration: 2, startBeat: 4 },
+      { string: 5, fret: 4, duration: 2, startBeat: 6 },
+      { string: 4, fret: 1, duration: 4, startBeat: 8 },
+      { string: 4, fret: 3, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Wonderwall — Oasis. Arpège Em7 (capo 2). */
+const wonderwall: Tab = {
+  id: 'wonderwall',
+  name: 'Wonderwall',
+  artist: 'Oasis',
+  tempo: 87,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 4, fret: 2, duration: 2, startBeat: 0 },
+      { string: 3, fret: 2, duration: 2, startBeat: 2 },
+      { string: 2, fret: 0, duration: 2, startBeat: 4 },
+      { string: 1, fret: 3, duration: 2, startBeat: 6 },
+      { string: 0, fret: 3, duration: 2, startBeat: 8 },
+      { string: 1, fret: 3, duration: 2, startBeat: 10 },
+      { string: 2, fret: 0, duration: 2, startBeat: 12 },
+      { string: 3, fret: 2, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Hotel California (arp) — Eagles. Arpège Bm de l'intro. */
+const hotelCalifornia: Tab = {
+  id: 'hotel-california',
+  name: 'Hotel California (arpège)',
+  artist: 'Eagles',
+  tempo: 74,
+  key: 'B minor',
+  measures: [
+    [
+      { string: 4, fret: 2, duration: 2, startBeat: 0 },
+      { string: 3, fret: 4, duration: 2, startBeat: 2 },
+      { string: 2, fret: 4, duration: 2, startBeat: 4 },
+      { string: 1, fret: 3, duration: 2, startBeat: 6 },
+      { string: 2, fret: 4, duration: 2, startBeat: 8 },
+      { string: 3, fret: 4, duration: 2, startBeat: 10 },
+      { string: 4, fret: 2, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Sweet Caroline — Neil Diamond. Montée signature "bah bah bah". */
+const sweetCaroline: Tab = {
+  id: 'sweet-caroline',
+  name: 'Sweet Caroline',
+  artist: 'Neil Diamond',
+  tempo: 128,
+  key: 'A major',
+  measures: [
+    [
+      { string: 4, fret: 0, duration: 4, startBeat: 0 },
+      { string: 3, fret: 2, duration: 4, startBeat: 4 },
+      { string: 2, fret: 2, duration: 4, startBeat: 8 },
+      { string: 1, fret: 2, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Black Magic Woman — Santana. Lick latin-blues avec bends. */
+const blackMagicWoman: Tab = {
+  id: 'black-magic-woman',
+  name: 'Black Magic Woman',
+  artist: 'Santana',
+  tempo: 115,
+  key: 'D minor',
+  measures: [
+    [
+      { string: 3, fret: 7, duration: 2, startBeat: 0 },
+      { string: 3, fret: 5, duration: 2, startBeat: 2 },
+      { string: 2, fret: 7, duration: 2, startBeat: 4 },
+      { string: 3, fret: 7, duration: 2, startBeat: 6 },
+      { string: 4, fret: 5, duration: 4, startBeat: 8 },
+      { string: 3, fret: 7, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Nothing Else Matters — Metallica. Arpège Em main droite. */
+const nothingElseMatters: Tab = {
+  id: 'nothing-else-matters',
+  name: 'Nothing Else Matters',
+  artist: 'Metallica',
+  tempo: 70,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 4, startBeat: 0 },
+      { string: 2, fret: 0, duration: 2, startBeat: 4 },
+      { string: 1, fret: 0, duration: 2, startBeat: 6 },
+      { string: 0, fret: 0, duration: 2, startBeat: 8 },
+      { string: 1, fret: 0, duration: 2, startBeat: 10 },
+      { string: 2, fret: 0, duration: 2, startBeat: 12 },
+      { string: 4, fret: 2, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Hey Joe — Jimi Hendrix. Walk-up C-G-D-A-E de l'intro. */
+const heyJoe: Tab = {
+  id: 'hey-joe',
+  name: 'Hey Joe',
+  artist: 'Jimi Hendrix',
+  tempo: 80,
+  key: 'E major',
+  measures: [
+    [
+      { string: 4, fret: 3, duration: 4, startBeat: 0 },
+      { string: 5, fret: 3, duration: 4, startBeat: 4 },
+      { string: 4, fret: 5, duration: 4, startBeat: 8 },
+      { string: 4, fret: 0, duration: 2, startBeat: 12 },
+      { string: 5, fret: 0, duration: 2, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Layla — Derek & the Dominos / Clapton. Riff unisson descendant. */
+const layla: Tab = {
+  id: 'layla',
+  name: 'Layla',
+  artist: 'Eric Clapton',
+  tempo: 116,
+  key: 'D minor',
+  measures: [
+    [
+      { string: 4, fret: 5, duration: 2, startBeat: 0 },
+      { string: 4, fret: 8, duration: 2, startBeat: 2 },
+      { string: 3, fret: 5, duration: 2, startBeat: 4 },
+      { string: 3, fret: 7, duration: 2, startBeat: 6 },
+      { string: 3, fret: 5, duration: 2, startBeat: 8 },
+      { string: 2, fret: 5, duration: 2, startBeat: 10 },
+      { string: 2, fret: 7, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** For the Love of God (simplifié) — Steve Vai. Phrase à bends longs. */
+const forTheLoveOfGod: Tab = {
+  id: 'for-the-love-of-god',
+  name: 'For the Love of God (simplifié)',
+  artist: 'Steve Vai',
+  tempo: 90,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 0, fret: 15, duration: 4, startBeat: 0 },
+      { string: 0, fret: 17, duration: 2, startBeat: 4 },
+      { string: 0, fret: 15, duration: 2, startBeat: 6 },
+      { string: 1, fret: 15, duration: 4, startBeat: 8 },
+      { string: 0, fret: 12, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Tornado of Souls — Megadeth. Riff thrash palm-muté. */
+const tornadoOfSouls: Tab = {
+  id: 'tornado-of-souls',
+  name: 'Tornado of Souls',
+  artist: 'Megadeth',
+  tempo: 165,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 2, startBeat: 0 },
+      { string: 5, fret: 0, duration: 2, startBeat: 2 },
+      { string: 5, fret: 3, duration: 2, startBeat: 4 },
+      { string: 5, fret: 2, duration: 2, startBeat: 6 },
+      { string: 5, fret: 0, duration: 2, startBeat: 8 },
+      { string: 5, fret: 5, duration: 2, startBeat: 10 },
+      { string: 5, fret: 3, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Cliffs of Dover — Eric Johnson. Lick d'intro legato. */
+const cliffsOfDover: Tab = {
+  id: 'cliffs-of-dover',
+  name: 'Cliffs of Dover',
+  artist: 'Eric Johnson',
+  tempo: 150,
+  key: 'G major',
+  measures: [
+    [
+      { string: 2, fret: 5, duration: 2, startBeat: 0 },
+      { string: 1, fret: 5, duration: 2, startBeat: 2 },
+      { string: 1, fret: 8, duration: 2, startBeat: 4 },
+      { string: 0, fret: 5, duration: 2, startBeat: 6 },
+      { string: 0, fret: 8, duration: 2, startBeat: 8 },
+      { string: 1, fret: 8, duration: 2, startBeat: 10 },
+      { string: 2, fret: 7, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Cassidy — Grateful Dead. Arpège A jam-rock. */
+const cassidy: Tab = {
+  id: 'cassidy',
+  name: 'Cassidy',
+  artist: 'Grateful Dead',
+  tempo: 120,
+  key: 'A major',
+  measures: [
+    [
+      { string: 4, fret: 0, duration: 2, startBeat: 0 },
+      { string: 3, fret: 2, duration: 2, startBeat: 2 },
+      { string: 2, fret: 2, duration: 2, startBeat: 4 },
+      { string: 1, fret: 2, duration: 2, startBeat: 6 },
+      { string: 2, fret: 2, duration: 2, startBeat: 8 },
+      { string: 3, fret: 2, duration: 2, startBeat: 10 },
+      { string: 4, fret: 0, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Master of Puppets (riff) — Metallica. Pédale E down-pickée. */
+const masterOfPuppets: Tab = {
+  id: 'master-of-puppets',
+  name: 'Master of Puppets',
+  artist: 'Metallica',
+  tempo: 212,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 1, startBeat: 0 },
+      { string: 5, fret: 0, duration: 1, startBeat: 2 },
+      { string: 5, fret: 0, duration: 1, startBeat: 4 },
+      { string: 5, fret: 1, duration: 1, startBeat: 6 },
+      { string: 5, fret: 0, duration: 1, startBeat: 8 },
+      { string: 4, fret: 3, duration: 1, startBeat: 10 },
+      { string: 4, fret: 2, duration: 1, startBeat: 12 },
+      { string: 4, fret: 1, duration: 1, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Eruption (tap simplifié) — Van Halen. Tapping A minor. */
+const eruption: Tab = {
+  id: 'eruption',
+  name: 'Eruption (tap simplifié)',
+  artist: 'Van Halen',
+  tempo: 150,
+  key: 'A minor',
+  measures: [
+    [
+      { string: 1, fret: 5, duration: 1, startBeat: 0 },
+      { string: 1, fret: 8, duration: 1, startBeat: 2 },
+      { string: 1, fret: 12, duration: 1, startBeat: 4 },
+      { string: 1, fret: 8, duration: 1, startBeat: 6 },
+      { string: 1, fret: 5, duration: 1, startBeat: 8 },
+      { string: 1, fret: 12, duration: 1, startBeat: 10 },
+      { string: 1, fret: 8, duration: 1, startBeat: 12 },
+      { string: 1, fret: 5, duration: 1, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Caprice n°24 (adapt.) — Paganini. Thème néoclassique A minor. */
+const caprice24: Tab = {
+  id: 'caprice-24',
+  name: 'Caprice n°24 (adaptation)',
+  artist: 'Paganini',
+  tempo: 130,
+  key: 'A minor',
+  measures: [
+    [
+      { string: 1, fret: 1, duration: 2, startBeat: 0 },
+      { string: 1, fret: 0, duration: 2, startBeat: 2 },
+      { string: 0, fret: 0, duration: 2, startBeat: 4 },
+      { string: 1, fret: 1, duration: 2, startBeat: 6 },
+      { string: 1, fret: 3, duration: 2, startBeat: 8 },
+      { string: 1, fret: 1, duration: 2, startBeat: 10 },
+      { string: 1, fret: 0, duration: 4, startBeat: 12 },
+    ],
+  ],
+};
+
+/** Hammer Smashed Face — Cannibal Corpse. Gallop death metal (drop D). */
+const hammerSmashedFace: Tab = {
+  id: 'hammer-smashed-face',
+  name: 'Hammer Smashed Face',
+  artist: 'Cannibal Corpse',
+  tempo: 200,
+  key: 'D minor',
+  measures: [
+    [
+      { string: 5, fret: 0, duration: 1, startBeat: 0 },
+      { string: 5, fret: 0, duration: 1, startBeat: 2 },
+      { string: 5, fret: 1, duration: 1, startBeat: 4 },
+      { string: 5, fret: 0, duration: 1, startBeat: 6 },
+      { string: 5, fret: 3, duration: 1, startBeat: 8 },
+      { string: 5, fret: 1, duration: 1, startBeat: 10 },
+      { string: 5, fret: 0, duration: 1, startBeat: 12 },
+      { string: 5, fret: 5, duration: 1, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Far Beyond the Sun (sweep) — Yngwie Malmsteen. Balayage A minor. */
+const farBeyondTheSun: Tab = {
+  id: 'far-beyond-the-sun',
+  name: 'Far Beyond the Sun (sweep)',
+  artist: 'Yngwie Malmsteen',
+  tempo: 180,
+  key: 'A minor',
+  measures: [
+    [
+      { string: 5, fret: 5, duration: 1, startBeat: 0 },
+      { string: 4, fret: 7, duration: 1, startBeat: 2 },
+      { string: 3, fret: 7, duration: 1, startBeat: 4 },
+      { string: 2, fret: 5, duration: 1, startBeat: 6 },
+      { string: 1, fret: 5, duration: 1, startBeat: 8 },
+      { string: 0, fret: 8, duration: 1, startBeat: 10 },
+      { string: 1, fret: 5, duration: 1, startBeat: 12 },
+      { string: 2, fret: 7, duration: 1, startBeat: 14 },
+    ],
+  ],
+};
+
+/** Through the Fire and Flames — DragonForce. Lick power metal ultra-rapide. */
+const throughTheFireAndFlames: Tab = {
+  id: 'through-the-fire-and-flames',
+  name: 'Through the Fire and Flames',
+  artist: 'DragonForce',
+  tempo: 200,
+  key: 'E minor',
+  measures: [
+    [
+      { string: 0, fret: 7, duration: 1, startBeat: 0 },
+      { string: 0, fret: 9, duration: 1, startBeat: 2 },
+      { string: 0, fret: 10, duration: 1, startBeat: 4 },
+      { string: 0, fret: 12, duration: 1, startBeat: 6 },
+      { string: 1, fret: 10, duration: 1, startBeat: 8 },
+      { string: 1, fret: 12, duration: 1, startBeat: 10 },
+      { string: 0, fret: 9, duration: 1, startBeat: 12 },
+      { string: 0, fret: 7, duration: 1, startBeat: 14 },
+    ],
+  ],
+};
+
 export const TABS: Tab[] = [
   smokeOnTheWater,
   ironMan,
@@ -278,6 +715,29 @@ export const TABS: Tab[] = [
   dayTripper,
   crazyTrain,
   moneyForNothing,
+  // Session data 2026-06-17 — 22 nouveaux
+  comeAsYouAre,
+  wishYouWereHere,
+  smellsLikeTeenSpirit,
+  wholeLottaLove,
+  pumpedUpKicks,
+  wonderwall,
+  hotelCalifornia,
+  sweetCaroline,
+  blackMagicWoman,
+  nothingElseMatters,
+  heyJoe,
+  layla,
+  forTheLoveOfGod,
+  tornadoOfSouls,
+  cliffsOfDover,
+  cassidy,
+  masterOfPuppets,
+  eruption,
+  caprice24,
+  hammerSmashedFace,
+  farBeyondTheSun,
+  throughTheFireAndFlames,
 ];
 
 export function getTab(id: string): Tab | undefined {
