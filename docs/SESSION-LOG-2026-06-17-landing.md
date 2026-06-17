@@ -157,3 +157,13 @@ CTA → `/dashboard`
 - `src/i18n/locales/fr.json` + `en.json` — `landing.kicker` + `landing.headline`
   recadrés (FR + EN).
 - `docs/SESSION-LOG-2026-06-17-landing.md` — ce log.
+
+> ⚠️ Note process : les 4 fichiers ont d'abord atterri par erreur dans le
+> checkout principal (chemin sans `.claude/worktrees/...`). Comme le checkout
+> principal était pile sur `origin/main`, commit ciblé (pathspec, sans toucher
+> au WIP des autres sessions resté en staging) + `git push origin main` en
+> fast-forward. Worktree resynchronisé ensuite sur `origin/main`.
+
+---
+
+✅ Mergé dans main (5868474) — push fast-forward `9519ee4..5868474`.
