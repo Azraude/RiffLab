@@ -21,6 +21,7 @@ import {
   GLBErrorBoundary,
   ensureTransparentScene,
   stripSkyboxes,
+  DisposeOnUnmount,
 } from './sceneHelpers';
 import { Scene3DFallback } from './sceneFallbacks';
 
@@ -114,6 +115,7 @@ export default function FloatingGuitar3D({
         onCreated={ensureTransparentScene}
         style={{ pointerEvents: 'none', background: 'transparent' }}
       >
+        <DisposeOnUnmount />
         <Suspense fallback={null}>
           <Scene
             model={model}

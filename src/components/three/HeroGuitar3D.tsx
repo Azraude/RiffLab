@@ -20,6 +20,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { Component, Suspense, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
+import { DisposeOnUnmount } from './sceneHelpers';
 
 // ─── CSS variables → THREE.Color (lecture au mount) ─────────────────────
 function readGoldColors() {
@@ -183,6 +184,7 @@ export default function HeroGuitar3D() {
         gl={{ alpha: true, antialias: true }}
         style={{ pointerEvents: 'none' }}
       >
+        <DisposeOnUnmount />
         <Scene />
       </Canvas>
     </GLBErrorBoundary>

@@ -2,26 +2,87 @@ import { useEffect, useState } from 'react';
 import { usePrefs } from '@/stores/prefsStore';
 
 /**
+ * Kill-switch global de perte de contexte WebGL.
+ *
+ * Root cause de l'écran noir à la navigation (hotfix) : chaque page
+ * décorative monte un `<Canvas>` Three.js = un contexte WebGL. Le navigateur
+ * en limite ~8-16 ; à force de naviguer, les anciens contextes ne sont pas
+ * libérés assez vite → `THREE.WebGLRenderer: Context Lost` → canvas noir qui
+ * recouvre la page + boucle de render qui throw.
+ *
+ * Dès la PREMIÈRE perte de contexte, on coupe TOUT le 3D de l'app (tous les
+ * `useCanRender3D` repassent à false → les Canvas se démontent → fallback
+ * gradient). Dégradation propre, plus jamais d'écran noir pour la session.
+ * `webglcontextlost` ne bubble pas → on écoute en phase capture sur window.
+ */
+let webglContextLost = false;
+const lossListeners = new Set<() => void>();
+let globalHandlerInstalled = false;
+/**
+ * Fenêtre pendant laquelle une perte de contexte est INTENTIONNELLE (notre
+ * teardown au démontage appelle `gl.forceContextLoss()`, qui dispatch lui-même
+ * `webglcontextlost` — possiblement de façon async). On l'ignore alors, sinon
+ * chaque navigation déclencherait le kill-switch et couperait tout le 3D.
+ */
+let intentionalLossUntil = 0;
+
+/** Appelé juste avant un `forceContextLoss()` volontaire (cf. DisposeOnUnmount). */
+export function markIntentionalContextLoss(): void {
+  intentionalLossUntil = Date.now() + 800;
+}
+
+function installGlobalContextLossHandler(): void {
+  if (globalHandlerInstalled || typeof window === 'undefined') return;
+  globalHandlerInstalled = true;
+  window.addEventListener(
+    'webglcontextlost',
+    (e) => {
+      // Perte volontaire (démontage propre d'une page) → on n'y touche pas.
+      if (Date.now() < intentionalLossUntil) return;
+      // Vraie perte (saturation GPU) : preventDefault = pas de bruit, puis
+      // on coupe le 3D partout.
+      try {
+        e.preventDefault();
+      } catch {
+        /* noop */
+      }
+      if (webglContextLost) return;
+      webglContextLost = true;
+      lossListeners.forEach((fn) => {
+        try {
+          fn();
+        } catch {
+          /* noop */
+        }
+      });
+    },
+    true // capture : l'event est dispatché sur le <canvas>, ne bubble pas
+  );
+}
+
+/**
  * Hook central pour décider si on rend une scène Three.js ou son fallback.
  *
  * Composition (toutes les conditions doivent être vraies) :
- * 1. `prefs.effects3D` est `true` (default true, toggleable dans
- *    Préférences)
+ * 1. `prefs.effects3D` est `true` (default true, toggleable dans Préférences)
  * 2. `prefers-reduced-motion` est `no-preference` (accessibilité)
- * 3. Viewport ≥ 768px (policy CLAUDE.md : pas de Three.js sur mobile
- *    par défaut)
- * 4. Device non-low-end : `navigator.deviceMemory >= 4` (feature-
- *    detected, fallback `true` si non supporté) ET
- *    `navigator.hardwareConcurrency >= 4` (idem)
- *
- * Tout le reste = fallback gradient.
+ * 3. Viewport ≥ 768px (policy CLAUDE.md : pas de Three.js sur mobile)
+ * 4. Device non-low-end (`deviceMemory`/`hardwareConcurrency` ≥ 4 si dispo)
+ * 5. Aucun contexte WebGL perdu durant la session (kill-switch ci-dessus)
  */
 export function useCanRender3D(): boolean {
   const effects3D = usePrefs((s) => s.effects3D);
   const [mediaOk, setMediaOk] = useState(false);
   const [deviceOk, setDeviceOk] = useState(false);
+  const [lost, setLost] = useState(webglContextLost);
 
   useEffect(() => {
+    installGlobalContextLossHandler();
+    // S'abonner aux pertes de contexte → couper le 3D dès la 1ère.
+    const onLoss = () => setLost(true);
+    lossListeners.add(onLoss);
+    if (webglContextLost) setLost(true);
+
     // Media query gate : viewport + reduced-motion
     const mql = window.matchMedia(
       '(min-width: 768px) and (prefers-reduced-motion: no-preference)'
@@ -39,8 +100,11 @@ export function useCanRender3D(): boolean {
       nav.hardwareConcurrency == null || nav.hardwareConcurrency >= 4;
     setDeviceOk(memOk && cpuOk);
 
-    return () => mql.removeEventListener('change', onChange);
+    return () => {
+      lossListeners.delete(onLoss);
+      mql.removeEventListener('change', onChange);
+    };
   }, []);
 
-  return effects3D && mediaOk && deviceOk;
+  return effects3D && mediaOk && deviceOk && !lost;
 }

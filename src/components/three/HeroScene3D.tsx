@@ -22,6 +22,7 @@ import {
   GLBErrorBoundary,
   ensureTransparentScene,
   stripSkyboxes,
+  DisposeOnUnmount,
 } from './sceneHelpers';
 
 const MODEL_PATH = '/models/studio-scene.glb';
@@ -129,6 +130,7 @@ export default function HeroScene3D() {
         onCreated={ensureTransparentScene}
         style={{ pointerEvents: 'none', background: 'transparent' }}
       >
+        <DisposeOnUnmount />
         <Suspense fallback={null}>
           <Scene />
         </Suspense>
