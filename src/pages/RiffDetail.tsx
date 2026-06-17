@@ -12,7 +12,6 @@
  *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
 import { useMemo, useRef, useState } from 'react';
-import { SEO } from '@/components/SEO';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -99,15 +98,6 @@ export function RiffDetail() {
   const { riff, tab } = data;
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
-  const schemaJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'MusicComposition',
-    name: tab.name,
-    composer: { '@type': 'Person', name: riff.contributor },
-    musicalKey: tab.key,
-    url: `https://riff-lab-sigma.vercel.app/riffs/${riff.id}`,
-    description: riff.caption ?? undefined,
-  };
 
   const handleListen = () => {
     tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -119,12 +109,6 @@ export function RiffDetail() {
 
   return (
     <>
-      <SEO
-        title={`${tab.name} — ${riff.contributor}`}
-        description={riff.caption ?? `Apprends le riff "${tab.name}" (${tab.key}) sur RiffLab.`}
-        canonical={`https://riff-lab-sigma.vercel.app/riffs/${riff.id}`}
-        schemaJsonLd={schemaJsonLd}
-      />
       {/* === Header sticky compact mobile (Back + actions icons) ===
           Au-dessus du contenu, fond bg-bg/95 avec blur pour rester
           lisible quand on scroll le tab par-dessus. */}
@@ -168,10 +152,14 @@ export function RiffDetail() {
         {/* ───────── MAIN COLUMN ───────── */}
         <div className="pb-24 md:pb-8 lg:pb-12">
           {/* === Hero compact === */}
+          {/* NOTE : `initial={false}` désactive l'animation d'entrée Framer Motion.
+              Symptôme observé : la section restait bloquée à `opacity: 0` sur
+              certaines navigations (l'`animate` ne se déclenchait pas après le
+              click sur une card riff), donnant un écran noir alors que le DOM
+              était bien rendu. Pas d'animation = plus fiable. */}
           <motion.section
-            initial={{ opacity: 0, y: 12 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
             className="mt-3 mb-4 md:mt-0 md:mb-5"
           >
             <div className="flex flex-wrap items-center gap-2">

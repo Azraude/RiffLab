@@ -15,7 +15,6 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
 import { Plus, SlidersHorizontal } from 'lucide-react';
@@ -176,7 +175,6 @@ export function Riffs() {
 
   return (
     <>
-      <SEO title="Riffs" description="Découvre et partage des riffs de guitare. Feed communautaire mobile-first — apprends les riffs cultes, partage les tiens." />
       {/* === Header sticky : titre + tabs + filtres === */}
       <div className="sticky top-0 z-20 -mx-5 mb-5 border-b border-border/40 bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:px-12">
         <div className="mx-auto max-w-7xl">

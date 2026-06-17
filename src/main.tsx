@@ -7,7 +7,6 @@ import { usePrefs } from '@/stores/prefsStore';
 import { applyTheme } from '@/lib/themes';
 import { rebuildVoices } from '@/lib/audio';
 import { PWAUpdateToast } from '@/components/pwa/PWAUpdateToast';
-import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import '@/i18n'; // setup i18next FR/EN AVANT le render
 import '@/styles/globals.css';
@@ -33,6 +32,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <RouterProvider router={router} />
     </ErrorBoundary>
     <PWAUpdateToast />
-    <InstallPrompt />
   </React.StrictMode>
 );

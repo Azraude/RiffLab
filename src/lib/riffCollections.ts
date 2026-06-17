@@ -69,9 +69,7 @@ export const COLLECTIONS: RiffCollection[] = [
     filter: (r) =>
       r.tags.includes('rock' as RiffTag) &&
       r.addedAt <= '2026-03-01' &&
-      ['cr-iron', 'cr-sunshine', 'cr-stairway', 'cr-smoke', 'cr-whole-lotta-love'].includes(
-        r.id
-      ),
+      ['cr-iron', 'cr-sunshine', 'cr-stairway', 'cr-smoke'].includes(r.id),
   },
   {
     slug: 'blues-approach',
@@ -81,27 +79,6 @@ export const COLLECTIONS: RiffCollection[] = [
     emoji: '🎷',
     accent: 'purple',
     filter: (r) => r.tags.includes('blues' as RiffTag),
-  },
-  {
-    slug: 'metal',
-    title: '🤘 Riffs metal',
-    description:
-      "Du doom de Sabbath au death de Cannibal Corpse : palm mute, gallops et down-picking. Monte le gain.",
-    emoji: '🤘',
-    accent: 'red',
-    filter: (r) => r.tags.includes('metal' as RiffTag),
-  },
-  {
-    slug: 'classic-blues',
-    title: '🎷 Blues classique',
-    description:
-      "Hey Joe, Layla, Black Magic Woman... le vocabulaire blues-rock à avoir dans les doigts : bend, feel, vibrato.",
-    emoji: '🎷',
-    accent: 'purple',
-    filter: (r) =>
-      ['cr-hey-joe', 'cr-layla', 'cr-black-magic-woman', 'cr-sunshine', 'cr-whole-lotta-love'].includes(
-        r.id
-      ),
   },
 ];
 

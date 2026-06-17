@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { SEO } from '@/components/SEO';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TiltCard } from '@/components/ui/TiltCard';
@@ -32,7 +31,6 @@ export function Chords() {
 
   return (
     <>
-      <SEO title="Bibliothèque d'accords" description="200+ accords de guitare interactifs avec diagrammes SVG et audio. Filtre par tonalité et qualité." />
       <PageHeader
         title={t('chords.title')}
         subtitle={t('chords.subtitle', { count: CHORDS.length })}

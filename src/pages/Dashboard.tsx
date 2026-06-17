@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { SEO } from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -94,7 +93,6 @@ export function Dashboard() {
 
   return (
     <>
-      <SEO title="Dashboard" description="Ton studio guitare personnel — accords du jour, gammes, stats et pratique quotidienne." />
       {showOnboarding && (
         <Onboarding onDone={() => setOnboardingDismissed(true)} />
       )}
