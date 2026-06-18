@@ -254,28 +254,28 @@ export function RiffDetail() {
             </p>
           </section>
 
-          {/* === ACTIONS PRIMARY (hiérarchisées) ===
-              CTA "Écouter" PRIMARY full-width + grid 2-cols secondaires.
-              Sur mobile le CTA scroll-into-view sur le tab + tape sur
-              le play interne du RiffPlayer (Phase 2 connectera direct). */}
+          {/* === ACTIONS PRIMARY (hiérarchie inversée) ===
+              "Apprendre" est le vrai use case → CTA PRIMARY full-width.
+              "Écouter" + "Annotations" passent en secondaires 2-cols. */}
           <section className="mb-5 space-y-2">
             <button
               type="button"
-              onClick={handleListen}
+              onClick={() => setLearnOpen(true)}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
-              aria-label="Écouter le riff"
+              aria-label="Apprendre ce riff"
             >
-              <Play size={18} fill="currentColor" />
-              Écouter le riff
+              <Target size={18} />
+              Apprendre ce riff
             </button>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setLearnOpen(true)}
+                onClick={handleListen}
                 className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20 active:scale-[0.99]"
+                aria-label="Écouter le riff"
               >
-                <Target size={16} />
-                Apprendre
+                <Play size={16} fill="currentColor" />
+                Écouter
               </button>
               <button
                 type="button"
@@ -287,7 +287,7 @@ export function RiffDetail() {
                     ? 'border-border bg-surface text-text hover:border-gold-soft'
                     : 'cursor-not-allowed border-border/40 bg-surface/40 text-text-soft'
                 )}
-                aria-label={riff.caption ? 'Voir les annotations' : 'Pas d\'annotations'}
+                aria-label={riff.caption ? 'Voir les annotations' : "Pas d'annotations"}
               >
                 <BookOpen size={16} />
                 Annotations
