@@ -1,5 +1,5 @@
 import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+// AnimatePresence + motion retirés — voir note dans le JSX (Hotfix écran noir).
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { KeyboardShortcutsProvider } from '@/hooks/useKeyboardShortcuts';
@@ -64,22 +64,17 @@ export function Layout() {
           className="relative min-w-0 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0"
         >
           <div className="mx-auto min-w-0 max-w-[1400px] px-5 py-7 md:px-12 md:py-9">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
-              >
-                {/* Boundary re-montée à chaque route (key pathname du parent) :
-                    une erreur de page ne fait plus écran noir, la sidebar
-                    reste utilisable, et un échec de chunk lazy reload auto. */}
-                <ErrorBoundary>
-                  <Outlet />
-                </ErrorBoundary>
-              </motion.div>
-            </AnimatePresence>
+            {/* NOTE : l'AnimatePresence mode="wait" + motion.div avec
+                initial:{opacity:0,y:8} a été RETIRÉ. Symptôme : sur certaines
+                navigations (notamment click sur une card riff → RiffDetail),
+                le motion.div restait bloqué à opacity:0 → écran noir alors que
+                le DOM était bien rendu. Cause probable : Strict Mode double
+                mount + mode="wait" qui attend un exit qui n'arrive jamais.
+                Trade-off accepté : plus d'animation de transition entre pages,
+                mais plus jamais d'écran noir bloquant. */}
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>
