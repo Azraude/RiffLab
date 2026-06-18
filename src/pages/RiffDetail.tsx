@@ -12,7 +12,6 @@
  *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
 import { useMemo, useRef, useState } from 'react';
-import { SEO } from '@/components/SEO';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -99,15 +98,6 @@ export function RiffDetail() {
   const { riff, tab } = data;
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
-  const schemaJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'MusicComposition',
-    name: tab.name,
-    composer: { '@type': 'Person', name: riff.contributor },
-    musicalKey: tab.key,
-    url: `https://riff-lab-sigma.vercel.app/riffs/${riff.id}`,
-    description: riff.caption ?? undefined,
-  };
 
   const handleListen = () => {
     tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -119,12 +109,6 @@ export function RiffDetail() {
 
   return (
     <>
-      <SEO
-        title={`${tab.name} — ${riff.contributor}`}
-        description={riff.caption ?? `Apprends le riff "${tab.name}" (${tab.key}) sur RiffLab.`}
-        canonical={`https://riff-lab-sigma.vercel.app/riffs/${riff.id}`}
-        schemaJsonLd={schemaJsonLd}
-      />
       {/* === Header sticky compact mobile (Back + actions icons) ===
           Au-dessus du contenu, fond bg-bg/95 avec blur pour rester
           lisible quand on scroll le tab par-dessus. */}
@@ -168,10 +152,14 @@ export function RiffDetail() {
         {/* ───────── MAIN COLUMN ───────── */}
         <div className="pb-24 md:pb-8 lg:pb-12">
           {/* === Hero compact === */}
+          {/* NOTE : `initial={false}` désactive l'animation d'entrée Framer Motion.
+              Symptôme observé : la section restait bloquée à `opacity: 0` sur
+              certaines navigations (l'`animate` ne se déclenchait pas après le
+              click sur une card riff), donnant un écran noir alors que le DOM
+              était bien rendu. Pas d'animation = plus fiable. */}
           <motion.section
-            initial={{ opacity: 0, y: 12 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
             className="mt-3 mb-4 md:mt-0 md:mb-5"
           >
             <div className="flex flex-wrap items-center gap-2">
@@ -266,28 +254,28 @@ export function RiffDetail() {
             </p>
           </section>
 
-          {/* === ACTIONS PRIMARY (hiérarchisées) ===
-              CTA "Écouter" PRIMARY full-width + grid 2-cols secondaires.
-              Sur mobile le CTA scroll-into-view sur le tab + tape sur
-              le play interne du RiffPlayer (Phase 2 connectera direct). */}
+          {/* === ACTIONS PRIMARY (hiérarchie inversée) ===
+              "Apprendre" est le vrai use case → CTA PRIMARY full-width.
+              "Écouter" + "Annotations" passent en secondaires 2-cols. */}
           <section className="mb-5 space-y-2">
             <button
               type="button"
-              onClick={handleListen}
+              onClick={() => setLearnOpen(true)}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
-              aria-label="Écouter le riff"
+              aria-label="Apprendre ce riff"
             >
-              <Play size={18} fill="currentColor" />
-              Écouter le riff
+              <Target size={18} />
+              Apprendre ce riff
             </button>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setLearnOpen(true)}
+                onClick={handleListen}
                 className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20 active:scale-[0.99]"
+                aria-label="Écouter le riff"
               >
-                <Target size={16} />
-                Apprendre
+                <Play size={16} fill="currentColor" />
+                Écouter
               </button>
               <button
                 type="button"
@@ -299,7 +287,7 @@ export function RiffDetail() {
                     ? 'border-border bg-surface text-text hover:border-gold-soft'
                     : 'cursor-not-allowed border-border/40 bg-surface/40 text-text-soft'
                 )}
-                aria-label={riff.caption ? 'Voir les annotations' : 'Pas d\'annotations'}
+                aria-label={riff.caption ? 'Voir les annotations' : "Pas d'annotations"}
               >
                 <BookOpen size={16} />
                 Annotations

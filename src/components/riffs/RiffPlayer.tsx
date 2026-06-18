@@ -12,6 +12,11 @@
  *    avec close button qui arrête + cache
  *  - Auto-pause de l'autoscroll si l'user scroll manuellement (3s de
  *    grace period avant de reprendre le follow)
+ *
+ * Refonte toolbar (sess 2026-06-17) :
+ *  - Loop + Metronome → icônes toggle compactes en top-right du tab area
+ *  - Speed pills → popover "1x ▾" (fixed position pour échapper overflow-hidden)
+ *  - Play/Stop → rangée compacte fusionnée avec l'indicateur Mesure X/Y
  */
 import {
   forwardRef,
@@ -23,13 +28,15 @@ import {
   useState,
 } from 'react';
 import {
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Drum,
   Pause,
   Play,
   Repeat,
   Square,
-  Volume2,
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -76,6 +83,8 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
   const [activeBeat, setActiveBeat] = useState<number | null>(null);
   const [playCount, setPlayCount] = useState(0);
   const [scrollMeasureIdx, setScrollMeasureIdx] = useState(0);
+  /** Position fixe du popover speed (calculée au clic pour échapper overflow-hidden). */
+  const [speedPopover, setSpeedPopover] = useState<{ top: number; right: number } | null>(null);
   /**
    * Token d'annulation PAR-RUN (fix bug tempo « tarpin vite », hotfix).
    * Un booléen partagé ne marchait pas : quand l'effet se relançait (ex.
@@ -88,6 +97,7 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
   const runRef = useRef<{ cancelled: boolean } | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const manualScrollUntilRef = useRef(0);
+  const speedBtnRef = useRef<HTMLButtonElement | null>(null);
   /**
    * Refs pour les callbacks volatils : `playMidi` change d'identité au flip
    * de `ready` (init audio) et `onPlayCountChange` peut être inline côté
@@ -283,56 +293,143 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
     setSpeed(SPEED_OPTIONS[(i + 1) % SPEED_OPTIONS.length]);
   }, [speed]);
 
+  /** Ouvre le popover speed en position fixe (échappe overflow-hidden du card). */
+  const handleSpeedToggle = useCallback(() => {
+    if (speedPopover) {
+      setSpeedPopover(null);
+      return;
+    }
+    if (speedBtnRef.current) {
+      const r = speedBtnRef.current.getBoundingClientRect();
+      setSpeedPopover({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+  }, [speedPopover]);
+
   const progress = activeBeat != null ? (activeBeat / totalBeats) * 100 : 0;
   const playerCurrentMeasureIdx = activeBeat != null ? Math.floor(activeBeat / BEATS_PER_MEASURE) : -1;
 
   return (
     <>
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        {/* === Tab notation avec scroll horizontal auto === */}
-        <div
-          ref={scrollRef}
-          className="relative max-h-[200px] overflow-x-auto overflow-y-hidden border-b border-border bg-surface-2 px-3 py-4 [scrollbar-width:thin]"
-        >
-          {/* Highlight overlay de la mesure courante (en lecture seulement) */}
-          {playerCurrentMeasureIdx >= 0 && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute top-2 bottom-2 rounded-md bg-gold/8 transition-all duration-150"
-              style={{
-                left: `${PAD_LEFT + playerCurrentMeasureIdx * MEASURE_WIDTH}px`,
-                width: `${MEASURE_WIDTH}px`,
-              }}
-            />
-          )}
-          <TabReader tab={tab} activeAbsBeat={activeBeat} lineHeight={20} beatWidth={BEAT_WIDTH} />
+        {/* === Tab notation + toolbar overlay en top-right === */}
+        <div className="relative">
+          <div
+            ref={scrollRef}
+            className="relative max-h-[200px] overflow-x-auto overflow-y-hidden border-b border-border bg-surface-2 px-3 py-4 [scrollbar-width:thin]"
+          >
+            {/* Highlight overlay de la mesure courante (en lecture seulement) */}
+            {playerCurrentMeasureIdx >= 0 && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-2 bottom-2 rounded-md bg-gold/8 transition-all duration-150"
+                style={{
+                  left: `${PAD_LEFT + playerCurrentMeasureIdx * MEASURE_WIDTH}px`,
+                  width: `${MEASURE_WIDTH}px`,
+                }}
+              />
+            )}
+            <TabReader tab={tab} activeAbsBeat={activeBeat} lineHeight={20} beatWidth={BEAT_WIDTH} />
+          </div>
+
+          {/* ── Toolbar icônes top-right (Loop · Métronome · Speed) ──
+              Positionnée en absolute dans le wrapper relative pour rester
+              au-dessus du tab scrollable. bg-surface/80 + backdrop-blur
+              pour rester lisible sur les cordes. */}
+          <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-surface/80 p-0.5 backdrop-blur-sm">
+            <ToolbarIconBtn
+              active={loop}
+              onClick={() => setLoop((l) => !l)}
+              label={loop ? 'Désactiver loop' : 'Activer loop'}
+            >
+              <Repeat size={16} />
+            </ToolbarIconBtn>
+            <ToolbarIconBtn
+              active={metronome}
+              onClick={() => setMetronome((m) => !m)}
+              label={metronome ? 'Désactiver métronome' : 'Activer métronome'}
+            >
+              <Drum size={16} />
+            </ToolbarIconBtn>
+            {/* Speed selector : ouvre un popover fixed qui échappe overflow-hidden */}
+            <button
+              ref={speedBtnRef}
+              type="button"
+              onClick={handleSpeedToggle}
+              aria-label={`Vitesse ${speed}x — changer`}
+              aria-expanded={!!speedPopover}
+              className={clsx(
+                'flex h-9 items-center gap-0.5 rounded-md px-2 font-mono text-[11px] font-bold transition-colors',
+                speedPopover
+                  ? 'bg-gold/15 text-gold'
+                  : 'text-text-muted hover:bg-surface hover:text-text'
+              )}
+            >
+              {speed}x
+              <ChevronDown size={10} className={clsx('transition-transform', speedPopover && 'rotate-180')} />
+            </button>
+          </div>
         </div>
 
-        {/* === Indicateur Mesure X/Y + flèches navigation === */}
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-bg/40 px-2 py-1.5">
+        {/* === Rangée compacte : Play · Stop · Mesure X/Y ← → · badge count === */}
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+          {/* Play / Pause */}
           <button
             type="button"
-            onClick={() => scrollToMeasure(currentMeasureIdx - 1)}
-            disabled={currentMeasureIdx <= 0}
-            aria-label="Mesure précédente"
-            className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text disabled:opacity-30"
+            onClick={() => setPlaying((p) => !p)}
+            className={clsx(
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all',
+              playing
+                ? 'border border-danger/40 bg-danger/15 text-danger hover:bg-danger/25'
+                : 'bg-gradient-to-b from-gold-bright to-gold text-bg hover:-translate-y-px'
+            )}
+            aria-label={playing ? 'Pause' : 'Lecture'}
           >
-            <ChevronLeft size={16} />
+            {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
           </button>
-          <div className="font-mono text-xs">
-            <span className="text-text-soft">Mesure </span>
-            <span className="font-bold text-text">{currentMeasureIdx + 1}</span>
-            <span className="text-text-soft"> / {tab.measures.length}</span>
+          {/* Stop & reset */}
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text"
+            aria-label="Stop & reset"
+          >
+            <Square size={13} />
+          </button>
+
+          {/* Indicateur Mesure X/Y + flèches (centré, flex-1) */}
+          <div className="flex flex-1 items-center justify-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => scrollToMeasure(currentMeasureIdx - 1)}
+              disabled={currentMeasureIdx <= 0}
+              aria-label="Mesure précédente"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text disabled:opacity-30"
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <div className="min-w-[72px] text-center font-mono text-xs">
+              <span className="text-text-soft">Mesure </span>
+              <span className="font-bold text-text">{currentMeasureIdx + 1}</span>
+              <span className="text-text-soft"> / {tab.measures.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => scrollToMeasure(currentMeasureIdx + 1)}
+              disabled={currentMeasureIdx >= tab.measures.length - 1}
+              aria-label="Mesure suivante"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text disabled:opacity-30"
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => scrollToMeasure(currentMeasureIdx + 1)}
-            disabled={currentMeasureIdx >= tab.measures.length - 1}
-            aria-label="Mesure suivante"
-            className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text disabled:opacity-30"
-          >
-            <ChevronRight size={16} />
-          </button>
+
+          {/* Compteur tours de loop */}
+          {loop && playCount > 0 && (
+            <span className="shrink-0 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 font-mono text-xs text-gold">
+              {playCount}×
+            </span>
+          )}
+          {extraAction && <div className="shrink-0">{extraAction}</div>}
         </div>
 
         {/* === Progress bar interactive === */}
@@ -344,7 +441,7 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
           aria-valuemax={100}
           tabIndex={0}
           onClick={handleSeek}
-          className="relative h-2 cursor-pointer border-b border-border bg-bg/50"
+          className="relative h-1.5 cursor-pointer bg-bg/50"
         >
           <div
             className="h-full bg-gradient-to-r from-gold to-gold-bright transition-all"
@@ -352,76 +449,12 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
           />
         </div>
 
-        {/* === Toolbar inline === */}
-        <div className="grid gap-3 px-4 py-3 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-4">
-          {/* Play / Reset */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPlaying((p) => !p)}
-              className={clsx(
-                'inline-flex h-12 w-12 items-center justify-center rounded-full transition-all',
-                playing
-                  ? 'border border-danger/40 bg-danger/15 text-danger hover:bg-danger/25'
-                  : 'bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong hover:-translate-y-px'
-              )}
-              aria-label={playing ? 'Pause' : 'Lecture'}
-            >
-              {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-text-muted hover:border-gold-soft hover:text-text"
-              aria-label="Stop & reset"
-            >
-              <Square size={14} />
-            </button>
-          </div>
-
-          {/* Center : speed pills + toggles */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2 p-1">
-              {SPEED_OPTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSpeed(s)}
-                  className={clsx(
-                    'h-8 rounded-full px-2.5 font-mono text-[11px] font-bold transition-colors',
-                    speed === s ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'
-                  )}
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
-            <ToggleBtn active={loop} onClick={() => setLoop((l) => !l)} label="Loop">
-              <Repeat size={13} />
-              <span>Loop {loop ? '∞' : ''}</span>
-            </ToggleBtn>
-            <ToggleBtn active={metronome} onClick={() => setMetronome((m) => !m)} label="Métronome">
-              <Volume2 size={13} />
-              <span>Click</span>
-            </ToggleBtn>
-          </div>
-
-          {/* Right : extra action + reset count */}
-          <div className="flex items-center gap-2">
-            {loop && playCount > 0 && (
-              <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 font-mono text-xs text-gold">
-                Joué {playCount}×
-              </span>
-            )}
-            {extraAction}
-          </div>
-        </div>
-
+        {/* Tempo effectif quand speed != 1 */}
         {speed !== 1 && (
-          <div className="border-t border-border bg-surface-2 px-4 py-2 text-center text-[11px] text-text-soft">
+          <div className="border-t border-border bg-surface-2 px-4 py-1.5 text-center text-[10px] text-text-soft">
             Tempo effectif :{' '}
             <span className="font-mono text-gold">{Math.round(effectiveTempo)} BPM</span>{' '}
-            (×{speed} du tempo original {tab.tempo})
+            (×{speed} · original {tab.tempo})
           </div>
         )}
 
@@ -435,6 +468,40 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
           </button>
         )}
       </div>
+
+      {/* === Popover speed — fixed pour échapper overflow-hidden du card ===
+          Overlay transparent ferme au clic extérieur. */}
+      {speedPopover && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            aria-hidden
+            onClick={() => setSpeedPopover(null)}
+          />
+          <div
+            className="fixed z-50 min-w-[80px] overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+            style={{ top: speedPopover.top, right: speedPopover.right }}
+          >
+            {SPEED_OPTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setSpeed(s);
+                  setSpeedPopover(null);
+                }}
+                className={clsx(
+                  'flex w-full items-center justify-between gap-3 px-3 py-2.5 font-mono text-xs transition-colors hover:bg-surface-2',
+                  s === speed ? 'text-gold' : 'text-text-muted'
+                )}
+              >
+                <span>{s}x</span>
+                {s === speed && <Check size={11} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* === STICKY BOTTOM MINI-PLAYER (apparaît pendant lecture) ===
           Au-dessus du MobileNav (z-40 = nav, 45 = nous) + offset bottom
@@ -523,18 +590,19 @@ export const RiffPlayer = forwardRef<RiffPlayerHandle, RiffPlayerProps>(function
   );
 });
 
-// ─── Sous-composant ─────────────────────────────────────────────────
+// ─── Sous-composants ─────────────────────────────────────────────────
 
-function ToggleBtn({
+/** Icône toggle compact pour la toolbar en top-right du tab area. */
+function ToolbarIconBtn({
+  children,
   active,
   onClick,
   label,
-  children,
 }: {
-  active: boolean;
+  children: React.ReactNode;
+  active?: boolean;
   onClick: () => void;
   label: string;
-  children: React.ReactNode;
 }) {
   return (
     <button
@@ -543,10 +611,8 @@ function ToggleBtn({
       aria-label={label}
       aria-pressed={active}
       className={clsx(
-        'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors',
-        active
-          ? 'border-gold bg-gold/15 text-gold'
-          : 'border-border bg-surface-2 text-text-muted hover:border-gold-soft hover:text-text'
+        'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+        active ? 'bg-gold/15 text-gold' : 'text-text-muted hover:bg-surface hover:text-text'
       )}
     >
       {children}
