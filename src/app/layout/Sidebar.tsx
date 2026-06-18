@@ -15,6 +15,7 @@ import {
   Disc3,
   Flame,
   Settings as SettingsIcon,
+  UserCircle2,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -170,11 +171,26 @@ export function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer sidebar : Préférences (icône discrete) + langue + auth.
-            shrink-0 garantit qu'il reste visible même si nav contenu déborde
-            (sidebar parent gère l'overflow). Padding bottom 6 (24px) +
-            border-top pour séparation visuelle nette. */}
+        {/* Footer sidebar — section COMPTE : Mon profil + Préférences + langue + auth.
+            Mon profil ajouté sess MEGA pour découvrabilité (avant il fallait
+            ouvrir le dropdown AuthMenu pour y accéder). Pas connecté → /profile
+            propose un écran "Connecte-toi" (Profile.tsx gère ce cas).
+            shrink-0 garantit qu'il reste visible même si nav contenu déborde. */}
         <div className="mt-4 shrink-0 space-y-1.5 border-t border-border pt-4 pb-2">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                isActive
+                  ? 'bg-surface-2 text-gold'
+                  : 'text-text-soft hover:bg-surface-2 hover:text-text'
+              )
+            }
+          >
+            <UserCircle2 size={16} className="opacity-80" />
+            <span>Mon profil</span>
+          </NavLink>
           <NavLink
             to="/settings"
             className={({ isActive }) =>
