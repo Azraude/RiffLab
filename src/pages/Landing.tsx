@@ -73,18 +73,32 @@ export function Landing() {
 
       {/* ─── HERO ─── plein écran mobile, CTA above-the-fold ─────────────── */}
       <section className="relative flex min-h-[88vh] flex-col md:min-h-[90vh]">
-        {/* 3D scene en background absolu de la moitié basse — desktop only
-            (useCanRender3D renvoie le fallback gradient sur mobile). Posée
-            comme un "poster sur un mur de studio" avec l'ampli derrière. */}
-        <div className="pointer-events-none absolute inset-x-0 top-[52%] bottom-0 z-0">
+        {/* 3D scene en background ABSOLU FULL HERO (sess LANDING refonte) —
+            avant la scène était ancrée moitié basse seulement, maintenant
+            elle TRAVERSE le titre pour effet profondeur. opacity 0.85 pour
+            laisser respirer le texte par-dessus.
+            Desktop only — useCanRender3D renvoie un fallback gradient sur
+            mobile et reduced-motion. */}
+        <div className="pointer-events-none absolute inset-0 z-0 opacity-85">
           <HeroScene3DLazy />
         </div>
-        {/* Halo gold radial sous l'ampli pour le faire "exister" sans cadre */}
+        {/* Halo gold radial centré sur le tiers haut, là où le titre vit.
+            Renforce la lisibilité du texte par-dessus la 3D + ajoute du
+            "poids" lumineux au centre du hero. */}
         <div
-          className="pointer-events-none absolute left-1/2 bottom-0 z-[1] h-[55vh] w-[85%] -translate-x-1/2"
+          className="pointer-events-none absolute left-1/2 top-[10%] z-[1] h-[60vh] w-[120%] -translate-x-1/2"
           style={{
             background:
-              'radial-gradient(ellipse at center, rgb(var(--gold-glow) / 0.08) 0%, transparent 60%)',
+              'radial-gradient(ellipse at center, rgb(var(--gold-glow) / 0.16) 0%, rgba(0,0,0,0.45) 35%, transparent 70%)',
+          }}
+        />
+        {/* Vignette top : sombre subtil au top pour pop le titre */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-[40vh]"
+          style={{
+            background:
+              'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 40%, transparent 100%)',
           }}
         />
         {/* Gradient bottom fade pour empêcher la 3D de manger la section suivante */}
@@ -313,59 +327,79 @@ export function Landing() {
   );
 }
 
-// ─── Hero title (split par lettre, stagger entrée) ───────────────────
+// ─── Hero title — stagger PAR MOT + text-shadow glow par-dessus 3D ────
+//
+// Refonte sess LANDING : avant on splittait par LETTRE et chaque
+// `motion.span inline-block` avec un caractère espace simple collapsait
+// au rendu (whitespace collapse entre inline-blocks adjacents). Résultat :
+// "L'appguitarequetuattendais." mots collés sans espaces.
+//
+// Fix : split par MOT, chaque mot en `motion.span inline-block` avec un
+// vrai espace HTML séparateur entre les spans. Plus simple, plus rapide
+// à render, et zéro risque de mot collé. L'anim entry reste théâtrale
+// (letter-spacing parent + per-word stagger blur/y/opacity).
+//
+// Plus : text-shadow gold + dark drop-shadow pour pop sur la scène 3D
+// qui passe DERRIÈRE le titre (z-10 above z-0).
 
 function HeroTitle({ text, goldWord }: { text: string; goldWord: string }) {
   const reduce = useReducedMotion();
-  const letters = text.split('');
-  const goldWordStart = text.indexOf(goldWord);
-  const goldWordEnd =
-    goldWordStart === -1 ? -1 : goldWordStart + goldWord.length;
+  const words = text.split(' ');
+
+  const titleClass =
+    'display text-display-lg md:text-display-xl [text-shadow:0_0_24px_rgba(0,0,0,0.8),0_0_60px_rgba(212,183,106,0.18)]';
 
   // Reduced-motion : titre statique, mot doré conservé, zéro animation.
   if (reduce) {
     return (
-      <h1 className="display text-display-lg md:text-display-xl">
-        {goldWordStart === -1 ? (
-          text
-        ) : (
-          <>
-            {text.slice(0, goldWordStart)}
-            <span className="text-gold text-gold-glow">{goldWord}</span>
-            {text.slice(goldWordEnd)}
-          </>
-        )}
+      <h1 className={titleClass}>
+        {words.map((word, i) => (
+          <span key={i}>
+            {word === goldWord || word.replace(/[.,!?;:]$/, '') === goldWord ? (
+              <span className="text-gold text-gold-glow">{word}</span>
+            ) : (
+              word
+            )}
+            {i < words.length - 1 ? ' ' : ''}
+          </span>
+        ))}
       </h1>
     );
   }
 
   return (
     <motion.h1
-      className="display text-display-lg md:text-display-xl"
-      initial={{ letterSpacing: '0.16em' }}
+      className={titleClass}
+      initial={{ letterSpacing: '0.12em' }}
       animate={{ letterSpacing: '0.005em' }}
-      transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
+      transition={{ duration: 0.9, ease: [0.25, 1, 0.5, 1] }}
       aria-label={text}
     >
-      {letters.map((char, i) => {
-        const isInGold = i >= goldWordStart && i < goldWordEnd;
+      {words.map((word, i) => {
+        // Match goldWord même si suivi d'une ponctuation (".", ",", etc.)
+        const cleanWord = word.replace(/[.,!?;:]$/, '');
+        const isGold = cleanWord === goldWord || word === goldWord;
         return (
-          <motion.span
-            key={i}
-            initial={{ opacity: 0, y: 18, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{
-              duration: 0.5,
-              delay: 0.08 + i * 0.035,
-              ease: [0.25, 1, 0.5, 1],
-            }}
-            className={
-              isInGold ? 'inline-block text-gold text-gold-glow' : 'inline-block'
-            }
-            aria-hidden
-          >
-            {char === ' ' ? ' ' : char}
-          </motion.span>
+          <span key={i} className="inline-block whitespace-nowrap">
+            <motion.span
+              initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{
+                duration: 0.55,
+                delay: 0.15 + i * 0.09,
+                ease: [0.25, 1, 0.5, 1],
+              }}
+              className={
+                isGold ? 'inline-block text-gold text-gold-glow' : 'inline-block'
+              }
+              aria-hidden
+            >
+              {word}
+            </motion.span>
+            {/* Espace explicite entre mots — un vrai caractère espace dans un
+                span sans inline-block respecte le whitespace inter-mots. */}
+            {i < words.length - 1 ? <span aria-hidden>{' '}</span> : null}
+          </span>
         );
       })}
     </motion.h1>
