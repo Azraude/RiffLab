@@ -19,6 +19,7 @@ import { SCALES } from '@/lib/scaleDatabase';
 import { NOTE_NAMES, type NoteName, type ScaleId } from '@/lib/theory';
 import { useAudio } from '@/hooks/useAudio';
 import { usePrefs } from '@/stores/prefsStore';
+import { useAuth } from '@/stores/authStore';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Play, Check, Flame, Sparkles, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +31,7 @@ import { CommunityRiffCard } from '@/components/dashboard/CommunityRiffCard';
 import { DailyChallengeCard } from '@/components/dashboard/DailyChallengeCard';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { Tutorial } from '@/components/onboarding/Tutorial';
+import { pickGreeting, daysSinceLastSession } from '@/lib/greetings';
 
 /**
  * Pseudo-random daily picks based on the date.
@@ -74,6 +76,39 @@ export function Dashboard() {
   const weekDays = useLiveQuery(() => lastSevenDays(), [today]);
   const practicedToday = today?.completed === true;
 
+  // Data pour greeting hero dynamique : noms + total sessions + dernière
+  // session pour calculer daysSinceLast.
+  const authUser = useAuth((s) => s.user);
+  const allSessionDates = useLiveQuery(
+    () =>
+      db.sessions
+        .filter((s) => s.completed === true)
+        .toArray()
+        .then((rows) => rows.map((r) => r.date)),
+    [],
+  );
+  const userName = useMemo(() => {
+    if (authUser?.email) {
+      const local = authUser.email.split('@')[0];
+      if (local && local.length > 0) {
+        // Capitalize première lettre
+        return local.charAt(0).toUpperCase() + local.slice(1);
+      }
+    }
+    return 'ami';
+  }, [authUser?.email]);
+  const greeting = useMemo(() => {
+    const dates = allSessionDates ?? [];
+    return pickGreeting({
+      userName,
+      daysSinceLast: daysSinceLastSession(dates),
+      streak: streak ?? 0,
+      totalSessions: dates.length,
+      hour: new Date().getHours(),
+    });
+    // Random à chaque change → frais à chaque mount/refresh
+  }, [userName, allSessionDates, streak]);
+
   const markPracticed = async () => {
     if (practicedToday) return;
     await logSession({
@@ -99,7 +134,20 @@ export function Dashboard() {
         <Onboarding onDone={() => setOnboardingDismissed(true)} />
       )}
       {showTutorial && <Tutorial onDone={() => setTutorialDismissed(true)} />}
-      <PageHeader title={<DashboardGreeting name="Melvin" />} />
+      {/* Settings btn TOP-RIGHT supprimé (showSettingsLink=false) — déjà
+          accessible via Sidebar/MobileNav, redondant ici. Hero phrase et
+          subtitle dynamiques sess DASHBOARD via pickGreeting(). */}
+      <PageHeader
+        showSettingsLink={false}
+        title={
+          <DashboardGreeting
+            title={greeting.title}
+            name={userName}
+            streak={streak ?? 0}
+          />
+        }
+        subtitle={greeting.subtitle}
+      />
 
       {/* Daily hero */}
       <div className="grid gap-5 md:grid-cols-[2fr_1fr]">
@@ -202,10 +250,12 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Streak card — trophée doré flamboyant (TASK E session 17) */}
+        {/* Streak card — trophée doré flamboyant (sess 17 + compactage mobile sess DASHBOARD).
+            Mobile : padding p-4 + compteur 36px (vs 64px desktop) + week dots
+            réduits. Garde l'aura "trophée" même condensé. */}
         <div
           data-tutorial-id="streak-card"
-          className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-6 text-center shadow-gold-strong streak-trophy-glow"
+          className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-4 text-center shadow-gold-strong streak-trophy-glow md:p-6"
         >
           {/* Radial glow centrale + sparkles */}
           <div
@@ -245,7 +295,7 @@ export function Dashboard() {
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className="display text-[40px] leading-none text-gold-bright text-gold-glow md:text-[64px]"
+                className="display text-[36px] leading-none text-gold-bright text-gold-glow md:text-[64px]"
               >
                 {streak ?? 0}
               </motion.div>
@@ -311,18 +361,15 @@ export function Dashboard() {
               })}
             </AnimatePresence>
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          {/* Lien discret mobile (sess DASHBOARD : avant 2 liens gros stats+plan,
+              maintenant un seul "Voir mes stats →" subtil. Plan reste accessible
+              via sidebar). */}
+          <div className="mt-3 flex justify-center">
             <Link
               to="/stats"
-              className="inline-block text-xs text-gold hover:text-gold-bright"
+              className="inline-flex items-center gap-1 text-xs text-gold hover:text-gold-bright"
             >
-              {t('dashboard.viewStats')}
-            </Link>
-            <Link
-              to="/plan"
-              className="inline-block text-xs text-gold hover:text-gold-bright"
-            >
-              {t('dashboard.viewPlan')}
+              {t('dashboard.viewStats')} →
             </Link>
           </div>
         </div>
@@ -424,119 +471,148 @@ export function Dashboard() {
 // ─── Dashboard greeting ───────────────────────────────────────────────
 
 /**
- * "Bon retour, <name>." — animation entrée word-by-word (stagger 60ms,
- * fade + slide-up + blur résorption), nom en italic gold avec un
- * underline SVG manuscrit qui se dessine en sweep gauche-droite.
+ * Phrase hero dynamique (sess DASHBOARD) — la phrase entière vient de
+ * `pickGreeting()` qui pick contextuellement (heure / streak / absence /
+ * first visit). Le `name` (si trouvé dans la phrase) est highlight en
+ * italic gold avec underline guitare SVG animé (6 cordes).
+ *
+ * Tous les autres mots animent stagger 60ms (fade + y + blur).
+ * Espaces préservés via separator inline-block + mr-2 (fix sess LANDING
+ * où un caractère espace dans une inline-block collapsait).
  */
-function DashboardGreeting({ name }: { name: string }) {
-  const words = ['Bon', 'retour,'];
+function DashboardGreeting({
+  title,
+  name,
+  streak,
+}: {
+  title: string;
+  name: string;
+  streak: number;
+}) {
+  void streak; // conservé pour évolution future (anim pulse si compteur)
+
+  const words = title.split(' ');
+  const cleanName = name.toLowerCase();
+
   return (
     <span className="display text-display-md inline-block">
-      {words.map((w, i) => (
-        <motion.span
-          key={w}
-          initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{
-            duration: 0.5,
-            delay: i * 0.06,
-            ease: [0.25, 1, 0.5, 1],
-          }}
-          className="mr-2 inline-block"
-        >
-          {w}
-        </motion.span>
-      ))}
-      <motion.span
-        initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={{
-          duration: 0.5,
-          delay: words.length * 0.06,
-          ease: [0.25, 1, 0.5, 1],
-        }}
-        className="relative inline-block font-serif italic text-gold text-gold-glow"
-      >
-        {name}
-        {/* Underline thème guitare : 6 cordes horizontales empilées sous le
-            mot. Épaisseurs décroissantes top → bottom (mimant cordes wound
-            graves → plain aigus). Stroke-dashoffset CSS pour dessin
-            gauche→droite avec stagger 50ms. Les 3 cordes basses ont une
-            micro vibration verticale ±0.5px infinite. */}
-        <svg
-          className="absolute -bottom-1.5 left-0 w-full"
-          viewBox="0 0 100 14"
-          preserveAspectRatio="none"
-          fill="none"
-          height={12}
-          aria-hidden
-        >
-          <defs>
-            <linearGradient id="guitar-string-grad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
-              <stop offset="20%" stopColor="rgb(var(--gold-bright))" />
-              <stop offset="80%" stopColor="rgb(var(--gold-bright))" />
-              <stop offset="100%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
-            </linearGradient>
-          </defs>
-          {/* 6 cordes : épaisseurs 2 / 1.8 / 1.6 / 1.3 / 1 / 0.8 (top = bass) */}
-          {[
-            { y: 1, w: 2, vibrate: true, delay: 0 }, // E bass
-            { y: 3.4, w: 1.8, vibrate: true, delay: 0.05 }, // A
-            { y: 5.8, w: 1.6, vibrate: true, delay: 0.1 }, // D
-            { y: 8.2, w: 1.3, vibrate: false, delay: 0.15 }, // G
-            { y: 10.4, w: 1, vibrate: false, delay: 0.2 }, // B
-            { y: 12.2, w: 0.8, vibrate: false, delay: 0.25 }, // E aigu
-          ].map((str, i) => (
-            // NOTE : on utilise motion.path au lieu de motion.line car
-            // Framer Motion `pathLength` n'est PAS supporté sur SVG <line>
-            // (uniquement sur <path>, <circle>, <rect>, <ellipse>). Le bug
-            // « <line> attribute y1/y2: Expected length, undefined » qui
-            // causait l'écran noir entre les nav vient de là.
-            <motion.path
-              key={i}
-              d={`M 0 ${str.y} L 100 ${str.y}`}
-              stroke="url(#guitar-string-grad)"
-              strokeWidth={str.w}
-              strokeLinecap="round"
-              fill="none"
-              initial={{ pathLength: 0, opacity: 0, y: 0 }}
-              animate={{
-                pathLength: 1,
-                opacity: 1,
-                ...(str.vibrate && {
-                  y: [0, 0.4, -0.4, 0],
-                }),
-              }}
-              transition={{
-                pathLength: {
-                  duration: 0.6,
-                  delay: 0.4 + str.delay,
+      {words.map((word, i) => {
+        const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, '');
+        const trailing = word.match(/[.,!?;:]$/)?.[0] ?? '';
+        const isName = cleanWord === cleanName;
+        const isLast = i === words.length - 1;
+        const spaceAfter = isLast ? '' : ' ';
+
+        if (isName) {
+          return (
+            <span key={`${i}-${word}`} className="inline-block">
+              <motion.span
+                initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{
+                  duration: 0.5,
+                  delay: i * 0.06,
                   ease: [0.25, 1, 0.5, 1],
-                },
-                opacity: { duration: 0.2, delay: 0.4 + str.delay },
-                ...(str.vibrate && {
-                  y: {
-                    duration: 0.18,
-                    delay: 1.2 + i * 0.4,
-                    repeat: Infinity,
-                    repeatType: 'reverse' as const,
-                    repeatDelay: 2.5,
-                  },
-                }),
+                }}
+                className="relative inline-block font-serif italic text-gold text-gold-glow"
+              >
+                {word.replace(/[.,!?;:]$/, '')}
+                {/* Underline guitare : 6 cordes SVG, dessin gauche→droite,
+                    micro-vibration sur les 3 graves. Utilise motion.path
+                    (pathLength non supporté sur <line>). */}
+                <GuitarStringsUnderline />
+              </motion.span>
+              {trailing && <span>{trailing}</span>}
+              {spaceAfter && <span>{' '}</span>}
+            </span>
+          );
+        }
+
+        return (
+          <span key={`${i}-${word}`} className="inline-block">
+            <motion.span
+              initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{
+                duration: 0.5,
+                delay: i * 0.06,
+                ease: [0.25, 1, 0.5, 1],
               }}
-              style={{ filter: 'drop-shadow(0 0 2px rgb(var(--gold-glow) / 0.5))' }}
-            />
-          ))}
-        </svg>
-      </motion.span>
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 1.1 }}
-      >
-        .
-      </motion.span>
+              className="inline-block"
+            >
+              {word}
+            </motion.span>
+            {spaceAfter && <span>{' '}</span>}
+          </span>
+        );
+      })}
     </span>
+  );
+}
+
+/**
+ * Underline guitare 6 cordes — réutilisable. Trait du nom doré dans le
+ * greeting. Cordes basses vibrent en boucle, aiguës fixes.
+ */
+function GuitarStringsUnderline() {
+  return (
+    <svg
+      className="absolute -bottom-1.5 left-0 w-full"
+      viewBox="0 0 100 14"
+      preserveAspectRatio="none"
+      fill="none"
+      height={12}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="guitar-string-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
+          <stop offset="20%" stopColor="rgb(var(--gold-bright))" />
+          <stop offset="80%" stopColor="rgb(var(--gold-bright))" />
+          <stop offset="100%" stopColor="rgb(var(--gold))" stopOpacity="0.4" />
+        </linearGradient>
+      </defs>
+      {[
+        { y: 1, w: 2, vibrate: true, delay: 0 },
+        { y: 3.4, w: 1.8, vibrate: true, delay: 0.05 },
+        { y: 5.8, w: 1.6, vibrate: true, delay: 0.1 },
+        { y: 8.2, w: 1.3, vibrate: false, delay: 0.15 },
+        { y: 10.4, w: 1, vibrate: false, delay: 0.2 },
+        { y: 12.2, w: 0.8, vibrate: false, delay: 0.25 },
+      ].map((str, i) => (
+        <motion.path
+          key={i}
+          d={`M 0 ${str.y} L 100 ${str.y}`}
+          stroke="url(#guitar-string-grad)"
+          strokeWidth={str.w}
+          strokeLinecap="round"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0, y: 0 }}
+          animate={{
+            pathLength: 1,
+            opacity: 1,
+            ...(str.vibrate && { y: [0, 0.4, -0.4, 0] }),
+          }}
+          transition={{
+            pathLength: {
+              duration: 0.6,
+              delay: 0.4 + str.delay,
+              ease: [0.25, 1, 0.5, 1],
+            },
+            opacity: { duration: 0.2, delay: 0.4 + str.delay },
+            ...(str.vibrate && {
+              y: {
+                duration: 0.18,
+                delay: 1.2 + i * 0.4,
+                repeat: Infinity,
+                repeatType: 'reverse' as const,
+                repeatDelay: 2.5,
+              },
+            }),
+          }}
+          style={{ filter: 'drop-shadow(0 0 2px rgb(var(--gold-glow) / 0.5))' }}
+        />
+      ))}
+    </svg>
   );
 }
