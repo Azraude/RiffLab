@@ -29,6 +29,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
+import { SEO } from '@/components/SEO';
 
 const FEATURES = [
   {
@@ -81,6 +82,11 @@ const ROADMAP = [
 export function About() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg">
+      <SEO
+        title="À propos"
+        description="Pourquoi RiffLab. Le manifeste anti-pub d'un studio guitare moderne pour les guitaristes qui veulent juste jouer."
+        canonical="https://riff-lab-sigma.vercel.app/about"
+      />
       {/* Ambient halo gold */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[60vh]"

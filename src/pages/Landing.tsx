@@ -18,6 +18,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { SEO } from '@/components/SEO';
+import pkg from '../../package.json';
 
 /**
  * Landing publique de RiffLab.
@@ -40,6 +42,13 @@ export function Landing() {
   const [loginOpen, setLoginOpen] = useState(false);
   return (
     <div className="relative min-h-screen overflow-hidden">
+      {/* SEO per-route (sess AUDIT) — title vide → SEO.tsx renvoie le titre
+          de base "RiffLab — Studio guitare moderne". Description unifiée
+          partout (index.html, og, twitter, JSON-LD). */}
+      <SEO
+        description="RiffLab — Studio guitare moderne. Compose, joue, partage tes riffs. Sans pub, sans inscription obligatoire."
+        canonical="https://riff-lab-sigma.vercel.app/"
+      />
       {/* Ambient halo gold derrière le hero — pure CSS, accompagne la 3D */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[80vh]"
@@ -234,14 +243,14 @@ export function Landing() {
         </motion.div>
       </section>
 
-      {/* ─── Sons & visuels ─── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-5 pb-16 md:px-8 md:pb-24">
+      {/* ─── Sons & visuels — preuve produit (sess AUDIT : 3 screenshots clés) ─── */}
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6 }}
-          className="relative overflow-hidden rounded-3xl border border-border-gold bg-surface/50 p-7 text-center backdrop-blur-md md:p-12"
+          className="relative overflow-hidden rounded-3xl border border-border-gold bg-surface/50 p-5 backdrop-blur-md md:p-10"
         >
           <div
             className="pointer-events-none absolute inset-0"
@@ -254,13 +263,57 @@ export function Landing() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-border-gold bg-gold/10 text-gold">
               <Music2 size={22} strokeWidth={1.5} />
             </div>
-            <h2 className="display text-display-md md:text-display-lg">
+            <h2 className="display text-center text-display-md md:text-display-lg">
               Des vraies guitares, pas des bips.
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-text-muted md:text-base">
+            <p className="mx-auto mt-3 max-w-xl text-center text-sm text-text-muted md:text-base">
               Samples HQ de vraies guitares, 5 amplis modélisés, et un manche
               interactif que tu peux lire à bout de bras en pleine répèt.
             </p>
+
+            {/* Grid 3 screenshots — stack mobile, 3 cols desktop. Subtle hover
+                tilt sur md+ pour donner vie sans distraire. */}
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 md:mt-10 md:grid-cols-3">
+              {[
+                {
+                  src: '/screenshots/chords.png',
+                  alt: 'Bibliothèque interactive d\'accords avec diagrammes',
+                  label: 'Accords',
+                },
+                {
+                  src: '/screenshots/composer.png',
+                  alt: 'Studio de composition de progressions',
+                  label: 'Studio compo',
+                },
+                {
+                  src: '/screenshots/dashboard.png',
+                  alt: 'Dashboard quotidien avec accord, gamme et streak',
+                  label: 'Dashboard',
+                },
+              ].map((shot, i) => (
+                <motion.div
+                  key={shot.src}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-bg shadow-lg transition-all hover:border-gold-soft hover:shadow-gold"
+                >
+                  <img
+                    src={shot.src}
+                    alt={shot.alt}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[16/10] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent p-3">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-gold-soft">
+                      {shot.label}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </section>
@@ -306,7 +359,7 @@ export function Landing() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 text-xs text-text-soft md:px-8">
           <span className="flex items-center gap-2">
             <RiffLabLogo size={16} />
-            RiffLab — v0.4 · local-first · open source
+            RiffLab — v{pkg.version} · local-first · open source
           </span>
           <div className="flex items-center gap-4">
             <Link to="/about" className="hover:text-text">
