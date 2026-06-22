@@ -108,9 +108,38 @@ export function UserProfile() {
     );
   }
 
-  // Pas trouvé
+  // Pas trouvé → écran "Profil introuvable" GRACIEUX (plus de redirect
+  // silencieux vers /riffs qui frustrait l'user qui ne comprenait pas).
+  // Cas courant : seeds Dexie locaux (@whiteguy, @axl_rose…) qui n'ont
+  // pas de row dans la table profiles Supabase.
   if (!profile) {
-    return <Navigate to="/riffs" replace />;
+    return (
+      <>
+        <Link
+          to="/riffs"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold"
+        >
+          <ArrowLeft size={14} /> Feed des riffs
+        </Link>
+        <div className="mx-auto max-w-md py-12 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-surface">
+            <span className="display text-2xl text-text-muted">?</span>
+          </div>
+          <h2 className="display mb-3 text-xl">Profil introuvable</h2>
+          <p className="mb-6 text-sm leading-relaxed text-text-muted">
+            Ce profil n'existe pas encore — soit l'username est mal écrit,
+            soit ce riffeur est un contributeur de la bibliothèque d'exemples
+            qui n'a pas (encore) de compte RiffLab public.
+          </p>
+          <Link
+            to="/riffs"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-border-gold bg-surface px-5 text-sm text-text hover:bg-gold/5"
+          >
+            ← Retour au feed
+          </Link>
+        </div>
+      </>
+    );
   }
 
   const isMe = me?.id === profile.id;
