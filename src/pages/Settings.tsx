@@ -5,14 +5,24 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Toggle } from '@/components/ui/Toggle';
 import { LOCALES, setLocale, type LocaleId } from '@/i18n';
 import { usePrefs } from '@/stores/prefsStore';
+import { useAuth } from '@/stores/authStore';
 import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
 import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { Check, Lock, Volume2, GraduationCap, Compass, Globe } from 'lucide-react';
+import {
+  Check,
+  Lock,
+  Volume2,
+  GraduationCap,
+  Compass,
+  Globe,
+  User as UserIcon,
+} from 'lucide-react';
 import clsx from 'clsx';
+import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRow';
 
 export function Settings() {
   const prefs = usePrefs();
@@ -49,9 +59,29 @@ export function Settings() {
     alert('Bibliothèque vidée.');
   };
 
+  const user = useAuth((s) => s.user);
+
   return (
     <>
       <PageHeader title={t('settings.title')} showSettingsLink={false} />
+
+      {/* Mon compte (sess SET-NEXT) — header iOS-style en tête de Settings,
+          renvoie vers /profile pour le hub compte (modification profil +
+          déconnexion). Si pas connecté → row qui propose connexion. */}
+      <div className="mb-5">
+        <SettingsGroup label="MON COMPTE">
+          <SettingsRow
+            icon={<UserIcon size={16} />}
+            label={user ? 'Mon profil' : 'Pas connecté'}
+            sub={
+              user
+                ? user.email ?? 'Voir mes infos compte'
+                : 'Connecte-toi pour publier, liker, suivre'
+            }
+            to="/profile"
+          />
+        </SettingsGroup>
+      </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         <Card className="md:col-span-2">

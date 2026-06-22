@@ -20,14 +20,13 @@ import {
   Settings as SettingsIcon,
   Edit3,
   ExternalLink,
-  ChevronRight,
 } from 'lucide-react';
-import clsx from 'clsx';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/stores/authStore';
 import { getProfile, type Profile as ProfileRow } from '@/lib/socialApi';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRow';
 
 export function Profile() {
   const user = useAuth((s) => s.user);
@@ -152,7 +151,7 @@ export function Profile() {
         </Card>
 
         {/* ─── Section actions profil ─── */}
-        <SettingsList>
+        <SettingsGroup>
           {username && (
             <SettingsRow
               icon={<Edit3 size={16} />}
@@ -166,83 +165,18 @@ export function Profile() {
             sub="Audio, affichage, accordage, données"
             to="/settings"
           />
-        </SettingsList>
+        </SettingsGroup>
 
         {/* ─── Section déconnexion ─── */}
-        <SettingsList>
+        <SettingsGroup>
           <SettingsRow
             icon={<LogOut size={16} />}
             label="Se déconnecter"
             onClick={() => void handleSignOut()}
             danger
           />
-        </SettingsList>
+        </SettingsGroup>
       </div>
     </>
-  );
-}
-
-// ─── Sub-components (inline, pas extraits — usage local Profile only) ───
-
-function SettingsList({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      {children}
-    </div>
-  );
-}
-
-function SettingsRow({
-  icon,
-  label,
-  sub,
-  to,
-  onClick,
-  danger = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sub?: string;
-  to?: string;
-  onClick?: () => void;
-  danger?: boolean;
-}) {
-  const className = clsx(
-    'flex h-14 w-full items-center gap-3 border-b border-border/40 px-4 text-left transition-colors last:border-0',
-    danger
-      ? 'text-danger hover:bg-danger/5'
-      : 'text-text hover:bg-surface-2',
-  );
-
-  const content = (
-    <>
-      <span
-        className={clsx(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-          danger ? 'bg-danger/10 text-danger' : 'bg-gold/10 text-gold',
-        )}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium">{label}</div>
-        {sub && <div className="mt-0.5 text-xs text-text-soft">{sub}</div>}
-      </div>
-      {to && <ChevronRight size={16} className="text-text-soft" />}
-    </>
-  );
-
-  if (to) {
-    return (
-      <Link to={to} className={className}>
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onClick} className={className}>
-      {content}
-    </button>
   );
 }
