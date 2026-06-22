@@ -1,46 +1,59 @@
 /**
- * /profile — entry point édition personnelle.
+ * /profile — hub compte personnel (sess SET-MOBILENAV).
  *
- * Comportement :
- * - Pas connecté → écran "Connecte-toi" GRACIEUX (plus de redirect /
- *   silencieux qui frustre l'user)
- * - Connecté → redirect vers /u/<myUsername>?edit=1 (ProfileEditDrawer
- *   ouvert auto par UserProfile)
- * - Connecté sans profil DB → message d'erreur explicite
+ * Refonte : avant Profile.tsx faisait juste un Navigate vers
+ * /u/<myUsername>?edit=1. Maintenant c'est un vrai HUB COMPTE
+ * style iOS (sections empilées) pour pattern réseau social :
+ * - Header : avatar + @username + "Voir mon profil public"
+ * - Row "Modifier mon profil" → /u/<me>?edit=1 (drawer auto)
+ * - Row "Préférences" → /settings (sess SET — déménage depuis MobileNav)
+ * - Row "Se déconnecter" rouge
+ *
+ * Pas connecté → écran "Connecte-toi" gracieux (pas redirect home).
  */
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { LogIn, User as UserIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  LogIn,
+  LogOut,
+  User as UserIcon,
+  Settings as SettingsIcon,
+  Edit3,
+  ExternalLink,
+  ChevronRight,
+} from 'lucide-react';
+import clsx from 'clsx';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/stores/authStore';
-import { getProfile } from '@/lib/socialApi';
+import { getProfile, type Profile as ProfileRow } from '@/lib/socialApi';
 import { LoginModal } from '@/components/auth/LoginModal';
 
 export function Profile() {
   const user = useAuth((s) => s.user);
   const loading = useAuth((s) => s.loading);
-  const [username, setUsername] = useState<string | null | undefined>(undefined);
+  const signOut = useAuth((s) => s.signOut);
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<ProfileRow | null | undefined>(undefined);
   const [loginOpen, setLoginOpen] = useState(false);
 
-  // Récupère mon username pour construire l'URL /u/<username>?edit=1
   useEffect(() => {
     if (!user) {
-      setUsername(undefined);
+      setProfile(undefined);
       return;
     }
     let cancelled = false;
     void (async () => {
       const { data } = await getProfile(user.id);
       if (cancelled) return;
-      setUsername(data?.username ?? null);
+      setProfile(data);
     })();
     return () => {
       cancelled = true;
     };
   }, [user]);
 
-  // Loading state (auth en cours OU profile fetch en cours)
+  // Loading auth
   if (loading) {
     return (
       <>
@@ -52,9 +65,7 @@ export function Profile() {
     );
   }
 
-  // Pas connecté → écran gracieux avec CTA Se connecter.
-  // PLUS de redirect / silencieux (frustrait l'user qui ne comprenait
-  // pas pourquoi /profile le ramenait à l'accueil).
+  // === Pas connecté → écran gracieux ===
   if (!user) {
     return (
       <>
@@ -84,7 +95,7 @@ export function Profile() {
   }
 
   // Connecté + profile fetch en cours
-  if (username === undefined) {
+  if (profile === undefined) {
     return (
       <>
         <PageHeader title="Mon profil" />
@@ -95,22 +106,143 @@ export function Profile() {
     );
   }
 
-  // Profile pas créé (rare — devrait être créé automatiquement à la
-  // signup). Fallback : message + bouton reconnexion.
-  if (username === null) {
-    return (
-      <>
-        <PageHeader title="Mon profil" />
-        <Card>
-          <p className="text-sm text-text-muted">
-            Aucun profil trouvé pour ce compte. Connecte-toi à nouveau pour le
-            recréer.
-          </p>
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const username = profile?.username ?? null;
+  const initial = (username?.[0] ?? user.email?.[0] ?? '?').toUpperCase();
+
+  // === Connecté → hub compte ===
+  return (
+    <>
+      <PageHeader title="Mon profil" />
+
+      <div className="mx-auto max-w-2xl space-y-6">
+        {/* ─── Section identité ─── */}
+        <Card className="text-center">
+          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gold/15 ring-1 ring-gold/30">
+            {profile?.avatar_url ? (
+              // eslint-disable-next-line jsx-a11y/img-redundant-alt
+              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="font-mono text-3xl font-bold text-gold">{initial}</span>
+            )}
+          </div>
+          <h2 className="display text-xl">
+            {profile?.display_name || profile?.username || 'Mon compte'}
+          </h2>
+          {username && (
+            <p className="mt-0.5 font-mono text-sm text-text-muted">@{username}</p>
+          )}
+          {user.email && (
+            <p className="mt-0.5 break-all text-xs text-text-soft">{user.email}</p>
+          )}
+
+          {username && (
+            <Link
+              to={`/u/${username}`}
+              className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-4 text-xs text-text-muted hover:border-gold-soft hover:text-text"
+            >
+              <ExternalLink size={13} />
+              Voir mon profil public
+            </Link>
+          )}
         </Card>
-      </>
+
+        {/* ─── Section actions profil ─── */}
+        <SettingsList>
+          {username && (
+            <SettingsRow
+              icon={<Edit3 size={16} />}
+              label="Modifier mon profil"
+              to={`/u/${username}?edit=1`}
+            />
+          )}
+          <SettingsRow
+            icon={<SettingsIcon size={16} />}
+            label="Préférences"
+            sub="Audio, affichage, accordage, données"
+            to="/settings"
+          />
+        </SettingsList>
+
+        {/* ─── Section déconnexion ─── */}
+        <SettingsList>
+          <SettingsRow
+            icon={<LogOut size={16} />}
+            label="Se déconnecter"
+            onClick={() => void handleSignOut()}
+            danger
+          />
+        </SettingsList>
+      </div>
+    </>
+  );
+}
+
+// ─── Sub-components (inline, pas extraits — usage local Profile only) ───
+
+function SettingsList({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      {children}
+    </div>
+  );
+}
+
+function SettingsRow({
+  icon,
+  label,
+  sub,
+  to,
+  onClick,
+  danger = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sub?: string;
+  to?: string;
+  onClick?: () => void;
+  danger?: boolean;
+}) {
+  const className = clsx(
+    'flex h-14 w-full items-center gap-3 border-b border-border/40 px-4 text-left transition-colors last:border-0',
+    danger
+      ? 'text-danger hover:bg-danger/5'
+      : 'text-text hover:bg-surface-2',
+  );
+
+  const content = (
+    <>
+      <span
+        className={clsx(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+          danger ? 'bg-danger/10 text-danger' : 'bg-gold/10 text-gold',
+        )}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium">{label}</div>
+        {sub && <div className="mt-0.5 text-xs text-text-soft">{sub}</div>}
+      </div>
+      {to && <ChevronRight size={16} className="text-text-soft" />}
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {content}
+      </Link>
     );
   }
 
-  // Redirect vers /u/<username>?edit=1 → ProfileEditDrawer ouvert auto
-  return <Navigate to={`/u/${username}?edit=1`} replace />;
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
 }
