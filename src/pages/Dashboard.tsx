@@ -51,6 +51,21 @@ function pickOfTheDay() {
   return { chord, scale, key };
 }
 
+/**
+ * Variants Framer Motion pour les cards du Dashboard (sess DASH-POLISH).
+ * Le parent grid applique staggerChildren via `visible.transition` pour
+ * faire apparaître la card "Accord du jour" puis "Streak" en cascade.
+ */
+const dashCardVariants = {
+  hidden: { opacity: 0, y: 18, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] as const },
+  },
+};
+
 export function Dashboard() {
   const { t } = useTranslation();
   const songs = useLiveQuery(() => db.songs.orderBy('updatedAt').reverse().limit(3).toArray(), []);
@@ -149,10 +164,21 @@ export function Dashboard() {
         subtitle={greeting.subtitle}
       />
 
-      {/* Daily hero */}
-      <div className="grid gap-5 md:grid-cols-[2fr_1fr]">
-        <div
-          className="daily-gold-sheen relative overflow-hidden rounded-3xl border border-border-gold p-5 md:p-8"
+      {/* Daily hero — anim séquentielle stagger (sess DASH-POLISH) :
+          eyebrow → h1 → subtitle → cards apparaissent en cascade 80ms.
+          Variants Framer Motion via staggerChildren sur le parent. */}
+      <motion.div
+        className="grid gap-5 md:grid-cols-[2fr_1fr]"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
+        }}
+      >
+        <motion.div
+          variants={dashCardVariants}
+          className="daily-gold-sheen relative overflow-hidden rounded-3xl border border-border-gold p-4 md:p-8"
           style={{
             background: 'linear-gradient(135deg, rgb(var(--surface)) 0%, rgb(var(--bg)) 60%)',
           }}
@@ -165,9 +191,8 @@ export function Dashboard() {
             }}
           />
           {/* Fender Rose 3D décoratif : à droite de la card, derrière le
-              contenu. Opacity 0.3, intensité subtle pour ne pas distraire
-              du training info. Visible desktop seulement (card étroite
-              en mobile). */}
+              contenu. Opacity 0.3, intensité subtle. Visible desktop seulement
+              (card étroite en mobile + perf). */}
           <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] opacity-30 md:block">
             <FloatingGuitar3DLazy
               model="rose"
@@ -179,11 +204,49 @@ export function Dashboard() {
           </div>
           <div className="relative">
             <div className="eyebrow">{t('dashboard.dailyTraining')} · {todayLabel}</div>
-            <h2 className="display mt-3 text-display-sm md:text-display-lg">
+            <h2 className="display mt-2 text-display-sm md:mt-3 md:text-display-lg">
               {t('dashboard.workChordPrefix')}{' '}
               <span className="text-gold">{chord.name}</span>
             </h2>
-            <p className="mt-3 max-w-xl text-sm text-text-muted md:text-base">
+
+            {/* Mobile : layout compact 2 cols (chord+scale en haut, diagram à droite).
+                Sess DASH-POLISH : refonte pour réduire hauteur card mobile.
+                Avant : ChordDiagram size="lg" centré (110px+), 3 cards meta
+                grid-cols-2, CTAs flex-wrap pouvant overflow. */}
+            <div className="mt-3 grid grid-cols-[1fr_auto] gap-3 md:hidden">
+              <div className="space-y-2">
+                <p className="text-sm leading-relaxed text-text-muted">
+                  {t('dashboard.combineWithScale', {
+                    scale: scale.name,
+                    key,
+                    mood: scale.mood.toLowerCase(),
+                  })}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-text-soft">
+                      {t('dashboard.scale')}
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-gold">
+                      {key} {scale.shortName}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-text-soft">
+                      {t('dashboard.category')}
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-gold">
+                      {scale.category}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* ChordDiagram à droite, size="sm" (96px) au lieu de "lg" → gain ~50px */}
+              <ChordDiagram voicing={voicing} name={chord.name} size="sm" />
+            </div>
+
+            {/* Desktop : paragraphe pleine largeur + ChordDiagram inline droite (inchangé) */}
+            <p className="mt-3 hidden max-w-xl text-base text-text-muted md:block">
               {t('dashboard.combineWithScale', {
                 scale: scale.name,
                 key,
@@ -191,12 +254,7 @@ export function Dashboard() {
               })}
             </p>
 
-            {/* Mobile : ChordDiagram dominant in lg, centered under the title */}
-            <div className="mt-6 flex justify-center md:hidden">
-              <ChordDiagram voicing={voicing} name={chord.name} size="lg" />
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-4 md:flex md:flex-wrap md:items-center md:gap-7">
+            <div className="mt-5 hidden flex-wrap items-center gap-7 md:flex">
               <div>
                 <div className="label-small">{t('dashboard.chord')}</div>
                 <div className="mt-1 font-mono text-lg font-semibold">{chord.name}</div>
@@ -212,22 +270,22 @@ export function Dashboard() {
                 <div className="mt-1 font-mono text-lg font-semibold">{scale.category}</div>
               </div>
 
-              {/* Desktop : ChordDiagram inline right */}
-              <div className="ml-auto hidden md:block">
+              <div className="ml-auto">
                 <ChordDiagram voicing={voicing} name={chord.name} size="md" />
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            {/* CTAs : stack full-width mobile (3 boutons h-11), flex-wrap desktop */}
+            <div className="mt-4 flex flex-col gap-2 md:mt-6 md:flex-row md:flex-wrap md:gap-3">
               <button
                 onClick={() => strum(chord.name)}
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-bg hover:bg-gold-bright md:h-10 md:w-auto"
               >
                 <Play size={14} /> {t('dashboard.hearChord')}
               </button>
               <Link
                 to="/scales"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-gold px-4 text-sm hover:bg-gold/5 md:h-10 md:w-auto"
               >
                 {t('dashboard.viewScale')}
               </Link>
@@ -248,12 +306,13 @@ export function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Streak card — trophée doré flamboyant (sess 17 + compactage mobile sess DASHBOARD).
             Mobile : padding p-4 + compteur 36px (vs 64px desktop) + week dots
             réduits. Garde l'aura "trophée" même condensé. */}
-        <div
+        <motion.div
+          variants={dashCardVariants}
           data-tutorial-id="streak-card"
           className="relative overflow-hidden rounded-2xl border-2 border-gold bg-gradient-to-b from-surface to-bg p-4 text-center shadow-gold-strong streak-trophy-glow md:p-6"
         >
@@ -372,16 +431,28 @@ export function Dashboard() {
               {t('dashboard.viewStats')} →
             </Link>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Daily Challenge — tab du jour pickée déterministe (TASK E) */}
-      <div data-tutorial-id="daily-challenge">
+      {/* Daily Challenge — tab du jour pickée déterministe (TASK E).
+          Wrap dans motion.div pour fade-in après le hero (delay 0.4s). */}
+      <motion.div
+        data-tutorial-id="daily-challenge"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4, ease: [0.25, 1, 0.5, 1] }}
+      >
         <DailyChallengeCard />
-      </div>
+      </motion.div>
 
-      {/* Scale preview */}
-      <div className="mt-10">
+      {/* Scale preview — fade-in stagger 0.6s après hero */}
+      <motion.div
+        className="mt-10"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
+      >
         <h2 className="eyebrow mb-3">Gamme du jour — {key} {scale.name}</h2>
         <Card>
           <div className="relative -mx-2 overflow-x-auto">
@@ -395,12 +466,19 @@ export function Dashboard() {
             <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-surface to-transparent md:hidden" />
           </div>
         </Card>
-      </div>
+      </motion.div>
 
-      {/* Riff du moment — widget communautaire avec tab reader + player */}
-      <div className="mt-12">
+      {/* Riff du moment — widget communautaire avec tab reader + player.
+          Fade-in stagger via whileInView (apparait quand on scroll dessus). */}
+      <motion.div
+        className="mt-12"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
+      >
         <CommunityRiffCard />
-      </div>
+      </motion.div>
 
       {/* Compagnon : teaser vers la page Riff de la semaine (catalogue complet) */}
       <div className="mt-4">
