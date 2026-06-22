@@ -112,74 +112,87 @@ export function Settings() {
           <p className="mt-2 text-xs text-text-soft">{t('settings.languageNote')}</p>
         </Card>
 
-        <Card>
-          <h3 className="display text-display-sm mb-3">{t('settings.tuning')}</h3>
-          <select
-            value={prefs.tuning}
-            onChange={(e) => prefs.setTuning(e.target.value as TuningId)}
-            className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none md:h-10"
-          >
-            {Object.entries(TUNING_LABELS).map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Card>
+        {/* Instrument — accordage + capo (sess SET-NEXT2 iOS-style) */}
+        <div className="md:col-span-2">
+          <SettingsGroup label="INSTRUMENT">
+            <SettingsRow
+              label={t('settings.tuning')}
+              sub="Accordage par défaut pour toutes les nouvelles songs"
+              trailing={
+                <select
+                  value={prefs.tuning}
+                  onChange={(e) => prefs.setTuning(e.target.value as TuningId)}
+                  aria-label={t('settings.tuning')}
+                  className="h-9 rounded-lg border border-border bg-surface-2 px-2 text-xs focus:border-gold-soft focus:outline-none"
+                >
+                  {Object.entries(TUNING_LABELS).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              }
+            />
+            <SettingsRow
+              label="Capo par défaut"
+              sub={`Frette ${prefs.capo}`}
+              trailing={
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={12}
+                  value={prefs.capo}
+                  onChange={(e) => prefs.setCapo(parseInt(e.target.value) || 0)}
+                  aria-label="Capo par défaut"
+                  className="h-9 w-16 rounded-lg border border-border bg-surface-2 px-2 text-center text-xs focus:border-gold-soft focus:outline-none"
+                />
+              }
+            />
+          </SettingsGroup>
+        </div>
 
-        <Card>
-          <h3 className="display text-display-sm mb-3">Capo par défaut</h3>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={12}
-            value={prefs.capo}
-            onChange={(e) => prefs.setCapo(parseInt(e.target.value) || 0)}
-            className="h-11 w-24 rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none md:h-10"
-          />
-        </Card>
+        {/* Audio — toggles + volume slider (sess SET-NEXT2 iOS-style) */}
+        <div className="md:col-span-2">
+          <SettingsGroup label="AUDIO">
+            <SettingsRow
+              label="Son au clic"
+              sub="Joue un son quand tu cliques sur un accord ou une gamme"
+              trailing={<Toggle checked={prefs.audioEnabled} onChange={prefs.toggleAudio} />}
+            />
+            <SettingsRow
+              label="Volume"
+              sub={`${Math.round(prefs.volume * 100)}%`}
+              trailing={
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={prefs.volume * 100}
+                  onChange={(e) => prefs.setVolume(parseInt(e.target.value) / 100)}
+                  aria-label="Volume"
+                  className="w-28 accent-gold"
+                />
+              }
+            />
+            <SettingsRow
+              label="Noms de notes sur le manche"
+              sub="Affiche C, D, E... sur les frets dans le fretboard"
+              trailing={<Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />}
+            />
+          </SettingsGroup>
+        </div>
 
-        <Card>
-          <h3 className="display text-display-sm mb-3">Audio</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm">Activer le son au clic</span>
-              <Toggle checked={prefs.audioEnabled} onChange={prefs.toggleAudio} />
-            </div>
-            <div>
-              <div className="label-small mb-1">Volume ({Math.round(prefs.volume * 100)}%)</div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={prefs.volume * 100}
-                onChange={(e) => prefs.setVolume(parseInt(e.target.value) / 100)}
-                className="w-full accent-gold"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm">Afficher les noms de notes sur le manche</span>
-              <Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="display text-display-sm mb-3">Affichage</h3>
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="text-sm">Effets 3D</div>
-                <p className="mt-0.5 text-xs text-text-soft">
-                  Hero studio, ampli, guitares flottantes décoratives. Désactive si
-                  l'app rame sur ton appareil.
-                </p>
-              </div>
-              <Toggle checked={prefs.effects3D} onChange={prefs.toggleEffects3D} />
-            </div>
-          </div>
-        </Card>
+        {/* Affichage — effets 3D (sess SET-NEXT2 iOS-style) */}
+        <div className="md:col-span-2">
+          <SettingsGroup label="AFFICHAGE">
+            <SettingsRow
+              label="Effets 3D"
+              sub="Hero studio, ampli, guitares flottantes. Désactive si l'app rame."
+              trailing={<Toggle checked={prefs.effects3D} onChange={prefs.toggleEffects3D} />}
+            />
+          </SettingsGroup>
+        </div>
 
         <Card className="md:col-span-2">
           <h3 className="display text-display-sm mb-1">Son de strum</h3>
