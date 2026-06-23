@@ -111,7 +111,7 @@ function notConfigured(): { data: null; error: Error } {
  * (gen_random_uuid), les riffs "seed" intégrés au bundle utilisent des slugs
  * courts (cr-iron, sw-stairway, etc.).
  */
-function isUUID(id: string): boolean {
+export function isUUID(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 

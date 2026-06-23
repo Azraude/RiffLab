@@ -28,7 +28,15 @@ import {
 import type { Tab } from '@/lib/tabsDatabase';
 import { TabReader } from '@/components/tabs/TabReader';
 import { isRiffBookmarked, isRiffLiked, toggleRiffBookmark, toggleRiffLike } from '@/lib/db';
+import {
+  isUUID,
+  likeRiff,
+  unlikeRiff,
+  bookmarkRiff,
+  unbookmarkRiff,
+} from '@/lib/socialApi';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { useToast } from '@/hooks/useToast';
 import { LoginModal } from '@/components/auth/LoginModal';
 
 interface RiffCardProps {
@@ -61,20 +69,43 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
   // Gating soft pour like/bookmark (sess GATE) — pas connecté → toast +
   // LoginModal après 200ms. Le caller doit monter <LoginModal/> ci-dessous.
   const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
+  const toast = useToast();
 
   const stop = (fn?: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn?.();
   };
 
-  const handleLike = () => {
+  // Like/bookmark dual-path : Dexie en cache local (réactivité instantanée
+  // via useLiveQuery) + persistance Supabase pour les riffs publiés (UUID).
+  // Les riffs seed bundlés (cr-*, sw-*) n'ont pas d'UUID → Dexie local only,
+  // donc pas de 400 sur la table (riff_id UUID-only). cf socialApi.isSeedRiff.
+  const handleLike = async () => {
     if (!requireAuth('aimer')) return;
-    void toggleRiffLike(riff.id);
+    const wasLiked = liked;
+    await toggleRiffLike(riff.id);
+    if (isUUID(riff.id)) {
+      const { error } = wasLiked ? await unlikeRiff(riff.id) : await likeRiff(riff.id);
+      if (error) {
+        await toggleRiffLike(riff.id); // rollback cache local
+        toast.error('Échec du like, réessaie');
+      }
+    }
   };
 
-  const handleBookmark = () => {
+  const handleBookmark = async () => {
     if (!requireAuth('sauvegarder')) return;
-    void toggleRiffBookmark(riff.id);
+    const wasBookmarked = bookmarked;
+    await toggleRiffBookmark(riff.id);
+    if (isUUID(riff.id)) {
+      const { error } = wasBookmarked
+        ? await unbookmarkRiff(riff.id)
+        : await bookmarkRiff(riff.id);
+      if (error) {
+        await toggleRiffBookmark(riff.id); // rollback cache local
+        toast.error('Échec de la sauvegarde, réessaie');
+      }
+    }
   };
 
   return (

@@ -52,7 +52,15 @@ import {
   toggleRiffBookmark,
   toggleRiffLike,
 } from '@/lib/db';
+import {
+  isUUID,
+  likeRiff,
+  unlikeRiff,
+  bookmarkRiff,
+  unbookmarkRiff,
+} from '@/lib/socialApi';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { useToast } from '@/hooks/useToast';
 import { LoginModal } from '@/components/auth/LoginModal';
 
 export function RiffDetail() {
@@ -76,13 +84,32 @@ export function RiffDetail() {
   // Gating soft (sess GATE) — like/bookmark déclenchent toast + LoginModal
   // si user pas connecté. LoginModal monté à la fin du JSX.
   const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
-  const handleLike = () => {
-    if (!requireAuth('aimer')) return;
-    if (id) void toggleRiffLike(id);
+  const toast = useToast();
+  // Dual-path : Dexie cache local (réactivité) + Supabase pour riffs UUID.
+  // Seeds (cr-*) → Dexie only (pas d'UUID, évite un 400 sur likes/bookmarks).
+  const handleLike = async () => {
+    if (!requireAuth('aimer') || !id) return;
+    const wasLiked = liked;
+    await toggleRiffLike(id);
+    if (isUUID(id)) {
+      const { error } = wasLiked ? await unlikeRiff(id) : await likeRiff(id);
+      if (error) {
+        await toggleRiffLike(id);
+        toast.error('Échec du like, réessaie');
+      }
+    }
   };
-  const handleBookmark = () => {
-    if (!requireAuth('sauvegarder')) return;
-    if (id) void toggleRiffBookmark(id);
+  const handleBookmark = async () => {
+    if (!requireAuth('sauvegarder') || !id) return;
+    const wasBookmarked = bookmarked;
+    await toggleRiffBookmark(id);
+    if (isUUID(id)) {
+      const { error } = wasBookmarked ? await unbookmarkRiff(id) : await bookmarkRiff(id);
+      if (error) {
+        await toggleRiffBookmark(id);
+        toast.error('Échec de la sauvegarde, réessaie');
+      }
+    }
   };
 
   // Plus de @username : 3 autres riffs du même contributor
