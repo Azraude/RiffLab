@@ -52,6 +52,8 @@ import {
   toggleRiffBookmark,
   toggleRiffLike,
 } from '@/lib/db';
+import { useAuthGate } from '@/hooks/useAuthGate';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 export function RiffDetail() {
   const { id } = useParams();
@@ -70,6 +72,18 @@ export function RiffDetail() {
     () => new Map(masteredRows.map((m) => [m.id, m.masteredAt] as const)),
     [masteredRows]
   );
+
+  // Gating soft (sess GATE) — like/bookmark déclenchent toast + LoginModal
+  // si user pas connecté. LoginModal monté à la fin du JSX.
+  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
+  const handleLike = () => {
+    if (!requireAuth('aimer')) return;
+    if (id) void toggleRiffLike(id);
+  };
+  const handleBookmark = () => {
+    if (!requireAuth('sauvegarder')) return;
+    if (id) void toggleRiffBookmark(id);
+  };
 
   // Plus de @username : 3 autres riffs du même contributor
   const moreByUser = useMemo(() => {
@@ -125,7 +139,7 @@ export function RiffDetail() {
         </Link>
         <div className="flex items-center gap-1 md:hidden">
           <IconBtn
-            onClick={() => void toggleRiffLike(riff.id)}
+            onClick={handleLike}
             label={liked ? 'Retirer du favoris' : "J'aime"}
             active={liked}
             activeColor="danger"
@@ -133,7 +147,7 @@ export function RiffDetail() {
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
           </IconBtn>
           <IconBtn
-            onClick={() => void toggleRiffBookmark(riff.id)}
+            onClick={handleBookmark}
             label={bookmarked ? 'Retirer du sauvegardés' : 'Sauvegarder'}
             active={bookmarked}
             activeColor="gold"
@@ -320,7 +334,7 @@ export function RiffDetail() {
                 active={liked}
                 activeColor="danger"
                 label={liked ? 'Aimé' : "J'aime"}
-                onClick={() => void toggleRiffLike(riff.id)}
+                onClick={handleLike}
               >
                 <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
               </SocialBtn>
@@ -328,7 +342,7 @@ export function RiffDetail() {
                 active={bookmarked}
                 activeColor="gold"
                 label={bookmarked ? 'Sauvegardé' : 'Sauver'}
-                onClick={() => void toggleRiffBookmark(riff.id)}
+                onClick={handleBookmark}
               >
                 <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
               </SocialBtn>
@@ -468,6 +482,10 @@ export function RiffDetail() {
         riff={riff}
         tab={tab}
       />
+
+      {/* Soft gating LoginModal (sess GATE) — ouvert auto si user clique
+          like/bookmark sans être connecté. */}
+      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </>
   );
 }

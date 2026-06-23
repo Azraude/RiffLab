@@ -28,6 +28,8 @@ import {
 import type { Tab } from '@/lib/tabsDatabase';
 import { TabReader } from '@/components/tabs/TabReader';
 import { isRiffBookmarked, isRiffLiked, toggleRiffBookmark, toggleRiffLike } from '@/lib/db';
+import { useAuthGate } from '@/hooks/useAuthGate';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface RiffCardProps {
   riff: CommunityRiff;
@@ -56,9 +58,23 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
   const bookmarked = useLiveQuery(() => isRiffBookmarked(riff.id), [riff.id]) ?? false;
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
+  // Gating soft pour like/bookmark (sess GATE) — pas connecté → toast +
+  // LoginModal après 200ms. Le caller doit monter <LoginModal/> ci-dessous.
+  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
+
   const stop = (fn?: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn?.();
+  };
+
+  const handleLike = () => {
+    if (!requireAuth('aimer')) return;
+    void toggleRiffLike(riff.id);
+  };
+
+  const handleBookmark = () => {
+    if (!requireAuth('sauvegarder')) return;
+    void toggleRiffBookmark(riff.id);
   };
 
   return (
@@ -177,7 +193,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
             count={likeCount}
             active={liked}
             activeColor="danger"
-            onClick={stop(() => void toggleRiffLike(riff.id))}
+            onClick={stop(handleLike)}
           >
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
           </ActionBtn>
@@ -192,7 +208,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
             label={bookmarked ? 'Sauvegardé' : 'Sauver'}
             active={bookmarked}
             activeColor="gold"
-            onClick={stop(() => void toggleRiffBookmark(riff.id))}
+            onClick={stop(handleBookmark)}
           >
             <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
           </ActionBtn>
@@ -201,6 +217,9 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
           <Play size={18} fill="currentColor" />
         </ActionBtn>
       </footer>
+      {/* LoginModal mounted via Portal Radix : sibling au article OK,
+          le drawer s'attache au body indépendamment du DOM ancestry. */}
+      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </article>
   );
 }
