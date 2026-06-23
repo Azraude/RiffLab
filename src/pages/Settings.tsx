@@ -271,6 +271,14 @@ export function Settings() {
             </button>
           </div>
         </Card>
+
+        {/* Légal — requis (AdSense + RGPD) */}
+        <div className="md:col-span-2">
+          <SettingsGroup label="LÉGAL">
+            <SettingsRow label="Politique de confidentialité" to="/privacy" chevron />
+            <SettingsRow label="CGU / CGV" to="/terms" chevron />
+          </SettingsGroup>
+        </div>
       </div>
 
       {/* ─── Drawers de sélection (sess settings-polish) ─────────────── */}

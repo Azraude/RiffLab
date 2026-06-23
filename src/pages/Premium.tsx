@@ -3,6 +3,7 @@
  * Le CTA affiche une alerte « bientôt » ; Session B branchera le checkout.
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Crown, Check, X, Sparkles, ChevronDown, Infinity as InfinityIcon, FileDown, Palette, BadgeCheck } from 'lucide-react';
 import clsx from 'clsx';
@@ -172,11 +173,24 @@ export function Premium() {
 
       {/* FAQ */}
       <h2 className="display mt-10 mb-4 text-display-sm">Questions fréquentes</h2>
-      <div className="space-y-2 pb-8">
+      <div className="space-y-2">
         {FAQ.map((item, i) => (
           <FaqItem key={i} question={item.q} answer={item.a} />
         ))}
       </div>
+
+      {/* Liens légaux discrets */}
+      <p className="mt-6 pb-8 text-center text-xs text-text-soft">
+        En t'abonnant, tu acceptes nos{' '}
+        <Link to="/terms" className="text-gold hover:underline">
+          CGU / CGV
+        </Link>{' '}
+        et notre{' '}
+        <Link to="/privacy" className="text-gold hover:underline">
+          politique de confidentialité
+        </Link>
+        .
+      </p>
     </>
   );
 }

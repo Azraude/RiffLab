@@ -24,6 +24,8 @@ import { RiffOfTheWeek } from '@/pages/RiffOfTheWeek';
 import { Settings } from '@/pages/Settings';
 import { Profile } from '@/pages/Profile';
 import { Premium } from '@/pages/Premium';
+import { Privacy } from '@/pages/Privacy';
+import { Terms } from '@/pages/Terms';
 // Composer fusionné dans Studio (sess PROG-STUDIO) — /composer redirige
 // vers /progressions (qui rend le Studio multi-tabs)
 import { About } from '@/pages/About';
@@ -104,6 +106,8 @@ export const router = createBrowserRouter([
       { path: 'share/:encoded', element: <SharePreview /> },
       { path: 'settings', element: <Settings /> },
       { path: 'premium', element: <Premium /> },
+      { path: 'privacy', element: <Privacy /> },
+      { path: 'terms', element: <Terms /> },
       { path: 'profile', element: <Profile /> },
 
       // ─── Profils publics (sess 29) ─────────────────────────────
