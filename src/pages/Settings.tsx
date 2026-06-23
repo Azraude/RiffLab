@@ -13,9 +13,12 @@ import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
 import { STRUM_SOUNDS } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import { GraduationCap, Compass, User as UserIcon } from 'lucide-react';
+import { GraduationCap, Compass, User as UserIcon, Crown } from 'lucide-react';
 import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRow';
 import { SelectorDrawer } from '@/components/settings/SelectorDrawer';
+import { usePremium } from '@/hooks/usePremium';
+
+const DEV_EMAIL = 'melvin.bruhat@gmail.com';
 
 export function Settings() {
   const prefs = usePrefs();
@@ -24,6 +27,9 @@ export function Settings() {
   const currentLocale: LocaleId = (i18n.resolvedLanguage as LocaleId) ?? 'fr';
   const { strum } = useAudio();
   const user = useAuth((s) => s.user);
+  const isPremium = useAuth((s) => s.isPremium);
+  const setPremiumDev = useAuth((s) => s.setPremiumDev);
+  const { openPremiumModal } = usePremium();
 
   // Drawers iOS-style — chaque sélecteur complexe (Langue, Son, Thème, Skin)
   // s'ouvre dans un bottom sheet plein écran mobile.
@@ -85,6 +91,25 @@ export function Settings() {
             }
             to="/profile"
           />
+          <SettingsRow
+            icon={<Crown size={16} />}
+            label={isPremium ? 'RiffLab+ actif' : 'Passer à RiffLab+'}
+            sub={
+              isPremium
+                ? 'Merci de soutenir RiffLab 🙏'
+                : 'Sauvegardes illimitées, export PDF, skins premium, zéro pub'
+            }
+            to="/premium"
+          />
+          {user?.email === DEV_EMAIL && (
+            <SettingsRow
+              label="DEV · Premium"
+              sub="Toggle local pour tester (à virer en Session B)"
+              trailing={
+                <Toggle checked={isPremium} onChange={() => setPremiumDev(!isPremium)} />
+              }
+            />
+          )}
         </SettingsGroup>
       </div>
 
@@ -272,6 +297,7 @@ export function Settings() {
           // Preview après un court délai pour laisser le hot-swap rebuild.
           setTimeout(() => void strum('Em', 'down'), 80);
         }}
+        onPremium={() => openPremiumModal({ feature: 'strum-sound', reason: 'Ce timbre est réservé à RiffLab+' })}
         options={STRUM_SOUNDS.map((s) => ({
           value: s.id,
           label: s.label,
@@ -286,6 +312,7 @@ export function Settings() {
         title="Thème de l'app"
         value={prefs.theme}
         onChange={(v) => prefs.setTheme(v)}
+        onPremium={() => openPremiumModal({ feature: 'theme', reason: 'Ce thème est réservé à RiffLab+' })}
         options={THEMES.filter((th) => !th.secret || prefs.unlockedSecretTheme).map((theme) => ({
           value: theme.id,
           label: theme.label,
@@ -301,6 +328,7 @@ export function Settings() {
         title="Skin du manche"
         value={prefs.fretboardSkin}
         onChange={(v) => prefs.setFretboardSkin(v)}
+        onPremium={() => openPremiumModal({ feature: 'skin', reason: 'Ce skin de manche est réservé à RiffLab+' })}
         options={SKIN_LIST.map((skin) => ({
           value: skin.id,
           label: skin.name,
