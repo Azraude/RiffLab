@@ -8,6 +8,8 @@ import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { ToastViewport, useToast } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
 import { NotificationBell } from '@/components/social/NotificationBell';
+import { AdBanner } from '@/components/premium/AdBanner';
+import { GlobalPremiumModal } from '@/components/premium/PremiumModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useEffect } from 'react';
 
@@ -80,6 +82,8 @@ export function Layout() {
       </div>
       <MobileNav />
       <FeedbackButton />
+      <AdBanner />
+      <GlobalPremiumModal />
       <ToastViewport />
       <BadgeUnlockListener />
       <StickyPlayer />
