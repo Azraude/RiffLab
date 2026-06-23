@@ -37,6 +37,7 @@ import {
 } from '@/lib/socialApi';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useToast } from '@/hooks/useToast';
+import { useAdStore } from '@/stores/adStore';
 import { LoginModal } from '@/components/auth/LoginModal';
 
 interface RiffCardProps {
@@ -82,6 +83,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
   // donc pas de 400 sur la table (riff_id UUID-only). cf socialApi.isSeedRiff.
   const handleLike = async () => {
     if (!requireAuth('aimer')) return;
+    useAdStore.getState().trackAction();
     const wasLiked = liked;
     await toggleRiffLike(riff.id);
     if (isUUID(riff.id)) {
@@ -95,6 +97,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
 
   const handleBookmark = async () => {
     if (!requireAuth('sauvegarder')) return;
+    useAdStore.getState().trackAction();
     const wasBookmarked = bookmarked;
     await toggleRiffBookmark(riff.id);
     if (isUUID(riff.id)) {

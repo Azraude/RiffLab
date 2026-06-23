@@ -63,6 +63,8 @@ import {
 } from '@/lib/socialApi';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useToast } from '@/hooks/useToast';
+import { usePremium } from '@/hooks/usePremium';
+import { useAdStore } from '@/stores/adStore';
 import { LoginModal } from '@/components/auth/LoginModal';
 
 export function RiffDetail() {
@@ -89,6 +91,14 @@ export function RiffDetail() {
       cancelled = true;
     };
   }, [id]);
+
+  // Compteur de riffs visités → déclenche l'interstitielle (free tier only).
+  const { isPremium } = usePremium();
+  useEffect(() => {
+    if (!id || isPremium) return;
+    useAdStore.getState().trackRiffVisit();
+  }, [id, isPremium]);
+
   const [shareOpen, setShareOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
   const tabAreaRef = useRef<HTMLElement | null>(null);

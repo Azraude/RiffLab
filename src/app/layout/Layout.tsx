@@ -9,6 +9,7 @@ import { ToastViewport, useToast } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
 import { NotificationBell } from '@/components/social/NotificationBell';
 import { AdBanner } from '@/components/premium/AdBanner';
+import { InterstitialAd } from '@/components/ads/InterstitialAd';
 import { GlobalPremiumModal } from '@/components/premium/PremiumModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useEffect } from 'react';
@@ -83,6 +84,7 @@ export function Layout() {
       <MobileNav />
       <FeedbackButton />
       <AdBanner />
+      <InterstitialAd />
       <GlobalPremiumModal />
       <ToastViewport />
       <BadgeUnlockListener />

@@ -13,8 +13,9 @@
  *   - Infinite scroll (IntersectionObserver) au-delà de 12 cards
  *   - Click card → /riffs/:id (la card est un teaser, le reste est en détail)
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -262,20 +263,25 @@ export function Riffs() {
               const tab = resolveTab(r);
               if (!tab) return null;
               return (
-                <motion.div
-                  key={r.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22, delay: Math.min(i, 8) * 0.02 }}
-                >
-                  <RiffCard
-                    riff={r}
-                    tab={tab}
-                    masteredAt={masteredMap.get(r.id) ?? null}
-                    onOpenDetail={() => navigate(`/riffs/${r.id}`)}
-                    onListen={() => handleListen(r.id, r.tabId)}
-                  />
-                </motion.div>
+                <Fragment key={r.id}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: Math.min(i, 8) * 0.02 }}
+                  >
+                    <RiffCard
+                      riff={r}
+                      tab={tab}
+                      masteredAt={masteredMap.get(r.id) ?? null}
+                      onOpenDetail={() => navigate(`/riffs/${r.id}`)}
+                      onListen={() => handleListen(r.id, r.tabId)}
+                    />
+                  </motion.div>
+                  {/* Pub in-feed tous les 6 riffs (placeholder ou AdSense) */}
+                  {(i + 1) % 6 === 0 && (
+                    <AdSlot format="native" adSlot="" className="sm:col-span-2 lg:col-span-3" />
+                  )}
+                </Fragment>
               );
             })}
           </div>
