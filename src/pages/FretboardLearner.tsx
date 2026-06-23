@@ -34,6 +34,8 @@ import {
 } from '@/lib/fretboardLearner';
 import { saveFretboardLearnerStats, type FretboardLearnerLevel } from '@/lib/db';
 import { useToast } from '@/hooks/useToast';
+import { ChallengeMode } from '@/components/fretboard/ChallengeMode';
+import { FreePlayMode } from '@/components/fretboard/FreePlayMode';
 import {
   Flame,
   Pause,
@@ -42,8 +44,13 @@ import {
   SkipForward,
   Target,
   Trophy,
+  Eye,
+  Headphones,
+  Radio,
 } from 'lucide-react';
 import clsx from 'clsx';
+
+type LearnerMode = 'visual' | 'challenge' | 'freeplay';
 
 type Status = 'idle' | 'playing' | 'paused' | 'finished';
 type Reveal = {
@@ -63,6 +70,7 @@ export function FretboardLearner() {
   const { playMidi } = useAudio();
   const toast = useToast();
 
+  const [mode, setMode] = useState<LearnerMode>('visual');
   const [level, setLevel] = useState<FretboardLearnerLevel>('beginner');
   const [status, setStatus] = useState<Status>('idle');
   const [question, setQuestion] = useState<FretboardQuestion | null>(null);
@@ -304,11 +312,27 @@ export function FretboardLearner() {
 
       <PageHeader
         title="Fretboard Learner"
-        subtitle="Apprends ton manche — mini-jeu avec 4 niveaux de difficulté."
+        subtitle="Apprends ton manche — au clic ou à l'oreille avec le micro."
       />
 
+      {/* Mode switch : visuel (clic) / challenge (micro + voix) / free play */}
+      <div className="mb-5 grid grid-cols-3 gap-2">
+        <ModeTab active={mode === 'visual'} onClick={() => setMode('visual')} icon={<Eye size={14} />}>
+          Visuel
+        </ModeTab>
+        <ModeTab active={mode === 'challenge'} onClick={() => setMode('challenge')} icon={<Headphones size={14} />}>
+          Challenge
+        </ModeTab>
+        <ModeTab active={mode === 'freeplay'} onClick={() => setMode('freeplay')} icon={<Radio size={14} />}>
+          Free Play
+        </ModeTab>
+      </div>
+
+      {mode === 'challenge' && <ChallengeMode />}
+      {mode === 'freeplay' && <FreePlayMode />}
+
       {/* === IDLE / FINISHED : selector de niveau + récap === */}
-      {(status === 'idle' || status === 'finished') && (
+      {mode === 'visual' && (status === 'idle' || status === 'finished') && (
         <>
           {status === 'finished' && (
             <FinishedRecap
@@ -375,7 +399,7 @@ export function FretboardLearner() {
       )}
 
       {/* === PLAYING : question + fretboard + stats live === */}
-      {status === 'playing' && question && labels && (
+      {mode === 'visual' && status === 'playing' && question && labels && (
         <>
           {/* Top bar : niveau / score / streak */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
@@ -504,6 +528,37 @@ export function FretboardLearner() {
         </>
       )}
     </>
+  );
+}
+
+// ─── Mode switch tab ──────────────────────────────────────────────────
+
+function ModeTab({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        'inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-semibold transition-colors',
+        active
+          ? 'border-gold bg-gold/15 text-gold'
+          : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text',
+      )}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 
