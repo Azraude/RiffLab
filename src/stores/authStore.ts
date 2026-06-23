@@ -22,16 +22,35 @@ type AuthState = {
   session: Session | null;
   /** True pendant la résolution initiale de getSession(). */
   loading: boolean;
+  /**
+   * Flag premium (RiffLab+). HARDCODÉ pour l'instant (Session A — UX only).
+   * Session B le remplira depuis profile.subscription / Stripe.
+   * Toggle dev via setPremiumDev (persisté localStorage pour tester).
+   */
+  isPremium: boolean;
   setSession: (session: Session | null) => void;
+  /** DEV uniquement — à virer en Session B (vrai paiement Stripe). */
+  setPremiumDev: (value: boolean) => void;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
 
+const DEV_PREMIUM_KEY = 'rifflab_dev_premium';
+
+function readDevPremium(): boolean {
+  try {
+    return localStorage.getItem(DEV_PREMIUM_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   session: null,
   loading: true,
+  isPremium: readDevPremium(),
 
   setSession: (session) =>
     set({
@@ -39,6 +58,15 @@ export const useAuth = create<AuthState>((set) => ({
       user: session?.user ?? null,
       loading: false,
     }),
+
+  setPremiumDev: (value) => {
+    try {
+      localStorage.setItem(DEV_PREMIUM_KEY, value ? '1' : '0');
+    } catch {
+      /* localStorage indispo — toggle reste en mémoire pour la session */
+    }
+    set({ isPremium: value });
+  },
 
   signInWithMagicLink: async (email) => {
     if (!isSupabaseConfigured) {
