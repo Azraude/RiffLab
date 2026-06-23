@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -10,25 +11,32 @@ import { TUNING_LABELS, type TuningId } from '@/lib/theory';
 import { db } from '@/lib/db';
 import { SKIN_LIST, type FretboardSkin } from '@/lib/fretboardSkins';
 import { THEMES, type Theme } from '@/lib/themes';
-import { STRUM_SOUNDS, type StrumSound } from '@/lib/strumSounds';
+import { STRUM_SOUNDS } from '@/lib/strumSounds';
 import { useAudio } from '@/hooks/useAudio';
-import {
-  Check,
-  Lock,
-  Volume2,
-  GraduationCap,
-  Compass,
-  Globe,
-  User as UserIcon,
-} from 'lucide-react';
-import clsx from 'clsx';
+import { GraduationCap, Compass, User as UserIcon } from 'lucide-react';
 import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRow';
+import { SelectorDrawer } from '@/components/settings/SelectorDrawer';
 
 export function Settings() {
   const prefs = usePrefs();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const currentLocale: LocaleId = (i18n.resolvedLanguage as LocaleId) ?? 'fr';
+  const { strum } = useAudio();
+  const user = useAuth((s) => s.user);
+
+  // Drawers iOS-style — chaque sélecteur complexe (Langue, Son, Thème, Skin)
+  // s'ouvre dans un bottom sheet plein écran mobile.
+  const [langDrawerOpen, setLangDrawerOpen] = useState(false);
+  const [strumDrawerOpen, setStrumDrawerOpen] = useState(false);
+  const [themeDrawerOpen, setThemeDrawerOpen] = useState(false);
+  const [skinDrawerOpen, setSkinDrawerOpen] = useState(false);
+
+  // Valeurs courantes affichées en sous-titre des rows.
+  const currentLang = LOCALES.find((l) => l.id === currentLocale);
+  const currentStrum = STRUM_SOUNDS.find((s) => s.id === prefs.strumSound);
+  const currentTheme = THEMES.find((th) => th.id === prefs.theme);
+  const currentSkin = SKIN_LIST.find((sk) => sk.id === prefs.fretboardSkin);
 
   const replayTutorial = () => {
     prefs.setOnboardingCompleted(false);
@@ -40,7 +48,6 @@ export function Settings() {
     prefs.setTutorialCompleted(false);
     navigate('/dashboard');
   };
-  const { strum } = useAudio();
 
   const exportLib = async () => {
     const songs = await db.songs.toArray();
@@ -58,8 +65,6 @@ export function Settings() {
     await db.songs.clear();
     alert('Bibliothèque vidée.');
   };
-
-  const user = useAuth((s) => s.user);
 
   return (
     <>
@@ -84,33 +89,17 @@ export function Settings() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="md:col-span-2">
-          <div className="mb-3 flex items-center gap-2">
-            <Globe size={16} className="text-gold" />
-            <h3 className="display text-display-sm">{t('settings.language')}</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {LOCALES.map((loc) => (
-              <button
-                key={loc.id}
-                type="button"
-                onClick={() => setLocale(loc.id)}
-                aria-pressed={currentLocale === loc.id}
-                className={clsx(
-                  'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors',
-                  currentLocale === loc.id
-                    ? 'border-gold bg-gold/15 text-gold-bright'
-                    : 'border-border bg-surface-2 text-text-muted hover:border-gold-soft hover:text-text'
-                )}
-              >
-                <span aria-hidden="true">{loc.flag}</span>
-                {loc.label}
-                {currentLocale === loc.id && <Check size={14} strokeWidth={3} />}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-text-soft">{t('settings.languageNote')}</p>
-        </Card>
+        {/* Langue — SettingsRow + SelectorDrawer (sess settings-polish) */}
+        <div className="md:col-span-2">
+          <SettingsGroup label="LANGUE">
+            <SettingsRow
+              label={t('settings.language')}
+              sub={currentLang ? `${currentLang.flag} ${currentLang.label}` : undefined}
+              onClick={() => setLangDrawerOpen(true)}
+              chevron
+            />
+          </SettingsGroup>
+        </div>
 
         {/* Instrument — accordage + capo (sess SET-NEXT2 iOS-style) */}
         <div className="md:col-span-2">
@@ -152,7 +141,7 @@ export function Settings() {
           </SettingsGroup>
         </div>
 
-        {/* Audio — toggles + volume slider (sess SET-NEXT2 iOS-style) */}
+        {/* Audio — toggles + volume slider + son de strum (iOS-style) */}
         <div className="md:col-span-2">
           <SettingsGroup label="AUDIO">
             <SettingsRow
@@ -180,12 +169,30 @@ export function Settings() {
               sub="Affiche C, D, E... sur les frets dans le fretboard"
               trailing={<Toggle checked={prefs.showNoteNames} onChange={prefs.toggleNoteNames} />}
             />
+            <SettingsRow
+              label="Son de strum"
+              sub={currentStrum?.label ?? 'Auto'}
+              onClick={() => setStrumDrawerOpen(true)}
+              chevron
+            />
           </SettingsGroup>
         </div>
 
-        {/* Affichage — effets 3D (sess SET-NEXT2 iOS-style) */}
+        {/* Apparence — thème + skin manche + effets 3D (iOS-style) */}
         <div className="md:col-span-2">
-          <SettingsGroup label="AFFICHAGE">
+          <SettingsGroup label="APPARENCE">
+            <SettingsRow
+              label="Thème"
+              sub={currentTheme?.label ?? 'Dark Gold'}
+              onClick={() => setThemeDrawerOpen(true)}
+              chevron
+            />
+            <SettingsRow
+              label="Skin manche"
+              sub={currentSkin?.name ?? 'Noir mat'}
+              onClick={() => setSkinDrawerOpen(true)}
+              chevron
+            />
             <SettingsRow
               label="Effets 3D"
               sub="Hero studio, ampli, guitares flottantes. Désactive si l'app rame."
@@ -193,77 +200,6 @@ export function Settings() {
             />
           </SettingsGroup>
         </div>
-
-        <Card className="md:col-span-2">
-          <h3 className="display text-display-sm mb-1">Son de strum</h3>
-          <p className="mb-4 text-sm text-text-muted">
-            Le timbre des accords joués partout dans l'app. Clique sur un timbre pour le tester.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {STRUM_SOUNDS.map((sound) => (
-              <StrumSoundOption
-                key={sound.id}
-                sound={sound}
-                active={prefs.strumSound === sound.id}
-                onSelect={() => {
-                  if (sound.premium) {
-                    alert('Ce son est premium — disponible Phase 5 (cosmetics shop).');
-                    return;
-                  }
-                  prefs.setStrumSound(sound.id);
-                  // Preview après un court délai pour laisser le hot-swap rebuild
-                  setTimeout(() => void strum('Em', 'down'), 80);
-                }}
-              />
-            ))}
-          </div>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <h3 className="display text-display-sm mb-1">Thème de l'app</h3>
-          <p className="mb-4 text-sm text-text-muted">
-            Switch instantané — toutes les couleurs s'adaptent (sauf le manche, qui a son propre skin ci-dessous).
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {THEMES.filter((t) => !t.secret || prefs.unlockedSecretTheme).map((theme) => (
-              <ThemeOption
-                key={theme.id}
-                theme={theme}
-                active={prefs.theme === theme.id}
-                onSelect={() => {
-                  if (theme.premium) {
-                    alert('Ce thème est premium — disponible Phase 5 (cosmetics shop).');
-                    return;
-                  }
-                  prefs.setTheme(theme.id);
-                }}
-              />
-            ))}
-          </div>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <h3 className="display text-display-sm mb-1">Skin du manche</h3>
-          <p className="mb-4 text-sm text-text-muted">
-            La palette de couleurs du Fretboard. Tu peux aussi switcher en live sur la page Gammes.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {SKIN_LIST.map((skin) => (
-              <SkinOption
-                key={skin.id}
-                skin={skin}
-                active={prefs.fretboardSkin === skin.id}
-                onSelect={() => {
-                  if (skin.premium) {
-                    alert('Ce skin est premium — disponible Phase 5 (cosmetics shop).');
-                    return;
-                  }
-                  prefs.setFretboardSkin(skin.id);
-                }}
-              />
-            ))}
-          </div>
-        </Card>
 
         <Card>
           <div className="mb-3 flex items-center gap-2">
@@ -311,175 +247,106 @@ export function Settings() {
           </div>
         </Card>
       </div>
+
+      {/* ─── Drawers de sélection (sess settings-polish) ─────────────── */}
+
+      <SelectorDrawer
+        open={langDrawerOpen}
+        onOpenChange={setLangDrawerOpen}
+        title={t('settings.language')}
+        value={currentLocale}
+        onChange={(v) => setLocale(v)}
+        options={LOCALES.map((loc) => ({
+          value: loc.id,
+          label: `${loc.flag} ${loc.label}`,
+        }))}
+      />
+
+      <SelectorDrawer
+        open={strumDrawerOpen}
+        onOpenChange={setStrumDrawerOpen}
+        title="Son de strum"
+        value={prefs.strumSound}
+        onChange={(v) => {
+          prefs.setStrumSound(v);
+          // Preview après un court délai pour laisser le hot-swap rebuild.
+          setTimeout(() => void strum('Em', 'down'), 80);
+        }}
+        options={STRUM_SOUNDS.map((s) => ({
+          value: s.id,
+          label: s.label,
+          sublabel: s.description,
+          premium: s.premium,
+        }))}
+      />
+
+      <SelectorDrawer
+        open={themeDrawerOpen}
+        onOpenChange={setThemeDrawerOpen}
+        title="Thème de l'app"
+        value={prefs.theme}
+        onChange={(v) => prefs.setTheme(v)}
+        options={THEMES.filter((th) => !th.secret || prefs.unlockedSecretTheme).map((theme) => ({
+          value: theme.id,
+          label: theme.label,
+          sublabel: theme.description,
+          premium: theme.premium,
+          preview: <ThemeSwatch theme={theme} />,
+        }))}
+      />
+
+      <SelectorDrawer
+        open={skinDrawerOpen}
+        onOpenChange={setSkinDrawerOpen}
+        title="Skin du manche"
+        value={prefs.fretboardSkin}
+        onChange={(v) => prefs.setFretboardSkin(v)}
+        options={SKIN_LIST.map((skin) => ({
+          value: skin.id,
+          label: skin.name,
+          sublabel: skin.description,
+          premium: skin.premium,
+          preview: <SkinSwatch skin={skin} />,
+        }))}
+      />
     </>
   );
 }
 
-/** Strum sound picker — icone Volume + nom + chips de caractère. */
-function StrumSoundOption({
-  sound,
-  active,
-  onSelect,
-}: {
-  sound: StrumSound;
-  active: boolean;
-  onSelect: () => void;
-}) {
+/** Vignette thème — 3 bandes bg/surface/accent + mot RiffLab + dot bright. */
+function ThemeSwatch({ theme }: { theme: Theme }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      aria-label={`Son ${sound.label}`}
-      className={clsx(
-        'group flex items-start gap-3 rounded-xl border bg-surface-2 p-3 text-left transition-all',
-        active ? 'border-gold shadow-gold' : 'border-border hover:border-gold-soft'
-      )}
+    <div
+      className="relative h-16 w-full overflow-hidden rounded-lg border border-border"
+      style={{ backgroundColor: theme.preview.bg }}
     >
-      <span
-        className={clsx(
-          'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border',
-          active ? 'border-gold bg-gold/10 text-gold' : 'border-border bg-surface text-text-muted'
-        )}
-      >
-        <Volume2 size={16} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
-          {sound.label}
-          {sound.recommended && (
-            <span className="inline-flex items-center rounded-full border border-gold bg-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold">
-              Recommandé
-            </span>
-          )}
-          {sound.premium && <Lock size={12} className="text-text-soft" />}
-        </div>
-        <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{sound.description}</div>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {sound.tags.map((t) => (
-            <span key={t} className="chip text-[10px]">{t}</span>
-          ))}
-        </div>
-      </div>
-      {active && (
-        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
-          <Check size={12} strokeWidth={3} />
-        </span>
-      )}
-    </button>
-  );
-}
-
-/** Theme selector — vignette colorée 3-stripes + nom + check si actif. */
-function ThemeOption({
-  theme,
-  active,
-  onSelect,
-}: {
-  theme: Theme;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      aria-label={`Thème ${theme.label}`}
-      className={clsx(
-        'group flex flex-col gap-3 rounded-xl border bg-surface-2 p-3 text-left transition-all',
-        active ? 'border-gold shadow-gold' : 'border-border hover:border-gold-soft'
-      )}
-    >
-      {/* Vignette : 3 bandes horizontales bg / surface / accent + dot bright */}
+      <div className="absolute inset-x-0 top-0 h-1/3" style={{ backgroundColor: theme.preview.bg }} />
       <div
-        className="relative h-16 w-full overflow-hidden rounded-lg border border-border"
+        className="absolute inset-x-0 top-1/3 h-1/3"
+        style={{ backgroundColor: theme.preview.surface }}
+      />
+      <div
+        className="absolute bottom-0 left-0 right-0 flex h-1/3 items-center justify-between px-3"
         style={{ backgroundColor: theme.preview.bg }}
       >
-        <div
-          className="absolute inset-x-0 top-0 h-1/3"
-          style={{ backgroundColor: theme.preview.bg }}
-        />
-        <div
-          className="absolute inset-x-0 top-1/3 h-1/3"
-          style={{ backgroundColor: theme.preview.surface }}
-        />
-        <div
-          className="absolute bottom-0 left-0 right-0 h-1/3 flex items-center justify-between px-3"
-          style={{ backgroundColor: theme.preview.bg }}
+        <span
+          className="font-serif text-base font-semibold"
+          style={{
+            color: theme.preview.accent,
+            textShadow: `0 0 12px ${theme.preview.accentBright}40`,
+          }}
         >
-          <span
-            className="font-serif text-base font-semibold"
-            style={{ color: theme.preview.accent, textShadow: `0 0 12px ${theme.preview.accentBright}40` }}
-          >
-            RiffLab
-          </span>
-          <span
-            className="h-3 w-3 rounded-full"
-            style={{
-              backgroundColor: theme.preview.accentBright,
-              boxShadow: `0 0 8px ${theme.preview.accentBright}80`,
-            }}
-          />
-        </div>
+          RiffLab
+        </span>
+        <span
+          className="h-3 w-3 rounded-full"
+          style={{
+            backgroundColor: theme.preview.accentBright,
+            boxShadow: `0 0 8px ${theme.preview.accentBright}80`,
+          }}
+        />
       </div>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
-            {theme.label}
-            {theme.premium && <Lock size={12} className="text-text-soft" />}
-          </div>
-          <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{theme.description}</div>
-        </div>
-        {active && (
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
-            <Check size={12} strokeWidth={3} />
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
-
-/** Skin selector card option — preview swatch + name + check icon when active. */
-function SkinOption({
-  skin,
-  active,
-  onSelect,
-}: {
-  skin: FretboardSkin;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      aria-label={`Skin ${skin.name}`}
-      className={clsx(
-        'group flex flex-col gap-3 rounded-xl border bg-surface-2 p-3 text-left transition-all',
-        active
-          ? 'border-gold shadow-gold'
-          : 'border-border hover:border-gold-soft'
-      )}
-    >
-      <SkinSwatch skin={skin} />
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-text">
-            {skin.name}
-            {skin.premium && <Lock size={12} className="text-text-soft" />}
-          </div>
-          <div className="mt-0.5 line-clamp-2 text-xs text-text-soft">{skin.description}</div>
-        </div>
-        {active && (
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold text-bg">
-            <Check size={12} strokeWidth={3} />
-          </span>
-        )}
-      </div>
-    </button>
+    </div>
   );
 }
 
