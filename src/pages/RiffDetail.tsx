@@ -11,7 +11,7 @@
  *  - Sur <lg : sections empilées en bas (Plus de / Similaires / Comments)
  *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -38,12 +38,13 @@ import {
   difficultyToLevel,
   formatRelativeDate,
   getCommunityRiff,
+  publicRiffToFeedItem,
   LEVEL_LABELS,
   LEVEL_COLORS,
   TECHNIQUE_LABELS,
   type CommunityRiff,
 } from '@/lib/communityRiffs';
-import { getTab } from '@/lib/tabsDatabase';
+import { getTab, type Tab } from '@/lib/tabsDatabase';
 import {
   isRiffBookmarked,
   isRiffLiked,
@@ -58,6 +59,7 @@ import {
   unlikeRiff,
   bookmarkRiff,
   unbookmarkRiff,
+  getRiff,
 } from '@/lib/socialApi';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useToast } from '@/hooks/useToast';
@@ -65,7 +67,28 @@ import { LoginModal } from '@/components/auth/LoginModal';
 
 export function RiffDetail() {
   const { id } = useParams();
-  const data = id ? getCommunityRiff(id) : null;
+  // Riff seed (slug cr-*) → bundle local ; riff publié (UUID) → fetch Supabase.
+  // undefined = chargement, null = introuvable.
+  const [data, setData] = useState<
+    { riff: CommunityRiff; tab: Tab } | null | undefined
+  >(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) {
+      setData(null);
+      return;
+    }
+    if (isUUID(id)) {
+      void getRiff(id).then(({ data: r }) => {
+        if (!cancelled) setData(r ? publicRiffToFeedItem(r) : null);
+      });
+    } else {
+      setData(getCommunityRiff(id) ?? null);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
   const [shareOpen, setShareOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
   const tabAreaRef = useRef<HTMLElement | null>(null);
@@ -133,6 +156,11 @@ export function RiffDetail() {
       .slice(0, 4);
   }, [data?.riff.id]);
 
+  if (data === undefined) {
+    return (
+      <div className="py-16 text-center text-sm text-text-muted">Chargement du riff…</div>
+    );
+  }
   if (!data) {
     return <Navigate to="/riffs" replace />;
   }

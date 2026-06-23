@@ -13,7 +13,7 @@
  *   - Infinite scroll (IntersectionObserver) au-delà de 12 cards
  *   - Click card → /riffs/:id (la card est un teaser, le reste est en détail)
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -32,9 +32,12 @@ import {
   COMMUNITY_RIFFS,
   sortFeedRiffs,
   difficultyToLevel,
+  publicRiffToFeedItem,
   type FeedSort,
+  type CommunityRiff,
 } from '@/lib/communityRiffs';
-import { getTab } from '@/lib/tabsDatabase';
+import { getPublishedRiffs } from '@/lib/socialApi';
+import { getTab, type Tab } from '@/lib/tabsDatabase';
 import { checkAndUnlockBadges, db, listMasteredRiffs } from '@/lib/db';
 import { getBadgeMeta } from '@/lib/badges';
 import { usePrefs } from '@/stores/prefsStore';
@@ -72,6 +75,31 @@ export function Riffs() {
         ? 'advanced'
         : 'intermediate';
 
+  // Riffs publiés Supabase (riffs_public) mergés avec les seeds bundlés.
+  // Chaque item porte son Tab synthétisé (tab_data → measures) car ces
+  // riffs ne sont pas dans tabsDatabase.
+  const [publicItems, setPublicItems] = useState<{ riff: CommunityRiff; tab: Tab }[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const published = await getPublishedRiffs();
+      setPublicItems(published.map((r) => publicRiffToFeedItem(r)));
+    })();
+  }, []);
+
+  const publicTabMap = useMemo(
+    () => new Map(publicItems.map((p) => [p.riff.id, p.tab])),
+    [publicItems],
+  );
+  const allRiffs = useMemo<CommunityRiff[]>(
+    () => [...COMMUNITY_RIFFS, ...publicItems.map((p) => p.riff)],
+    [publicItems],
+  );
+  // Résout le Tab d'un riff : publié (porté) ou seed (tabsDatabase).
+  const resolveTab = useCallback(
+    (r: CommunityRiff): Tab | undefined => publicTabMap.get(r.id) ?? getTab(r.tabId),
+    [publicTabMap],
+  );
+
   // Check badges au mount (actions faites ailleurs)
   useEffect(() => {
     void (async () => {
@@ -99,7 +127,7 @@ export function Riffs() {
   }, [likedIds, masteredIds, userLevelMapped]);
 
   const visible = useMemo(() => {
-    let arr = [...COMMUNITY_RIFFS];
+    let arr = [...allRiffs];
 
     if (filters.genres.length > 0) {
       arr = arr.filter((r) => r.tags.some((t) => filters.genres.includes(t)));
@@ -112,7 +140,7 @@ export function Riffs() {
     }
     if (filters.bpmMin > 40 || filters.bpmMax < 240) {
       arr = arr.filter((r) => {
-        const tab = getTab(r.tabId);
+        const tab = resolveTab(r);
         if (!tab) return false;
         return tab.tempo >= filters.bpmMin && tab.tempo <= filters.bpmMax;
       });
@@ -120,7 +148,7 @@ export function Riffs() {
 
     // Tri avancé du Sheet (override les tabs) sinon tri par tab
     if (filters.sort === 'bpm') {
-      return arr.sort((a, b) => (getTab(a.tabId)?.tempo ?? 0) - (getTab(b.tabId)?.tempo ?? 0));
+      return arr.sort((a, b) => (resolveTab(a)?.tempo ?? 0) - (resolveTab(b)?.tempo ?? 0));
     }
     if (filters.sort === 'popular') return arr.sort((a, b) => b.baseLikes - a.baseLikes);
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
@@ -131,7 +159,7 @@ export function Riffs() {
       exploreWeight: 25,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, sort]);
+  }, [filters, sort, allRiffs, resolveTab]);
 
   // Reset la pagination quand la liste change (tab/filtres)
   useEffect(() => {
@@ -231,7 +259,7 @@ export function Riffs() {
         {shown.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
             {shown.map((r, i) => {
-              const tab = getTab(r.tabId);
+              const tab = resolveTab(r);
               if (!tab) return null;
               return (
                 <motion.div

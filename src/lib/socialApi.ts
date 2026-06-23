@@ -272,6 +272,26 @@ export async function getUserRiffs(
   };
 }
 
+/**
+ * Tous les riffs publiés (pour merger dans le feed /riffs avec les seeds
+ * bundlés). Retourne un array direct (vide en cas d'erreur / non configuré),
+ * pour que le feed ne crashe jamais sur une coupure réseau.
+ */
+export async function getPublishedRiffs(limit = 50): Promise<PublicRiffWithMeta[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from('riffs_public')
+    .select('*, author:profiles!riffs_public_author_id_fkey(username,display_name,avatar_url)')
+    .order('published_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[socialApi] getPublishedRiffs:', error.message);
+    return [];
+  }
+  return (data as PublicRiffWithMeta[]) ?? [];
+}
+
 // ─── Feeds ──────────────────────────────────────────────────────────
 
 /** Page de N riffs récents (pour infinite scroll). */
