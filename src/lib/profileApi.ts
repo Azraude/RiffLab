@@ -120,6 +120,31 @@ export async function uploadCover(
   return { data: publicUrl.publicUrl, error: null };
 }
 
+// ─── Upload avatar (bucket 'avatars') ──────────────────────────────
+
+/**
+ * Upload avatar dans bucket `avatars/<userId>/avatar-<ts>.<ext>`.
+ * Bucket public → URL accessible sans auth. Retourne l'URL publique ;
+ * l'appelant l'injecte dans le patch (`avatar_url`) puis updateProfileExtended.
+ */
+export async function uploadAvatar(
+  userId: string,
+  file: File,
+): Promise<{ data: string | null; error: Error | null }> {
+  if (!isSupabaseConfigured) return notConfigured();
+  if (file.size > 3 * 1024 * 1024) {
+    return { data: null, error: new Error('Image trop lourde (max 3 MB)') };
+  }
+  const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase();
+  const path = `${userId}/avatar-${Date.now()}.${ext}`;
+  const { error: uploadErr } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadErr) return { data: null, error: new Error(uploadErr.message) };
+  const { data: publicUrl } = supabase.storage.from('avatars').getPublicUrl(path);
+  return { data: publicUrl.publicUrl, error: null };
+}
+
 // ─── Validation URLs ───────────────────────────────────────────────
 
 const URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
