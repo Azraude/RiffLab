@@ -9,6 +9,7 @@ import { rebuildVoices } from '@/lib/audio';
 import { PWAUpdateToast } from '@/components/pwa/PWAUpdateToast';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useCloudSync } from '@/hooks/useCloudSync';
 import '@/i18n'; // setup i18next FR/EN AVANT le render
 import '@/styles/globals.css';
 
@@ -25,14 +26,28 @@ usePrefs.subscribe((state, prev) => {
   if (state.strumSound !== prev.strumSound) void rebuildVoices(state.strumSound);
 });
 
+/**
+ * Racine applicative — hôte des hooks globaux qui doivent vivre dans
+ * l'arbre React (cloud-sync au login, etc.) tout en englobant le router.
+ */
+function AppRoot() {
+  // Déclenche la synchro Dexie ↔ Supabase dès qu'un user se connecte.
+  useCloudSync();
+  return (
+    <>
+      {/* Backstop global : si l'erreur survient hors des routes (Layout,
+          Sidebar, providers), on évite l'écran noir total. */}
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
+      <PWAUpdateToast />
+      <InstallPrompt />
+    </>
+  );
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {/* Backstop global : si l'erreur survient hors des routes (Layout,
-        Sidebar, providers), on évite l'écran noir total. */}
-    <ErrorBoundary>
-      <RouterProvider router={router} />
-    </ErrorBoundary>
-    <PWAUpdateToast />
-    <InstallPrompt />
+    <AppRoot />
   </React.StrictMode>
 );
