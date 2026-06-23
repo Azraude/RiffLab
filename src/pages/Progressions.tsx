@@ -55,6 +55,7 @@ import { SEO } from '@/components/SEO';
 import { saveCustomProgression } from '@/lib/progressionApi';
 import { useAuth } from '@/stores/authStore';
 import { useToast } from '@/hooks/useToast';
+import { usePremiumLimit } from '@/hooks/usePremiumLimit';
 
 type StudioTab = 'compose' | 'classics';
 
@@ -537,10 +538,14 @@ function FinishedActions({
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const isConnected = useAuth((s) => !!s.user);
+  const progCount = useLiveQuery(() => db.customProgressions.count(), []) ?? 0;
+  const { checkOrPrompt } = usePremiumLimit('customProgressions', progCount);
 
   // Sauvegarde la progression custom (Dexie + Supabase si connecté).
   // Save local autorisé sans compte ; soft-prompt connexion pour le cloud.
   const handleSave = async () => {
+    // Gating premium : au-delà de la limite free → modale RiffLab+.
+    if (!checkOrPrompt('Tu as atteint la limite de progressions sauvegardées')) return;
     const fallback = `${keyName} ${mode === 'minor' ? 'mineur' : 'majeur'}`;
     const name = (window.prompt('Nom de ta progression ?', fallback) ?? '').trim();
     if (!name) return;

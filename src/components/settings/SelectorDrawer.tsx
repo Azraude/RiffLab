@@ -30,6 +30,8 @@ interface SelectorDrawerProps<T extends string | number> {
   options: SelectorOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Appelé quand une option premium est tapée (ex: ouvrir la modale RiffLab+). */
+  onPremium?: (value: T) => void;
 }
 
 export function SelectorDrawer<T extends string | number>({
@@ -39,6 +41,7 @@ export function SelectorDrawer<T extends string | number>({
   options,
   value,
   onChange,
+  onPremium,
 }: SelectorDrawerProps<T>) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title={title}>
@@ -52,7 +55,12 @@ export function SelectorDrawer<T extends string | number>({
               disabled={opt.disabled}
               aria-pressed={selected}
               onClick={() => {
-                if (opt.premium || opt.disabled) return;
+                if (opt.disabled) return;
+                if (opt.premium) {
+                  onPremium?.(opt.value);
+                  onOpenChange(false);
+                  return;
+                }
                 onChange(opt.value);
                 onOpenChange(false);
               }}

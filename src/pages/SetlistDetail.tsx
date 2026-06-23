@@ -14,6 +14,7 @@ import {
 } from '@/lib/db';
 import { encodeSetlist, buildShareUrl } from '@/lib/share';
 import { exportSetlistToPdf } from '@/lib/setlistPdf';
+import { PremiumLock } from '@/components/premium/PremiumLock';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import { SongDetailSkeleton } from '@/components/ui/Skeleton';
 import {
@@ -169,15 +170,17 @@ export function SetlistDetail() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPdfOpen(true)}
-            aria-label="Exporter en PDF"
-            title="Exporter en PDF"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text md:h-10 md:w-10"
-          >
-            <FileText size={16} />
-          </button>
+          <PremiumLock feature="pdf-export" reason="L'export PDF est réservé à RiffLab+">
+            <button
+              type="button"
+              onClick={() => setPdfOpen(true)}
+              aria-label="Exporter en PDF"
+              title="Exporter en PDF"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-muted hover:border-gold-soft hover:text-text md:h-10 md:w-10"
+            >
+              <FileText size={16} />
+            </button>
+          </PremiumLock>
           <button
             type="button"
             onClick={handleShare}
