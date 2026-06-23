@@ -48,9 +48,13 @@ import {
   RotateCcw,
   Dices,
   Music2,
+  Save,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { SEO } from '@/components/SEO';
+import { saveCustomProgression } from '@/lib/progressionApi';
+import { useAuth } from '@/stores/authStore';
+import { useToast } from '@/hooks/useToast';
 
 type StudioTab = 'compose' | 'classics';
 
@@ -345,6 +349,7 @@ function StudioCompose() {
           chords={lockedChords}
           keyName={keyName}
           mode={mode}
+          styles={styles}
           onPlayingChange={setPlayingIdx}
         />
       )}
@@ -514,11 +519,13 @@ function FinishedActions({
   chords,
   keyName,
   mode,
+  styles,
   onPlayingChange,
 }: {
   chords: string[];
   keyName: NoteName;
   mode: 'major' | 'minor';
+  styles: ProgressionStyle[];
   onPlayingChange: (idx: number | null) => void;
 }) {
   const { strum } = useAudio();
@@ -527,6 +534,39 @@ function FinishedActions({
   const cancelRef = useRef(false);
   const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+  const isConnected = useAuth((s) => !!s.user);
+
+  // Sauvegarde la progression custom (Dexie + Supabase si connecté).
+  // Save local autorisé sans compte ; soft-prompt connexion pour le cloud.
+  const handleSave = async () => {
+    const fallback = `${keyName} ${mode === 'minor' ? 'mineur' : 'majeur'}`;
+    const name = (window.prompt('Nom de ta progression ?', fallback) ?? '').trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      await saveCustomProgression({
+        name,
+        chords,
+        key: keyName,
+        mode,
+        style: styles[0],
+      });
+      toast.success(`Progression « ${name} » sauvegardée !`);
+      if (!isConnected) {
+        window.setTimeout(
+          () =>
+            toast.info('Connecte-toi pour retrouver tes progressions sur tous tes appareils'),
+          1000,
+        );
+      }
+    } catch {
+      toast.error('Échec de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePlay = async () => {
     if (playing) {
@@ -599,6 +639,15 @@ function FinishedActions({
             )}
           >
             🔁 Loop {loop ? 'ON' : 'OFF'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-colors hover:bg-gold-bright disabled:opacity-50"
+          >
+            <Save size={14} />
+            {saving ? 'Sauvegarde…' : 'Sauvegarder'}
           </button>
           <button
             type="button"
