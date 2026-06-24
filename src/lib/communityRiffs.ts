@@ -742,6 +742,43 @@ export function formatRelativeDate(isoDate: string, now: Date = new Date()): str
   return `il y a ${years} an${years > 1 ? 's' : ''}`;
 }
 
+/**
+ * Annotation horodatée d'un riff — affichée sous la tab sur la page détail,
+ * cliquable (seek audio + scroll tab) avec highlight de l'annotation active.
+ * Stub seeds en attendant que les users postent leurs propres annotations.
+ * Les `timeSeconds` sont calés sur la durée musicale réelle des riffs courts
+ * (la plupart < 4 s) pour que le highlight "actif" se déclenche en démo.
+ */
+export interface RiffAnnotation {
+  id: string;
+  /** Position dans le temps (secondes). */
+  timeSeconds: number;
+  text: string;
+}
+
+const SEEDS_ANNOTATIONS: Record<string, RiffAnnotation[]> = {
+  'cr-sevennation': [
+    { id: 'a1', timeSeconds: 0, text: 'Intro : attaque sèche, tout sur la corde de Mi grave' },
+    { id: 'a2', timeSeconds: 0.7, text: 'Slide descendant sur le fa# (10 → 7)' },
+    { id: 'a3', timeSeconds: 1.7, text: 'Hammer-on puis pull-off pour finir la phrase' },
+  ],
+  'cr-smoke': [
+    { id: 'a1', timeSeconds: 0, text: 'Les 3 power-notes : G — Bb — C, palm-mute léger' },
+    { id: 'a2', timeSeconds: 1.2, text: 'Laisse sonner le C, ne coupe pas trop tôt' },
+    { id: 'a3', timeSeconds: 2.4, text: 'Reprends la boucle, garde le swing' },
+  ],
+  'cr-nothing-else-matters': [
+    { id: 'a1', timeSeconds: 0, text: 'Arpège aux doigts, corde à vide en pédale' },
+    { id: 'a2', timeSeconds: 1.5, text: 'Laisse ringer chaque note, pas de précipitation' },
+    { id: 'a3', timeSeconds: 3, text: 'Le pull-off final doit chanter' },
+  ],
+};
+
+/** Annotations seed d'un riff (vide si aucune). */
+export function getRiffAnnotations(riffId: string): RiffAnnotation[] {
+  return SEEDS_ANNOTATIONS[riffId] ?? [];
+}
+
 export type FeedSort = 'for-you' | 'trending' | 'recent';
 
 /**

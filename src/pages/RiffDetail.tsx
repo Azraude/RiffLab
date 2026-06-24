@@ -1,49 +1,55 @@
 /**
- * /riffs/:id — page détail d'un riff.
+ * /riffs/:id — page détail d'un riff = écran de pratique #1.
  *
- * Sess B (P1) — refonte mobile-first pleine page :
- *  - Header sticky top compact (Back + Share + Bookmark + Like)
- *  - Hero compact (Instagram-style) : avatar + @user + meta + tags inline
- *  - Tab area sticky-top mobile (md:relative desktop)
- *  - Actions row hiérarchisée : CTA "Écouter" primary full-width + grid
- *    2-cols "Apprendre" + "Annotations"
- *  - Sidebar droite lg+ : "Plus de @user" + "Riffs similaires"
- *  - Sur <lg : sections empilées en bas (Plus de / Similaires / Comments)
- *  - Bottom sticky "Apprendre" remplacé par le grid actions row
+ * Refonte design Phase 2 (2026-06-25) :
+ *  - Header simple (back + menu ⋯ → Apprendre / Partager)
+ *  - Titre serif + artiste + auteur + bouton Suivre
+ *  - Note de l'auteur (caption) en citation dorée
+ *  - UN SEUL bouton "Lire avec l'audio" + temps / tonalité / BPM
+ *  - Tab COMPLÈTE scrollable, tête de lecture dorée + auto-scroll synchro,
+ *    techniques colorées (h/p/slide/bend/vibrato)
+ *  - Légende techniques + annotations horodatées cliquables (seek)
+ *  - Barre actions sociales (like / comment / save / share)
+ *
+ * Moteur HYBRIDE : `useAudioSync` pilote l'horloge (playhead + annotations),
+ * et on déclenche en parallèle la synthèse note-à-note (Tone.js via useAudio)
+ * tant qu'aucun vrai fichier audio n'est uploadé → on garde le son.
  */
-import { useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
-  Heart,
+  AudioLines,
   Bookmark,
+  ChevronLeft,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Pause,
+  Quote,
   Share2,
-  Trophy,
   Target,
-  Music2,
+  Trophy,
   User,
-  Play,
-  BookOpen,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { Card } from '@/components/ui/Card';
-import { RiffPlayer, type RiffPlayerHandle } from '@/components/riffs/RiffPlayer';
 import { LearnRiffMode } from '@/components/riffs/LearnRiffMode';
 import { ShareDrawer } from '@/components/share/ShareDrawer';
 import { CommentsSection } from '@/components/social/CommentsSection';
+import { FollowButton } from '@/components/social/FollowButton';
+import { TabReader } from '@/components/tabs/TabReader';
+import { AnnotationList, fmtTime } from '@/components/riffs/AnnotationList';
 import {
   COMMUNITY_RIFFS,
   difficultyToLevel,
   formatRelativeDate,
   getCommunityRiff,
+  getRiffAnnotations,
   LEVEL_LABELS,
   LEVEL_COLORS,
-  TECHNIQUE_LABELS,
   type CommunityRiff,
 } from '@/lib/communityRiffs';
-import { getTab } from '@/lib/tabsDatabase';
+import { flattenTab, getTab, tabNoteToMidi } from '@/lib/tabsDatabase';
 import {
   isRiffBookmarked,
   isRiffLiked,
@@ -52,18 +58,32 @@ import {
   toggleRiffBookmark,
   toggleRiffLike,
 } from '@/lib/db';
+import { useAudio } from '@/hooks/useAudio';
+import { useAudioSync } from '@/hooks/useAudioSync';
+
+/** Légende des techniques affichées sur la tab. */
+const TECHNIQUE_LEGEND: { glyph: string; label: string }[] = [
+  { glyph: 'h', label: 'hammer-on' },
+  { glyph: 'p', label: 'pull-off' },
+  { glyph: '/', label: 'slide up' },
+  { glyph: '\\', label: 'slide down' },
+  { glyph: 'b', label: 'bend' },
+  { glyph: '~', label: 'vibrato' },
+];
 
 export function RiffDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const data = id ? getCommunityRiff(id) : null;
+
   const [shareOpen, setShareOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
-  const tabAreaRef = useRef<HTMLElement | null>(null);
-  const captionRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<RiffPlayerHandle | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const commentsRef = useRef<HTMLDivElement | null>(null);
 
   const liked = useLiveQuery(() => (id ? isRiffLiked(id) : Promise.resolve(false)), [id]) ?? false;
-  const bookmarked = useLiveQuery(() => (id ? isRiffBookmarked(id) : Promise.resolve(false)), [id]) ?? false;
+  const bookmarked =
+    useLiveQuery(() => (id ? isRiffBookmarked(id) : Promise.resolve(false)), [id]) ?? false;
   const mastered = useLiveQuery(() => (id ? isRiffMastered(id) : Promise.resolve(undefined)), [id]);
   const masteredRows = useLiveQuery(() => listMasteredRiffs(), []) ?? [];
   const masteredMap = useMemo(
@@ -71,15 +91,13 @@ export function RiffDetail() {
     [masteredRows]
   );
 
-  // Plus de @username : 3 autres riffs du même contributor
   const moreByUser = useMemo(() => {
     if (!data) return [];
     return COMMUNITY_RIFFS.filter(
       (r) => r.contributor === data.riff.contributor && r.id !== data.riff.id
-    ).slice(0, 4);
+    ).slice(0, 3);
   }, [data?.riff.id]);
 
-  // Riffs similaires : même tag dominant ou même difficulté ±1
   const similar = useMemo(() => {
     if (!data) return [];
     return COMMUNITY_RIFFS.filter((r) => {
@@ -89,8 +107,47 @@ export function RiffDetail() {
       return tagOverlap && closeDifficulty;
     })
       .sort((a, b) => b.baseLikes - a.baseLikes)
-      .slice(0, 4);
+      .slice(0, 3);
   }, [data?.riff.id]);
+
+  // ─── Horloge de lecture (hybride sim + synthèse) ───
+  const { playMidi } = useAudio();
+  const playMidiRef = useRef(playMidi);
+  playMidiRef.current = playMidi;
+
+  // Durée musicale réelle : totalBeats (16e) × secondes-par-16e (15 / tempo).
+  const secPerBeat = data ? 15 / data.tab.tempo : 0.12;
+  const totalBeats = data ? data.tab.measures.length * 16 : 0;
+  const duration = Math.max(1, totalBeats * secPerBeat);
+  const audio = useAudioSync({ duration, audioUrl: data?.riff.audio_url });
+
+  const noteEvents = useMemo(() => {
+    if (!data) return [] as { t: number; midi: number }[];
+    return flattenTab(data.tab).map((n) => ({
+      t: n.absoluteBeat * secPerBeat,
+      midi: tabNoteToMidi(n, data.riff.capo ?? 0),
+    }));
+  }, [data?.tab, secPerBeat, data?.riff.capo]);
+
+  // Synthèse note-à-note synchronisée sur l'horloge (mode simulé uniquement).
+  // Pointeur monotone + détection de saut (seek) pour éviter les rafales.
+  const firedRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  useEffect(() => {
+    if (!audio.isSimulated) return;
+    const t = audio.currentTime;
+    const jumped = Math.abs(t - lastTimeRef.current) > 0.3;
+    lastTimeRef.current = t;
+    if (jumped || !audio.isPlaying) {
+      const idx = noteEvents.findIndex((e) => e.t >= t - 1e-6);
+      firedRef.current = idx < 0 ? noteEvents.length : idx;
+      if (!audio.isPlaying) return;
+    }
+    while (firedRef.current < noteEvents.length && noteEvents[firedRef.current].t <= t + 1e-6) {
+      void playMidiRef.current(noteEvents[firedRef.current].midi);
+      firedRef.current++;
+    }
+  }, [audio.currentTime, audio.isPlaying, audio.isSimulated, noteEvents]);
 
   if (!data) {
     return <Navigate to="/riffs" replace />;
@@ -98,359 +155,285 @@ export function RiffDetail() {
   const { riff, tab } = data;
   const level = difficultyToLevel(riff.difficulty);
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
+  const annotations = getRiffAnnotations(riff.id);
+  const authorId = riff.contributor.replace('@', '');
+  const progress = duration > 0 ? (audio.currentTime / duration) * 100 : 0;
 
-  const handleListen = () => {
-    tabAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    playerRef.current?.play();
-  };
-  const scrollToCaption = () => {
-    captionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleSeekBar = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.seekTo(ratio * duration);
   };
 
   return (
     <>
-      {/* === Header sticky compact mobile (Back + actions icons) ===
-          Au-dessus du contenu, fond bg-bg/95 avec blur pour rester
-          lisible quand on scroll le tab par-dessus. */}
-      <header
-        className="sticky top-0 z-20 -mx-5 -mt-6 flex items-center justify-between gap-2 border-b border-border/60 bg-bg/90 px-3 py-2 backdrop-blur-md md:relative md:mx-0 md:mt-0 md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none"
-      >
-        <Link
-          to="/riffs"
-          aria-label="Retour au feed"
-          className="inline-flex h-11 items-center gap-1.5 rounded-xl px-2 text-sm text-text-muted hover:text-gold md:h-9 md:px-3"
+      {/* === Header simple : back + menu ⋯ === */}
+      <header className="sticky top-0 z-20 -mx-5 -mt-6 flex items-center justify-between border-b border-border bg-bg/90 px-3 py-2 backdrop-blur-md md:-mx-12 md:px-12">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Retour"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors hover:border-gold-soft hover:text-text"
         >
-          <ArrowLeft size={18} />
-          <span className="hidden md:inline">Feed des riffs</span>
-        </Link>
-        <div className="flex items-center gap-1 md:hidden">
-          <IconBtn
-            onClick={() => void toggleRiffLike(riff.id)}
-            label={liked ? 'Retirer du favoris' : "J'aime"}
-            active={liked}
-            activeColor="danger"
+          <ChevronLeft size={20} />
+        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Plus d'options"
+            aria-expanded={menuOpen}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors hover:border-gold-soft hover:text-text"
           >
-            <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-          </IconBtn>
-          <IconBtn
-            onClick={() => void toggleRiffBookmark(riff.id)}
-            label={bookmarked ? 'Retirer du sauvegardés' : 'Sauvegarder'}
-            active={bookmarked}
-            activeColor="gold"
-          >
-            <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
-          </IconBtn>
-          <IconBtn onClick={() => setShareOpen(true)} label="Partager">
-            <Share2 size={18} />
-          </IconBtn>
+            <MoreHorizontal size={18} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} aria-hidden />
+              <div className="absolute right-0 top-12 z-40 w-52 overflow-hidden rounded-xl border border-border bg-surface shadow-gold-strong">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setLearnOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-text hover:bg-surface-2"
+                >
+                  <Target size={16} className="text-gold" /> Apprendre ce riff
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShareOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 border-t border-border px-4 py-3 text-left text-sm text-text hover:bg-surface-2"
+                >
+                  <Share2 size={16} className="text-gold" /> Partager
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
-      {/* === Layout main + sidebar desktop ===
-          <lg : 1 col stack. lg+ : grid main + sidebar 320px right. */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
-        {/* ───────── MAIN COLUMN ───────── */}
-        <div className="pb-24 md:pb-8 lg:pb-12">
-          {/* === Hero compact === */}
-          {/* NOTE : `initial={false}` désactive l'animation d'entrée Framer Motion.
-              Symptôme observé : la section restait bloquée à `opacity: 0` sur
-              certaines navigations (l'`animate` ne se déclenchait pas après le
-              click sur une card riff), donnant un écran noir alors que le DOM
-              était bien rendu. Pas d'animation = plus fiable. */}
-          <motion.section
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 mb-4 md:mt-0 md:mb-5"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={clsx(
-                  'rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
-                  LEVEL_COLORS[level]
-                )}
-              >
-                {LEVEL_LABELS[level]}
-              </span>
-              {mastered && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2.5 py-0.5 text-[10px] font-bold text-gold">
-                  <Trophy size={11} /> Maîtrisé
-                </span>
-              )}
-            </div>
-            <h1 className="display mt-2 text-display-sm leading-tight md:text-display-lg">
-              {tab.name}
-            </h1>
-            {tab.artist && (
-              <p className="mt-0.5 text-sm text-text-muted md:text-base">{tab.artist}</p>
-            )}
+      <div className="pb-28 md:pb-12">
+        {/* === Titre + artiste === */}
+        <section className="pt-5">
+          <h1 className="display text-3xl leading-tight text-text">{tab.name}</h1>
+          {tab.artist && <p className="mt-1 text-base text-text-muted">{tab.artist}</p>}
 
-            {/* Avatar + meta line (Instagram-style header) */}
-            <div className="mt-3 flex items-center gap-2 text-xs text-text-muted md:text-sm">
+          {/* Row auteur + suivre */}
+          <div className="mt-4 flex items-center gap-3">
+            <Link to={`/u/${authorId}`} className="shrink-0" aria-label={`Profil ${riff.contributor}`}>
               <Avatar name={riff.contributor} />
+            </Link>
+            <div className="min-w-0 flex-1">
               <Link
-                to={`/u/${riff.contributor.replace('@', '')}`}
-                className="font-mono text-text hover:text-gold"
+                to={`/u/${authorId}`}
+                className="block font-mono text-sm font-bold text-text hover:text-gold"
               >
                 {riff.contributor}
               </Link>
-              <span className="text-text-soft">·</span>
-              <span>{formatRelativeDate(riff.addedAt)}</span>
-            </div>
-
-            {/* Metadata pills inline mobile / cards md+ */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs md:hidden">
-              <InlineMeta label="BPM" value={tab.tempo} />
-              <span className="text-text-soft">·</span>
-              <InlineMeta label="Tonalité" value={tab.key} />
-              <span className="text-text-soft">·</span>
-              <InlineMeta label="Mesures" value={tab.measures.length} />
-            </div>
-            <div className="mt-4 hidden grid-cols-4 gap-2 md:grid">
-              <Meta label="BPM" value={tab.tempo} />
-              <Meta label="Tonalité" value={tab.key} />
-              <Meta label="Mesures" value={tab.measures.length} />
-              <Meta label="Difficulté" value={'⭐'.repeat(riff.difficulty)} />
-            </div>
-
-            {/* Tags + techniques inline */}
-            {(riff.tags.length > 0 || riff.techniques?.length) && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {riff.tags.map((t) => (
-                  <Link
-                    key={t}
-                    to={`/riffs/tag/${t}`}
-                    className="rounded-md bg-gold/10 px-2 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
-                  >
-                    #{t}
-                  </Link>
-                ))}
-                {riff.techniques?.map((t) => (
-                  <Link
-                    key={`tech-${t}`}
-                    to={`/riffs/tag/${t}`}
-                    className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[10px] text-text-soft hover:border-gold-soft hover:text-text"
-                  >
-                    {TECHNIQUE_LABELS[t]}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </motion.section>
-
-          {/* === TAB AREA STICKY MOBILE ===
-              Le RiffPlayer wrap déjà le TabReader avec scroll-x pur.
-              Ici on rend le wrapper sticky-top-0 pour que la tab reste
-              visible quand l'user scroll les comments. Bleed -mx-5 +
-              bg-bg pour masquer le contenu derrière le sticky.
-              md:relative pour désactiver sticky desktop. */}
-          <section
-            ref={tabAreaRef}
-            id="tab-area"
-            className="sticky top-[calc(env(safe-area-inset-top)+44px)] z-10 -mx-5 mb-4 bg-bg px-5 pt-2 pb-3 md:relative md:top-auto md:mx-0 md:px-0 md:pt-0 md:pb-0"
-          >
-            <RiffPlayer ref={playerRef} tab={tab} />
-            <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
-              ← swipe pour voir la suite du tab →
-            </p>
-          </section>
-
-          {/* === ACTIONS PRIMARY (hiérarchisées) ===
-              CTA "Écouter" PRIMARY full-width + grid 2-cols secondaires.
-              Sur mobile le CTA scroll-into-view sur le tab + tape sur
-              le play interne du RiffPlayer (Phase 2 connectera direct). */}
-          <section className="mb-5 space-y-2">
-            <button
-              type="button"
-              onClick={handleListen}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-gold-strong transition-all hover:-translate-y-px active:scale-[0.99]"
-              aria-label="Écouter le riff"
-            >
-              <Play size={18} fill="currentColor" />
-              Écouter le riff
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setLearnOpen(true)}
-                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 text-sm font-semibold text-gold transition-colors hover:bg-gold/20 active:scale-[0.99]"
-              >
-                <Target size={16} />
-                Apprendre
-              </button>
-              <button
-                type="button"
-                onClick={scrollToCaption}
-                disabled={!riff.caption}
-                className={clsx(
-                  'inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition-colors active:scale-[0.99]',
-                  riff.caption
-                    ? 'border-border bg-surface text-text hover:border-gold-soft'
-                    : 'cursor-not-allowed border-border/40 bg-surface/40 text-text-soft'
-                )}
-                aria-label={riff.caption ? 'Voir les annotations' : 'Pas d\'annotations'}
-              >
-                <BookOpen size={16} />
-                Annotations
-              </button>
-            </div>
-          </section>
-
-          {/* === Caption / annotation créateur === */}
-          {riff.caption && (
-            <div ref={captionRef} className="mb-5 scroll-mt-24">
-              <Card className="border-gold/30 bg-gradient-to-br from-gold/8 to-transparent">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold">
-                    <Music2 size={15} />
-                  </div>
-                  <div>
-                    <div className="eyebrow">Annotation du créateur</div>
-                    <p className="mt-1 text-sm leading-relaxed text-text">{riff.caption}</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* === Footer social (counts + share desktop) === */}
-          <section className="mb-5 hidden items-center justify-between gap-3 border-t border-b border-border py-3 md:flex">
-            <div className="flex items-center gap-1">
-              <SocialBtn
-                count={likeCount}
-                active={liked}
-                activeColor="danger"
-                label={liked ? 'Aimé' : "J'aime"}
-                onClick={() => void toggleRiffLike(riff.id)}
-              >
-                <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-              </SocialBtn>
-              <SocialBtn
-                active={bookmarked}
-                activeColor="gold"
-                label={bookmarked ? 'Sauvegardé' : 'Sauver'}
-                onClick={() => void toggleRiffBookmark(riff.id)}
-              >
-                <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
-              </SocialBtn>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border px-4 text-sm text-text-muted hover:border-gold-soft hover:text-text"
-            >
-              <Share2 size={14} /> Partager
-            </button>
-          </section>
-
-          {/* === Commentaires (wired sess 30) === */}
-          <section className="space-y-3">
-            <h3 className="display text-display-sm">
-              Commentaires
-              {(riff.commentsCount ?? 0) > 0 && (
-                <span className="ml-2 font-mono text-base text-text-soft">
-                  ({riff.commentsCount})
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-text-soft">
+                <span aria-label={`${riff.difficulty} sur 5`}>{'⭐'.repeat(riff.difficulty)}</span>
+                <span
+                  className={clsx(
+                    'rounded-full border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider',
+                    LEVEL_COLORS[level]
+                  )}
+                >
+                  {LEVEL_LABELS[level]}
                 </span>
-              )}
-            </h3>
-            <CommentsSection riffId={riff.id} />
-          </section>
-
-          {/* === Sections "Plus de" + "Similaires" mobile/tablet === */}
-          {moreByUser.length > 0 && (
-            <section className="mt-8 space-y-3 lg:hidden">
-              <h3 className="display text-display-sm">Plus de {riff.contributor}</h3>
-              <div className="space-y-3">
-                {moreByUser.slice(0, 3).map((r) => {
-                  const t = getTab(r.tabId);
-                  if (!t) return null;
-                  return (
-                    <RelatedRiffRow
-                      key={r.id}
-                      riff={r}
-                      tabName={t.name}
-                      tabArtist={t.artist}
-                      bpm={t.tempo}
-                      masteredAt={masteredMap.get(r.id) ?? null}
-                    />
-                  );
-                })}
+                {mastered && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
+                    <Trophy size={10} /> Maîtrisé
+                  </span>
+                )}
               </div>
-            </section>
-          )}
-          {similar.length > 0 && (
-            <section className="mt-8 space-y-3 lg:hidden">
-              <h3 className="display text-display-sm">Riffs similaires</h3>
-              <div className="space-y-3">
-                {similar.slice(0, 3).map((r) => {
-                  const t = getTab(r.tabId);
-                  if (!t) return null;
-                  return (
-                    <RelatedRiffRow
-                      key={r.id}
-                      riff={r}
-                      tabName={t.name}
-                      tabArtist={t.artist}
-                      bpm={t.tempo}
-                      masteredAt={masteredMap.get(r.id) ?? null}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* ───────── SIDEBAR DESKTOP (lg+) ─────────
-            Sticky top, "Plus de @user" + "Similaires", cards compact. */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-6 space-y-6">
-            {moreByUser.length > 0 && (
-              <section className="space-y-2.5">
-                <h3 className="eyebrow">🎵 Plus de {riff.contributor}</h3>
-                <div className="space-y-2">
-                  {moreByUser.map((r) => {
-                    const t = getTab(r.tabId);
-                    if (!t) return null;
-                    return (
-                      <RelatedRiffRow
-                        key={r.id}
-                        riff={r}
-                        tabName={t.name}
-                        tabArtist={t.artist}
-                        bpm={t.tempo}
-                        masteredAt={masteredMap.get(r.id) ?? null}
-                        compact
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-            {similar.length > 0 && (
-              <section className="space-y-2.5">
-                <h3 className="eyebrow">🔥 Riffs similaires</h3>
-                <div className="space-y-2">
-                  {similar.map((r) => {
-                    const t = getTab(r.tabId);
-                    if (!t) return null;
-                    return (
-                      <RelatedRiffRow
-                        key={r.id}
-                        riff={r}
-                        tabName={t.name}
-                        tabArtist={t.artist}
-                        bpm={t.tempo}
-                        masteredAt={masteredMap.get(r.id) ?? null}
-                        compact
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+            </div>
+            <FollowButton userId={authorId} username={authorId} variant="compact" />
           </div>
-        </aside>
+        </section>
+
+        {/* === Note de l'auteur (citation dorée) === */}
+        {riff.caption && (
+          <section className="pt-5">
+            <div className="relative rounded-2xl border border-y-border border-r-border border-l-4 border-l-gold bg-surface-2 p-4">
+              <Quote size={14} className="absolute left-3 top-3 text-gold/40" />
+              <div className="eyebrow pl-5">Note de l'auteur</div>
+              <p className="mt-1 pl-5 text-sm italic leading-relaxed text-text-muted">{riff.caption}</p>
+            </div>
+          </section>
+        )}
+
+        {/* === UN SEUL BOUTON "Lire avec l'audio" === */}
+        <section className="mt-5 rounded-2xl border border-gold/30 bg-surface-2 p-4">
+          <button
+            type="button"
+            onClick={audio.togglePlay}
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-b from-gold-bright to-gold text-base font-bold text-bg shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition-transform active:scale-[0.98]"
+            aria-label={audio.isPlaying ? 'Pause' : "Lire avec l'audio"}
+          >
+            {audio.isPlaying ? <Pause size={22} fill="currentColor" /> : <AudioLines size={22} />}
+            <span>{audio.isPlaying ? 'Pause' : "Lire avec l'audio"}</span>
+          </button>
+
+          {/* Barre de progression seekable */}
+          <div
+            role="slider"
+            tabIndex={0}
+            aria-label="Position de lecture"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            onClick={handleSeekBar}
+            className="relative mt-3 h-1.5 cursor-pointer overflow-hidden rounded-full bg-bg"
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-gold to-gold-bright"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className="mt-2.5 flex items-center justify-center gap-3 text-sm">
+            <span className="font-mono text-text-muted">
+              {fmtTime(audio.currentTime)} / {fmtTime(duration)}
+            </span>
+            <span className="text-text-soft">·</span>
+            <span className="font-mono text-gold">{tab.key}</span>
+            <span className="text-text-soft">·</span>
+            <span className="font-mono text-text-muted">♩ {tab.tempo}</span>
+          </div>
+        </section>
+
+        {/* === Tab COMPLÈTE scrollable + tête de lecture + auto-scroll === */}
+        <section className="mt-6">
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface px-3 py-4">
+            <TabReader
+              tab={tab}
+              lineHeight={20}
+              beatWidth={18}
+              autoScroll
+              showPlayhead
+              showTechniques
+              currentTime={audio.currentTime}
+              duration={duration}
+              onSeek={audio.seekTo}
+            />
+          </div>
+          <p className="mt-1.5 text-center text-[10px] text-text-soft md:hidden">
+            ← swipe pour voir la suite du tab · tape la tab ou une annotation pour te déplacer →
+          </p>
+        </section>
+
+        {/* === Légende techniques === */}
+        <section className="mt-3 rounded-xl border border-border bg-surface p-3">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-soft">
+            Techniques
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs">
+            {TECHNIQUE_LEGEND.map((t) => (
+              <div key={t.label}>
+                <span className="font-bold text-gold-bright">{t.glyph}</span>{' '}
+                <span className="text-text-muted">= {t.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* === Annotations horodatées === */}
+        <AnnotationList
+          annotations={annotations}
+          currentTime={audio.currentTime}
+          onSeek={audio.seekTo}
+        />
+
+        {/* === Commentaires === */}
+        <section ref={commentsRef} className="space-y-3 pt-8 scroll-mt-20">
+          <h3 className="display text-display-sm">
+            Commentaires
+            {(riff.commentsCount ?? 0) > 0 && (
+              <span className="ml-2 font-mono text-base text-text-soft">({riff.commentsCount})</span>
+            )}
+          </h3>
+          <CommentsSection riffId={riff.id} />
+        </section>
+
+        {/* === Plus de @user / similaires === */}
+        {moreByUser.length > 0 && (
+          <section className="mt-8 space-y-3">
+            <h3 className="display text-display-sm">Plus de {riff.contributor}</h3>
+            <div className="space-y-3">
+              {moreByUser.map((r) => {
+                const t = getTab(r.tabId);
+                if (!t) return null;
+                return (
+                  <RelatedRiffRow
+                    key={r.id}
+                    riff={r}
+                    tabName={t.name}
+                    tabArtist={t.artist}
+                    bpm={t.tempo}
+                    masteredAt={masteredMap.get(r.id) ?? null}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+        {similar.length > 0 && (
+          <section className="mt-8 space-y-3">
+            <h3 className="display text-display-sm">Riffs similaires</h3>
+            <div className="space-y-3">
+              {similar.map((r) => {
+                const t = getTab(r.tabId);
+                if (!t) return null;
+                return (
+                  <RelatedRiffRow
+                    key={r.id}
+                    riff={r}
+                    tabName={t.name}
+                    tabArtist={t.artist}
+                    bpm={t.tempo}
+                    masteredAt={masteredMap.get(r.id) ?? null}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
+
+      {/* === Barre actions sociales sticky bas (au-dessus du MobileNav) === */}
+      <footer className="sticky z-30 -mx-5 flex items-center justify-around border-t border-border bg-bg/90 px-4 py-2 backdrop-blur-md [bottom:calc(72px+env(safe-area-inset-bottom))] md:-mx-12 md:px-12 md:[bottom:0px]">
+        <ActionButton
+          icon={<Heart size={20} fill={liked ? 'currentColor' : 'none'} />}
+          count={likeCount}
+          active={liked}
+          activeColor="danger"
+          label={liked ? 'Aimé' : "J'aime"}
+          onClick={() => void toggleRiffLike(riff.id)}
+        />
+        <ActionButton
+          icon={<MessageCircle size={20} />}
+          count={riff.commentsCount ?? 0}
+          label="Commentaires"
+          onClick={() => commentsRef.current?.scrollIntoView({ behavior: 'smooth' })}
+        />
+        <ActionButton
+          icon={<Bookmark size={20} fill={bookmarked ? 'currentColor' : 'none'} />}
+          active={bookmarked}
+          activeColor="gold"
+          label={bookmarked ? 'Sauvegardé' : 'Sauver'}
+          onClick={() => void toggleRiffBookmark(riff.id)}
+        />
+        <ActionButton
+          icon={<Share2 size={20} />}
+          label="Partager"
+          onClick={() => setShareOpen(true)}
+        />
+      </footer>
 
       <ShareDrawer
         open={shareOpen}
@@ -462,12 +445,7 @@ export function RiffDetail() {
         }}
       />
 
-      <LearnRiffMode
-        open={learnOpen}
-        onClose={() => setLearnOpen(false)}
-        riff={riff}
-        tab={tab}
-      />
+      <LearnRiffMode open={learnOpen} onClose={() => setLearnOpen(false)} riff={riff} tab={tab} />
     </>
   );
 }
@@ -478,88 +456,41 @@ function Avatar({ name }: { name: string }) {
   const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
   return (
     <span
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-xs font-bold text-gold"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gold/30 bg-gold/10 font-mono text-sm font-bold text-gold"
       aria-hidden="true"
     >
-      {initial === '?' ? <User size={12} /> : initial}
+      {initial === '?' ? <User size={16} /> : initial}
     </span>
   );
 }
 
-function InlineMeta({ label, value }: { label: string; value: string | number }) {
-  return (
-    <span className="inline-flex items-baseline gap-1">
-      <span className="font-mono font-semibold text-gold">{value}</span>
-      <span className="text-[10px] uppercase tracking-wider text-text-soft">{label}</span>
-    </span>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-2.5 text-center">
-      <div className="label-small">{label}</div>
-      <div className="display mt-0.5 text-lg text-gold">{value}</div>
-    </div>
-  );
-}
-
-function IconBtn({
-  children,
-  label,
-  active,
-  activeColor = 'gold',
-  onClick,
-}: {
-  children: React.ReactNode;
-  label: string;
-  active?: boolean;
-  activeColor?: 'gold' | 'danger';
-  onClick?: () => void;
-}) {
-  const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className={clsx(
-        'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
-        active ? activeCls : 'text-text-muted hover:text-text'
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SocialBtn({
-  children,
-  label,
+function ActionButton({
+  icon,
   count,
   active,
   activeColor = 'gold',
+  label,
   onClick,
 }: {
-  children: React.ReactNode;
-  label: string;
+  icon: React.ReactNode;
   count?: number;
   active?: boolean;
   activeColor?: 'gold' | 'danger';
-  onClick?: () => void;
+  label: string;
+  onClick: () => void;
 }) {
   const activeCls = activeColor === 'danger' ? 'text-danger' : 'text-gold-bright';
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={count !== undefined && count > 0 ? `${label} (${count})` : label}
       className={clsx(
-        'inline-flex h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors hover:bg-surface',
+        'inline-flex h-11 min-w-[44px] items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors hover:bg-surface',
         active ? activeCls : 'text-text-muted hover:text-text'
       )}
     >
-      {children}
+      {icon}
       {count !== undefined && count > 0 && (
         <span className="font-mono tabular-nums">{formatCount(count)}</span>
       )}
@@ -573,61 +504,27 @@ function RelatedRiffRow({
   tabArtist,
   bpm,
   masteredAt,
-  compact = false,
 }: {
   riff: CommunityRiff;
   tabName: string;
   tabArtist?: string;
   bpm: number;
   masteredAt: number | null;
-  compact?: boolean;
 }) {
   return (
     <Link
       to={`/riffs/${riff.id}`}
-      className={clsx(
-        'flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 transition-colors hover:border-gold-soft',
-        compact ? 'px-3 py-2.5' : 'px-4 py-3'
-      )}
+      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 transition-colors hover:border-gold-soft"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span
-            className={clsx(
-              'display truncate text-text',
-              compact ? 'text-sm' : 'text-base'
-            )}
-          >
-            {tabName}
-          </span>
-          {masteredAt && (
-            <Trophy
-              size={compact ? 10 : 12}
-              className="shrink-0 text-gold"
-              fill="currentColor"
-            />
-          )}
+          <span className="display truncate text-base text-text">{tabName}</span>
+          {masteredAt && <Trophy size={12} className="shrink-0 text-gold" fill="currentColor" />}
         </div>
-        {tabArtist && (
-          <div
-            className={clsx(
-              'truncate text-text-muted',
-              compact ? 'text-[10px]' : 'text-xs'
-            )}
-          >
-            {tabArtist}
-          </div>
-        )}
+        {tabArtist && <div className="truncate text-xs text-text-muted">{tabArtist}</div>}
       </div>
       <div className="shrink-0 text-right">
-        <div
-          className={clsx(
-            'font-mono font-bold text-gold',
-            compact ? 'text-xs' : 'text-sm'
-          )}
-        >
-          {bpm}
-        </div>
+        <div className="font-mono text-sm font-bold text-gold">{bpm}</div>
         <div className="text-[9px] uppercase tracking-wider text-text-soft">BPM</div>
       </div>
     </Link>

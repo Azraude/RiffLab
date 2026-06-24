@@ -19,6 +19,10 @@
 
 export type TabString = 0 | 1 | 2 | 3 | 4 | 5;
 
+/** Technique de jeu sur une note — rendue en glyphe doré sur la tab.
+ *  h = hammer-on · p = pull-off · s-up/s-down = slide · b = bend · v = vibrato. */
+export type Technique = 'h' | 'p' | 's-up' | 's-down' | 'b' | 'v';
+
 export type TabNote = {
   string: TabString;
   fret: number;
@@ -26,6 +30,8 @@ export type TabNote = {
   duration: number;
   /** Position dans la mesure en 16e (0-15) */
   startBeat: number;
+  /** Technique de jeu optionnelle (affichée en glyphe or sur la tab). */
+  technique?: Technique;
 };
 
 export type Tab = {
@@ -115,10 +121,10 @@ const sevenNationArmy: Tab = {
     [
       { string: 5, fret: 7, duration: 4, startBeat: 0 },
       { string: 5, fret: 7, duration: 2, startBeat: 4 },
-      { string: 5, fret: 10, duration: 2, startBeat: 6 },
+      { string: 5, fret: 10, duration: 2, startBeat: 6, technique: 's-down' },
       { string: 5, fret: 7, duration: 4, startBeat: 8 },
-      { string: 5, fret: 5, duration: 2, startBeat: 12 },
-      { string: 5, fret: 3, duration: 2, startBeat: 14 },
+      { string: 5, fret: 5, duration: 2, startBeat: 12, technique: 'h' },
+      { string: 5, fret: 3, duration: 2, startBeat: 14, technique: 'p' },
     ],
     [
       { string: 5, fret: 2, duration: 16, startBeat: 0 },
