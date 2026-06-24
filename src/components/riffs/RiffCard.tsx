@@ -28,17 +28,6 @@ import {
 import type { Tab } from '@/lib/tabsDatabase';
 import { TabReader } from '@/components/tabs/TabReader';
 import { isRiffBookmarked, isRiffLiked, toggleRiffBookmark, toggleRiffLike } from '@/lib/db';
-import {
-  isUUID,
-  likeRiff,
-  unlikeRiff,
-  bookmarkRiff,
-  unbookmarkRiff,
-} from '@/lib/socialApi';
-import { useAuthGate } from '@/hooks/useAuthGate';
-import { useToast } from '@/hooks/useToast';
-import { useAdStore } from '@/stores/adStore';
-import { LoginModal } from '@/components/auth/LoginModal';
 
 interface RiffCardProps {
   riff: CommunityRiff;
@@ -67,48 +56,9 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
   const bookmarked = useLiveQuery(() => isRiffBookmarked(riff.id), [riff.id]) ?? false;
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
-  // Gating soft pour like/bookmark (sess GATE) — pas connecté → toast +
-  // LoginModal après 200ms. Le caller doit monter <LoginModal/> ci-dessous.
-  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
-  const toast = useToast();
-
   const stop = (fn?: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn?.();
-  };
-
-  // Like/bookmark dual-path : Dexie en cache local (réactivité instantanée
-  // via useLiveQuery) + persistance Supabase pour les riffs publiés (UUID).
-  // Les riffs seed bundlés (cr-*, sw-*) n'ont pas d'UUID → Dexie local only,
-  // donc pas de 400 sur la table (riff_id UUID-only). cf socialApi.isSeedRiff.
-  const handleLike = async () => {
-    if (!requireAuth('aimer')) return;
-    useAdStore.getState().trackAction();
-    const wasLiked = liked;
-    await toggleRiffLike(riff.id);
-    if (isUUID(riff.id)) {
-      const { error } = wasLiked ? await unlikeRiff(riff.id) : await likeRiff(riff.id);
-      if (error) {
-        await toggleRiffLike(riff.id); // rollback cache local
-        toast.error('Échec du like, réessaie');
-      }
-    }
-  };
-
-  const handleBookmark = async () => {
-    if (!requireAuth('sauvegarder')) return;
-    useAdStore.getState().trackAction();
-    const wasBookmarked = bookmarked;
-    await toggleRiffBookmark(riff.id);
-    if (isUUID(riff.id)) {
-      const { error } = wasBookmarked
-        ? await unbookmarkRiff(riff.id)
-        : await bookmarkRiff(riff.id);
-      if (error) {
-        await toggleRiffBookmark(riff.id); // rollback cache local
-        toast.error('Échec de la sauvegarde, réessaie');
-      }
-    }
   };
 
   return (
@@ -227,7 +177,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
             count={likeCount}
             active={liked}
             activeColor="danger"
-            onClick={stop(handleLike)}
+            onClick={stop(() => void toggleRiffLike(riff.id))}
           >
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
           </ActionBtn>
@@ -242,7 +192,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
             label={bookmarked ? 'Sauvegardé' : 'Sauver'}
             active={bookmarked}
             activeColor="gold"
-            onClick={stop(handleBookmark)}
+            onClick={stop(() => void toggleRiffBookmark(riff.id))}
           >
             <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
           </ActionBtn>
@@ -251,9 +201,6 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
           <Play size={18} fill="currentColor" />
         </ActionBtn>
       </footer>
-      {/* LoginModal mounted via Portal Radix : sibling au article OK,
-          le drawer s'attache au body indépendamment du DOM ancestry. */}
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </article>
   );
 }

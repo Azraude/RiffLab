@@ -11,7 +11,7 @@
  *  - Sur <lg : sections empilées en bas (Plus de / Similaires / Comments)
  *  - Bottom sticky "Apprendre" remplacé par le grid actions row
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -38,13 +38,12 @@ import {
   difficultyToLevel,
   formatRelativeDate,
   getCommunityRiff,
-  publicRiffToFeedItem,
   LEVEL_LABELS,
   LEVEL_COLORS,
   TECHNIQUE_LABELS,
   type CommunityRiff,
 } from '@/lib/communityRiffs';
-import { getTab, type Tab } from '@/lib/tabsDatabase';
+import { getTab } from '@/lib/tabsDatabase';
 import {
   isRiffBookmarked,
   isRiffLiked,
@@ -53,52 +52,10 @@ import {
   toggleRiffBookmark,
   toggleRiffLike,
 } from '@/lib/db';
-import {
-  isUUID,
-  likeRiff,
-  unlikeRiff,
-  bookmarkRiff,
-  unbookmarkRiff,
-  getRiff,
-} from '@/lib/socialApi';
-import { useAuthGate } from '@/hooks/useAuthGate';
-import { useToast } from '@/hooks/useToast';
-import { usePremium } from '@/hooks/usePremium';
-import { useAdStore } from '@/stores/adStore';
-import { LoginModal } from '@/components/auth/LoginModal';
 
 export function RiffDetail() {
   const { id } = useParams();
-  // Riff seed (slug cr-*) → bundle local ; riff publié (UUID) → fetch Supabase.
-  // undefined = chargement, null = introuvable.
-  const [data, setData] = useState<
-    { riff: CommunityRiff; tab: Tab } | null | undefined
-  >(undefined);
-  useEffect(() => {
-    let cancelled = false;
-    if (!id) {
-      setData(null);
-      return;
-    }
-    if (isUUID(id)) {
-      void getRiff(id).then(({ data: r }) => {
-        if (!cancelled) setData(r ? publicRiffToFeedItem(r) : null);
-      });
-    } else {
-      setData(getCommunityRiff(id) ?? null);
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  // Compteur de riffs visités → déclenche l'interstitielle (free tier only).
-  const { isPremium } = usePremium();
-  useEffect(() => {
-    if (!id || isPremium) return;
-    useAdStore.getState().trackRiffVisit();
-  }, [id, isPremium]);
-
+  const data = id ? getCommunityRiff(id) : null;
   const [shareOpen, setShareOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
   const tabAreaRef = useRef<HTMLElement | null>(null);
@@ -113,37 +70,6 @@ export function RiffDetail() {
     () => new Map(masteredRows.map((m) => [m.id, m.masteredAt] as const)),
     [masteredRows]
   );
-
-  // Gating soft (sess GATE) — like/bookmark déclenchent toast + LoginModal
-  // si user pas connecté. LoginModal monté à la fin du JSX.
-  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
-  const toast = useToast();
-  // Dual-path : Dexie cache local (réactivité) + Supabase pour riffs UUID.
-  // Seeds (cr-*) → Dexie only (pas d'UUID, évite un 400 sur likes/bookmarks).
-  const handleLike = async () => {
-    if (!requireAuth('aimer') || !id) return;
-    const wasLiked = liked;
-    await toggleRiffLike(id);
-    if (isUUID(id)) {
-      const { error } = wasLiked ? await unlikeRiff(id) : await likeRiff(id);
-      if (error) {
-        await toggleRiffLike(id);
-        toast.error('Échec du like, réessaie');
-      }
-    }
-  };
-  const handleBookmark = async () => {
-    if (!requireAuth('sauvegarder') || !id) return;
-    const wasBookmarked = bookmarked;
-    await toggleRiffBookmark(id);
-    if (isUUID(id)) {
-      const { error } = wasBookmarked ? await unbookmarkRiff(id) : await bookmarkRiff(id);
-      if (error) {
-        await toggleRiffBookmark(id);
-        toast.error('Échec de la sauvegarde, réessaie');
-      }
-    }
-  };
 
   // Plus de @username : 3 autres riffs du même contributor
   const moreByUser = useMemo(() => {
@@ -166,11 +92,6 @@ export function RiffDetail() {
       .slice(0, 4);
   }, [data?.riff.id]);
 
-  if (data === undefined) {
-    return (
-      <div className="py-16 text-center text-sm text-text-muted">Chargement du riff…</div>
-    );
-  }
   if (!data) {
     return <Navigate to="/riffs" replace />;
   }
@@ -204,7 +125,7 @@ export function RiffDetail() {
         </Link>
         <div className="flex items-center gap-1 md:hidden">
           <IconBtn
-            onClick={handleLike}
+            onClick={() => void toggleRiffLike(riff.id)}
             label={liked ? 'Retirer du favoris' : "J'aime"}
             active={liked}
             activeColor="danger"
@@ -212,7 +133,7 @@ export function RiffDetail() {
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
           </IconBtn>
           <IconBtn
-            onClick={handleBookmark}
+            onClick={() => void toggleRiffBookmark(riff.id)}
             label={bookmarked ? 'Retirer du sauvegardés' : 'Sauvegarder'}
             active={bookmarked}
             activeColor="gold"
@@ -399,7 +320,7 @@ export function RiffDetail() {
                 active={liked}
                 activeColor="danger"
                 label={liked ? 'Aimé' : "J'aime"}
-                onClick={handleLike}
+                onClick={() => void toggleRiffLike(riff.id)}
               >
                 <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
               </SocialBtn>
@@ -407,7 +328,7 @@ export function RiffDetail() {
                 active={bookmarked}
                 activeColor="gold"
                 label={bookmarked ? 'Sauvegardé' : 'Sauver'}
-                onClick={handleBookmark}
+                onClick={() => void toggleRiffBookmark(riff.id)}
               >
                 <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
               </SocialBtn>
@@ -547,10 +468,6 @@ export function RiffDetail() {
         riff={riff}
         tab={tab}
       />
-
-      {/* Soft gating LoginModal (sess GATE) — ouvert auto si user clique
-          like/bookmark sans être connecté. */}
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </>
   );
 }

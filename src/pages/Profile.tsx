@@ -1,58 +1,46 @@
 /**
- * /profile — hub compte personnel (sess SET-MOBILENAV).
+ * /profile — entry point édition personnelle.
  *
- * Refonte : avant Profile.tsx faisait juste un Navigate vers
- * /u/<myUsername>?edit=1. Maintenant c'est un vrai HUB COMPTE
- * style iOS (sections empilées) pour pattern réseau social :
- * - Header : avatar + @username + "Voir mon profil public"
- * - Row "Modifier mon profil" → /u/<me>?edit=1 (drawer auto)
- * - Row "Préférences" → /settings (sess SET — déménage depuis MobileNav)
- * - Row "Se déconnecter" rouge
- *
- * Pas connecté → écran "Connecte-toi" gracieux (pas redirect home).
+ * Comportement :
+ * - Pas connecté → écran "Connecte-toi" GRACIEUX (plus de redirect /
+ *   silencieux qui frustre l'user)
+ * - Connecté → redirect vers /u/<myUsername>?edit=1 (ProfileEditDrawer
+ *   ouvert auto par UserProfile)
+ * - Connecté sans profil DB → message d'erreur explicite
  */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  LogIn,
-  LogOut,
-  User as UserIcon,
-  Settings as SettingsIcon,
-  Edit3,
-  ExternalLink,
-} from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { LogIn, User as UserIcon } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/stores/authStore';
-import { getProfile, type Profile as ProfileRow } from '@/lib/socialApi';
+import { getProfile } from '@/lib/socialApi';
 import { LoginModal } from '@/components/auth/LoginModal';
-import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRow';
 
 export function Profile() {
   const user = useAuth((s) => s.user);
   const loading = useAuth((s) => s.loading);
-  const signOut = useAuth((s) => s.signOut);
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileRow | null | undefined>(undefined);
+  const [username, setUsername] = useState<string | null | undefined>(undefined);
   const [loginOpen, setLoginOpen] = useState(false);
 
+  // Récupère mon username pour construire l'URL /u/<username>?edit=1
   useEffect(() => {
     if (!user) {
-      setProfile(undefined);
+      setUsername(undefined);
       return;
     }
     let cancelled = false;
     void (async () => {
       const { data } = await getProfile(user.id);
       if (cancelled) return;
-      setProfile(data);
+      setUsername(data?.username ?? null);
     })();
     return () => {
       cancelled = true;
     };
   }, [user]);
 
-  // Loading auth
+  // Loading state (auth en cours OU profile fetch en cours)
   if (loading) {
     return (
       <>
@@ -64,7 +52,9 @@ export function Profile() {
     );
   }
 
-  // === Pas connecté → écran gracieux ===
+  // Pas connecté → écran gracieux avec CTA Se connecter.
+  // PLUS de redirect / silencieux (frustrait l'user qui ne comprenait
+  // pas pourquoi /profile le ramenait à l'accueil).
   if (!user) {
     return (
       <>
@@ -94,7 +84,7 @@ export function Profile() {
   }
 
   // Connecté + profile fetch en cours
-  if (profile === undefined) {
+  if (username === undefined) {
     return (
       <>
         <PageHeader title="Mon profil" />
@@ -105,78 +95,22 @@ export function Profile() {
     );
   }
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const username = profile?.username ?? null;
-  const initial = (username?.[0] ?? user.email?.[0] ?? '?').toUpperCase();
-
-  // === Connecté → hub compte ===
-  return (
-    <>
-      <PageHeader title="Mon profil" />
-
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* ─── Section identité ─── */}
-        <Card className="text-center">
-          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gold/15 ring-1 ring-gold/30">
-            {profile?.avatar_url ? (
-              // eslint-disable-next-line jsx-a11y/img-redundant-alt
-              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="font-mono text-3xl font-bold text-gold">{initial}</span>
-            )}
-          </div>
-          <h2 className="display text-xl">
-            {profile?.display_name || profile?.username || 'Mon compte'}
-          </h2>
-          {username && (
-            <p className="mt-0.5 font-mono text-sm text-text-muted">@{username}</p>
-          )}
-          {user.email && (
-            <p className="mt-0.5 break-all text-xs text-text-soft">{user.email}</p>
-          )}
-
-          {username && (
-            <Link
-              to={`/u/${username}`}
-              className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-4 text-xs text-text-muted hover:border-gold-soft hover:text-text"
-            >
-              <ExternalLink size={13} />
-              Voir mon profil public
-            </Link>
-          )}
+  // Profile pas créé (rare — devrait être créé automatiquement à la
+  // signup). Fallback : message + bouton reconnexion.
+  if (username === null) {
+    return (
+      <>
+        <PageHeader title="Mon profil" />
+        <Card>
+          <p className="text-sm text-text-muted">
+            Aucun profil trouvé pour ce compte. Connecte-toi à nouveau pour le
+            recréer.
+          </p>
         </Card>
+      </>
+    );
+  }
 
-        {/* ─── Section actions profil ─── */}
-        <SettingsGroup>
-          {username && (
-            <SettingsRow
-              icon={<Edit3 size={16} />}
-              label="Modifier mon profil"
-              to={`/u/${username}?edit=1`}
-            />
-          )}
-          <SettingsRow
-            icon={<SettingsIcon size={16} />}
-            label="Préférences"
-            sub="Audio, affichage, accordage, données"
-            to="/settings"
-          />
-        </SettingsGroup>
-
-        {/* ─── Section déconnexion ─── */}
-        <SettingsGroup>
-          <SettingsRow
-            icon={<LogOut size={16} />}
-            label="Se déconnecter"
-            onClick={() => void handleSignOut()}
-            danger
-          />
-        </SettingsGroup>
-      </div>
-    </>
-  );
+  // Redirect vers /u/<username>?edit=1 → ProfileEditDrawer ouvert auto
+  return <Navigate to={`/u/${username}?edit=1`} replace />;
 }

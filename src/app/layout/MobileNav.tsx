@@ -1,27 +1,26 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Music2, Target } from 'lucide-react';
+import { LayoutDashboard, Music2, Target, Settings as SettingsIcon } from 'lucide-react';
 import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
-import { NavAvatar } from '@/components/nav/NavAvatar';
 import clsx from 'clsx';
 
 /**
- * Bottom nav mobile — 5 items pattern "central FAB" Instagram/TikTok.
+ * Bottom nav mobile — 5 items avec 🎸 RIFFS au centre proéminent
+ * (sess 30bis Phase 3).
  *
- * Refonte sess SET-MOBILENAV : le 5ème item "Préférences" devient
- * un AVATAR (style réseau social). Tap → /profile (connecté) ou
- * LoginModal (déconnecté). Les préférences restent accessibles
- * via Profile → row "Préférences" et via Sidebar desktop.
+ * Refonte : avant Home + 4 items uniformes. Maintenant pattern
+ * "central FAB" comme Instagram/TikTok : 4 items normaux répartis
+ * autour d'un bouton central gros qui déborde vers le haut.
  *
  * Items (de gauche à droite) :
  *  1. Aujourd'hui → /dashboard
  *  2. Ma musique → /library (englobe songs/setlists)
  *  3. 🎸 RIFFS (central, 60px rond gold notch protruding)
  *  4. Mon plan → /plan (englobe stats)
- *  5. AVATAR → /profile (NavAvatar component)
+ *  5. Préférences → /settings
  *
  * "Outils" plus dans le MobileNav (accessible via /tools URL direct
  * ou sidebar desktop). Justification : l'user fait surtout des riffs,
- * pas du métronome.
+ * pas du métronome. La sidebar desktop a tous les outils.
  */
 
 type Item = {
@@ -53,7 +52,12 @@ const RIGHT_ITEMS: Item[] = [
     icon: <Target size={20} />,
     matchPrefixes: ['/plan', '/stats'],
   },
-  // 5ème position = NavAvatar (sess SET-MOBILENAV), pas un NavItem standard.
+  {
+    to: '/settings',
+    label: 'Préférences',
+    icon: <SettingsIcon size={20} />,
+    matchPrefixes: ['/settings', '/profile'],
+  },
 ];
 
 export function MobileNav() {
@@ -104,9 +108,6 @@ export function MobileNav() {
         {RIGHT_ITEMS.map((it) => (
           <NavItem key={it.to} item={it} currentPath={location.pathname} />
         ))}
-
-        {/* 5ème slot : NavAvatar (sess SET-MOBILENAV) — pattern réseau social. */}
-        <NavAvatar />
       </div>
     </nav>
   );

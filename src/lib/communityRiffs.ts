@@ -7,7 +7,7 @@
  * rating moyenne baseline (la note du user sera persistée en Dexie
  * riffRatings et combinée à baseRating pour affichage).
  */
-import { getTab, type Tab, type TabNote } from './tabsDatabase';
+import { getTab, type Tab } from './tabsDatabase';
 
 /** Difficulté 1-5 (legacy session 17) → mappée vers les 4 niveaux nommés. */
 export type RiffDifficulty = 1 | 2 | 3 | 4 | 5;
@@ -692,67 +692,6 @@ export function getCommunityRiff(id: string): { riff: CommunityRiff; tab: Tab } 
   if (!riff) return null;
   const tab = getTab(riff.tabId);
   if (!tab) return null;
-  return { riff, tab };
-}
-
-/**
- * Forme structurelle minimale d'un riff publié Supabase (riffs_public),
- * suffisante pour l'adapter au feed. Évite d'importer le type PublicRiff de
- * socialApi (zéro couplage / risque de cycle).
- */
-export type PublicRiffInput = {
-  id: string;
-  title: string;
-  artist?: string | null;
-  description?: string | null;
-  bpm: number;
-  key?: string | null;
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  techniques?: string[] | null;
-  tags?: string[] | null;
-  tab_data: unknown;
-  published_at?: string | null;
-  author?: { username?: string | null } | null;
-};
-
-const LEVEL_TO_DIFFICULTY: Record<PublicRiffInput['difficulty'], RiffDifficulty> = {
-  beginner: 1,
-  intermediate: 2,
-  advanced: 4,
-  expert: 5,
-};
-
-/**
- * Adapte un riff publié Supabase au format du feed ({ riff, tab }).
- * `tab_data` est le format `measures` (TabNote[][]) écrit par RiffEditor
- * (cf. tabJson) et par le seed SEED-RIFFS-PUBLIC-DEMO.sql.
- */
-export function publicRiffToFeedItem(r: PublicRiffInput): { riff: CommunityRiff; tab: Tab } {
-  const measures: TabNote[][] = Array.isArray(r.tab_data) ? (r.tab_data as TabNote[][]) : [];
-  const username = r.author?.username ? `@${r.author.username}` : '@riffeur';
-  const tab: Tab = {
-    id: r.id,
-    name: r.title,
-    artist: r.artist ?? undefined,
-    tempo: r.bpm,
-    key: r.key ?? '',
-    measures,
-  };
-  const riff: CommunityRiff = {
-    id: r.id,
-    tabId: r.id, // pas dans tabsDatabase — résolu via le tab porté à côté
-    contributor: username,
-    difficulty: LEVEL_TO_DIFFICULTY[r.difficulty] ?? 2,
-    tags: (r.tags ?? []) as RiffTag[],
-    baseLikes: 0,
-    baseRating: 0,
-    addedAt: r.published_at ?? new Date(0).toISOString(),
-    caption: r.description ?? undefined,
-    commentsCount: 0,
-    techniques: (r.techniques ?? []) as RiffTechnique[],
-    bpm: r.bpm,
-    key: r.key ?? undefined,
-  };
   return { riff, tab };
 }
 

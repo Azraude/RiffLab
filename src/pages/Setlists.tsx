@@ -14,9 +14,8 @@ import {
   type Setlist,
   type Song,
 } from '@/lib/db';
-import { Plus, ListMusic, Crown } from 'lucide-react';
+import { Plus, ListMusic } from 'lucide-react';
 import { SetlistTileSkeleton } from '@/components/ui/SetlistTileSkeleton';
-import { usePremiumLimit } from '@/hooks/usePremiumLimit';
 
 export function Setlists() {
   const setlists = useLiveQuery(() => listSetlists(), []);
@@ -24,17 +23,6 @@ export function Setlists() {
   const songsById = new Map((songs ?? []).map((s) => [s.id, s] as const));
   const navigate = useNavigate();
   const [newOpen, setNewOpen] = useState(false);
-
-  const { isPremium, limit, checkOrPrompt } = usePremiumLimit(
-    'setlists',
-    setlists?.length ?? 0,
-  );
-
-  /** Ouvre le modal de création OU la modale premium si limite atteinte. */
-  const openCreate = () => {
-    if (!checkOrPrompt('Tu as atteint la limite de setlists du plan gratuit')) return;
-    setNewOpen(true);
-  };
 
   const handleCreate = async (name: string) => {
     const sl = emptySetlist({ name: name.trim() || 'Nouvelle setlist' });
@@ -51,25 +39,12 @@ export function Setlists() {
       >
         <button
           type="button"
-          onClick={openCreate}
+          onClick={() => setNewOpen(true)}
           className="hidden h-10 items-center justify-center rounded-xl bg-gold px-4 text-sm font-semibold text-bg transition-all hover:bg-gold-bright md:inline-flex"
         >
           + Nouvelle setlist
         </button>
       </PageHeader>
-
-      {/* Compteur limite free tier */}
-      {!isPremium && (setlists?.length ?? 0) > 0 && (
-        <div className="mb-4 flex items-center gap-1.5 text-xs text-text-soft">
-          <Crown size={12} className="text-gold" />
-          <span>
-            {setlists?.length ?? 0}/{limit} setlists utilisées ·{' '}
-            <Link to="/premium" className="text-gold hover:underline">
-              RiffLab+ = illimité
-            </Link>
-          </span>
-        </div>
-      )}
 
       {!setlists ? (
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
@@ -84,7 +59,7 @@ export function Setlists() {
           description="Groupe tes morceaux dans l'ordre pour ta répèt ou ton prochain bar. Exporte un chord chart PDF imprimable en 1 clic."
           primaryAction={{
             label: '+ Créer ma première setlist',
-            onClick: openCreate,
+            onClick: () => setNewOpen(true),
           }}
         />
       ) : (
@@ -101,7 +76,7 @@ export function Setlists() {
       {!newOpen && (
         <button
           type="button"
-          onClick={openCreate}
+          onClick={() => setNewOpen(true)}
           aria-label="Nouvelle setlist"
           className="fixed right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-bg shadow-gold-strong transition-transform active:scale-95 md:hidden"
           style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 1rem)' }}

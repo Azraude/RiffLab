@@ -12,8 +12,6 @@ import { followUser, unfollowUser, isFollowing } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
 import { useToast } from '@/hooks/useToast';
 import { useSocialStreak } from '@/stores/socialStreakStore';
-import { useAuthGate } from '@/hooks/useAuthGate';
-import { LoginModal } from '@/components/auth/LoginModal';
 
 interface FollowButtonProps {
   /** UUID du profil à suivre */
@@ -29,8 +27,6 @@ export function FollowButton({ userId, username, variant = 'primary' }: FollowBu
   const toast = useToast();
   const [following, setFollowing] = useState<boolean | null>(null);
   const [pending, setPending] = useState(false);
-  // Gating soft (sess GATE) — handleClick passe par requireAuth.
-  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
 
   useEffect(() => {
     if (!me) {
@@ -44,7 +40,10 @@ export function FollowButton({ userId, username, variant = 'primary' }: FollowBu
   if (me && me.id === userId) return null;
 
   const handleClick = async () => {
-    if (!requireAuth('suivre')) return;
+    if (!me) {
+      toast.warning('Connecte-toi pour suivre');
+      return;
+    }
     if (following === null || pending) return;
     setPending(true);
     const wantToFollow = !following;
@@ -75,49 +74,43 @@ export function FollowButton({ userId, username, variant = 'primary' }: FollowBu
 
   if (variant === 'compact') {
     return (
-      <>
-        <button
-          type="button"
-          onClick={() => void handleClick()}
-          disabled={pending}
-          className={clsx(
-            'inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[11px] font-bold transition-colors',
-            following
-              ? 'border-border bg-surface text-text-muted hover:border-danger/40 hover:text-danger'
-              : 'border-gold/40 bg-gold/10 text-gold hover:bg-gold/20'
-          )}
-        >
-          {following ? 'Suivi ✓' : '+ Suivre'}
-        </button>
-        <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
-      </>
-    );
-  }
-
-  return (
-    <>
       <button
         type="button"
         onClick={() => void handleClick()}
         disabled={pending}
         className={clsx(
-          'inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all',
+          'inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[11px] font-bold transition-colors',
           following
-            ? 'border border-border bg-surface-2 text-text hover:border-danger/40 hover:text-danger'
-            : 'bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold hover:-translate-y-px'
+            ? 'border-border bg-surface text-text-muted hover:border-danger/40 hover:text-danger'
+            : 'border-gold/40 bg-gold/10 text-gold hover:bg-gold/20'
         )}
       >
-        {following ? (
-          <>
-            <UserCheck size={16} /> Suivi
-          </>
-        ) : (
-          <>
-            <UserPlus size={16} /> Suivre
-          </>
-        )}
+        {following ? 'Suivi ✓' : '+ Suivre'}
       </button>
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
-    </>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleClick()}
+      disabled={pending}
+      className={clsx(
+        'inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all',
+        following
+          ? 'border border-border bg-surface-2 text-text hover:border-danger/40 hover:text-danger'
+          : 'bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold hover:-translate-y-px'
+      )}
+    >
+      {following ? (
+        <>
+          <UserCheck size={16} /> Suivi
+        </>
+      ) : (
+        <>
+          <UserPlus size={16} /> Suivre
+        </>
+      )}
+    </button>
   );
 }

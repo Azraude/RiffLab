@@ -10,7 +10,7 @@
  * laissés intacts côté DB).
  */
 import { useEffect, useState } from 'react';
-import { Save, Upload, Image as ImageIcon, Check, Camera } from 'lucide-react';
+import { Save, Upload, Image as ImageIcon, Check } from 'lucide-react';
 import clsx from 'clsx';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/hooks/useToast';
@@ -19,7 +19,6 @@ import {
   INSTRUMENTS,
   resolveCoverUrl,
   updateProfileExtended,
-  uploadAvatar,
   uploadCover,
   validateProfileUrl,
   type ProfilePatch,
@@ -45,8 +44,6 @@ export function ProfileEditDrawer({
   const [bio, setBio] = useState(profile.bio ?? '');
   const [instruments, setInstruments] = useState<string[]>(profile.instruments ?? []);
   const [coverUrl, setCoverUrl] = useState<string | null>(profile.cover_url ?? null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatar_url ?? null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState(profile.instagram_url ?? '');
   const [youtubeUrl, setYoutubeUrl] = useState(profile.youtube_url ?? '');
   const [soundcloudUrl, setSoundcloudUrl] = useState(profile.soundcloud_url ?? '');
@@ -61,7 +58,6 @@ export function ProfileEditDrawer({
       setBio(profile.bio ?? '');
       setInstruments(profile.instruments ?? []);
       setCoverUrl(profile.cover_url ?? null);
-      setAvatarUrl(profile.avatar_url ?? null);
       setInstagramUrl(profile.instagram_url ?? '');
       setYoutubeUrl(profile.youtube_url ?? '');
       setSoundcloudUrl(profile.soundcloud_url ?? '');
@@ -73,20 +69,6 @@ export function ProfileEditDrawer({
     setInstruments((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingAvatar(true);
-    const { data, error } = await uploadAvatar(profile.id, file);
-    setUploadingAvatar(false);
-    if (error || !data) {
-      toast.error(error?.message ?? 'Upload échoué');
-      return;
-    }
-    setAvatarUrl(data);
-    toast.success('Photo de profil mise à jour');
   };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +105,6 @@ export function ProfileEditDrawer({
     const patch: ProfilePatch = {
       display_name: displayName.trim() || null,
       bio: bio.trim() || null,
-      avatar_url: avatarUrl,
       cover_url: coverUrl,
       instagram_url: instagramUrl.trim() || null,
       youtube_url: youtubeUrl.trim() || null,
@@ -155,37 +136,6 @@ export function ProfileEditDrawer({
       description="Cover, bio, instruments, liens externes."
     >
       <div className="space-y-5 pb-2">
-        {/* ─── Avatar ─── */}
-        <div className="flex flex-col items-center gap-3">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt="Photo de profil"
-              className="h-24 w-24 rounded-full border-2 border-gold object-cover"
-            />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-3xl font-bold text-bg">
-              {(profile.username?.[0] ?? '?').toUpperCase()}
-            </div>
-          )}
-          <label
-            className={clsx(
-              'inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-border-gold px-4 text-sm text-text-muted transition-colors hover:text-gold',
-              uploadingAvatar && 'pointer-events-none opacity-50',
-            )}
-          >
-            <Camera size={14} />
-            {uploadingAvatar ? 'Upload…' : 'Changer la photo'}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              disabled={uploadingAvatar}
-              onChange={(e) => void handleAvatarUpload(e)}
-            />
-          </label>
-        </div>
-
         {/* ─── Cover picker ─── */}
         <div>
           <div className="label-small mb-2 flex items-center gap-1.5">

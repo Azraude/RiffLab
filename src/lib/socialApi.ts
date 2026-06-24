@@ -111,7 +111,7 @@ function notConfigured(): { data: null; error: Error } {
  * (gen_random_uuid), les riffs "seed" intégrés au bundle utilisent des slugs
  * courts (cr-iron, sw-stairway, etc.).
  */
-export function isUUID(id: string): boolean {
+function isUUID(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
@@ -270,26 +270,6 @@ export async function getUserRiffs(
     data: (data as PublicRiff[]) ?? null,
     error: error ? new Error(error.message) : null,
   };
-}
-
-/**
- * Tous les riffs publiés (pour merger dans le feed /riffs avec les seeds
- * bundlés). Retourne un array direct (vide en cas d'erreur / non configuré),
- * pour que le feed ne crashe jamais sur une coupure réseau.
- */
-export async function getPublishedRiffs(limit = 50): Promise<PublicRiffWithMeta[]> {
-  if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase
-    .from('riffs_public')
-    .select('*, author:profiles!riffs_public_author_id_fkey(username,display_name,avatar_url)')
-    .order('published_at', { ascending: false })
-    .limit(limit);
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('[socialApi] getPublishedRiffs:', error.message);
-    return [];
-  }
-  return (data as PublicRiffWithMeta[]) ?? [];
 }
 
 // ─── Feeds ──────────────────────────────────────────────────────────

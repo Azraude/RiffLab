@@ -20,8 +20,6 @@ import {
   type Comment,
 } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
-import { useAuthGate } from '@/hooks/useAuthGate';
-import { LoginModal } from '@/components/auth/LoginModal';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
 import { useSocialStreak } from '@/stores/socialStreakStore';
@@ -65,12 +63,11 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riffId, isSeed]);
 
-  // Gating soft (sess GATE) — handlePost passe par requireAuth qui toast +
-  // ouvre LoginModal après 200ms si pas connecté. <LoginModal/> monté plus bas.
-  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
-
   const handlePost = async () => {
-    if (!requireAuth('commenter')) return;
+    if (!me) {
+      toast.warning('Connecte-toi pour commenter');
+      return;
+    }
     const trimmed = text.trim();
     if (!trimmed) return;
     setPosting(true);
@@ -158,13 +155,9 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
       ) : (
         <Card className="text-center">
           <p className="text-sm text-text-muted">
-            <button
-              type="button"
-              onClick={() => setLoginOpen(true)}
-              className="text-gold underline hover:text-gold-bright"
-            >
+            <Link to="/login" className="text-gold underline hover:text-gold-bright">
               Connecte-toi
-            </button>{' '}
+            </Link>{' '}
             pour commenter ce riff.
           </p>
         </Card>
@@ -189,10 +182,6 @@ export function CommentsSection({ riffId, onActivity }: CommentsSectionProps) {
           ))}
         </ul>
       )}
-
-      {/* Soft gating LoginModal (sess GATE) — ouvert auto par useAuthGate
-          si user clique submit/login sans être connecté. */}
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </div>
   );
 }

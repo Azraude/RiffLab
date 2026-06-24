@@ -13,9 +13,8 @@
  *   - Infinite scroll (IntersectionObserver) au-delà de 12 cards
  *   - Click card → /riffs/:id (la card est un teaser, le reste est en détail)
  */
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdSlot } from '@/components/ads/AdSlot';
 import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
@@ -33,12 +32,9 @@ import {
   COMMUNITY_RIFFS,
   sortFeedRiffs,
   difficultyToLevel,
-  publicRiffToFeedItem,
   type FeedSort,
-  type CommunityRiff,
 } from '@/lib/communityRiffs';
-import { getPublishedRiffs } from '@/lib/socialApi';
-import { getTab, type Tab } from '@/lib/tabsDatabase';
+import { getTab } from '@/lib/tabsDatabase';
 import { checkAndUnlockBadges, db, listMasteredRiffs } from '@/lib/db';
 import { getBadgeMeta } from '@/lib/badges';
 import { usePrefs } from '@/stores/prefsStore';
@@ -76,31 +72,6 @@ export function Riffs() {
         ? 'advanced'
         : 'intermediate';
 
-  // Riffs publiés Supabase (riffs_public) mergés avec les seeds bundlés.
-  // Chaque item porte son Tab synthétisé (tab_data → measures) car ces
-  // riffs ne sont pas dans tabsDatabase.
-  const [publicItems, setPublicItems] = useState<{ riff: CommunityRiff; tab: Tab }[]>([]);
-  useEffect(() => {
-    void (async () => {
-      const published = await getPublishedRiffs();
-      setPublicItems(published.map((r) => publicRiffToFeedItem(r)));
-    })();
-  }, []);
-
-  const publicTabMap = useMemo(
-    () => new Map(publicItems.map((p) => [p.riff.id, p.tab])),
-    [publicItems],
-  );
-  const allRiffs = useMemo<CommunityRiff[]>(
-    () => [...COMMUNITY_RIFFS, ...publicItems.map((p) => p.riff)],
-    [publicItems],
-  );
-  // Résout le Tab d'un riff : publié (porté) ou seed (tabsDatabase).
-  const resolveTab = useCallback(
-    (r: CommunityRiff): Tab | undefined => publicTabMap.get(r.id) ?? getTab(r.tabId),
-    [publicTabMap],
-  );
-
   // Check badges au mount (actions faites ailleurs)
   useEffect(() => {
     void (async () => {
@@ -128,7 +99,7 @@ export function Riffs() {
   }, [likedIds, masteredIds, userLevelMapped]);
 
   const visible = useMemo(() => {
-    let arr = [...allRiffs];
+    let arr = [...COMMUNITY_RIFFS];
 
     if (filters.genres.length > 0) {
       arr = arr.filter((r) => r.tags.some((t) => filters.genres.includes(t)));
@@ -141,7 +112,7 @@ export function Riffs() {
     }
     if (filters.bpmMin > 40 || filters.bpmMax < 240) {
       arr = arr.filter((r) => {
-        const tab = resolveTab(r);
+        const tab = getTab(r.tabId);
         if (!tab) return false;
         return tab.tempo >= filters.bpmMin && tab.tempo <= filters.bpmMax;
       });
@@ -149,7 +120,7 @@ export function Riffs() {
 
     // Tri avancé du Sheet (override les tabs) sinon tri par tab
     if (filters.sort === 'bpm') {
-      return arr.sort((a, b) => (resolveTab(a)?.tempo ?? 0) - (resolveTab(b)?.tempo ?? 0));
+      return arr.sort((a, b) => (getTab(a.tabId)?.tempo ?? 0) - (getTab(b.tabId)?.tempo ?? 0));
     }
     if (filters.sort === 'popular') return arr.sort((a, b) => b.baseLikes - a.baseLikes);
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
@@ -160,7 +131,7 @@ export function Riffs() {
       exploreWeight: 25,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, sort, allRiffs, resolveTab]);
+  }, [filters, sort]);
 
   // Reset la pagination quand la liste change (tab/filtres)
   useEffect(() => {
@@ -260,28 +231,23 @@ export function Riffs() {
         {shown.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
             {shown.map((r, i) => {
-              const tab = resolveTab(r);
+              const tab = getTab(r.tabId);
               if (!tab) return null;
               return (
-                <Fragment key={r.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, delay: Math.min(i, 8) * 0.02 }}
-                  >
-                    <RiffCard
-                      riff={r}
-                      tab={tab}
-                      masteredAt={masteredMap.get(r.id) ?? null}
-                      onOpenDetail={() => navigate(`/riffs/${r.id}`)}
-                      onListen={() => handleListen(r.id, r.tabId)}
-                    />
-                  </motion.div>
-                  {/* Pub in-feed tous les 6 riffs (placeholder ou AdSense) */}
-                  {(i + 1) % 6 === 0 && (
-                    <AdSlot format="native" adSlot="" className="sm:col-span-2 lg:col-span-3" />
-                  )}
-                </Fragment>
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: Math.min(i, 8) * 0.02 }}
+                >
+                  <RiffCard
+                    riff={r}
+                    tab={tab}
+                    masteredAt={masteredMap.get(r.id) ?? null}
+                    onOpenDetail={() => navigate(`/riffs/${r.id}`)}
+                    onListen={() => handleListen(r.id, r.tabId)}
+                  />
+                </motion.div>
               );
             })}
           </div>

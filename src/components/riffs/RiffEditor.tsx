@@ -31,8 +31,6 @@ import { checkAndUnlockBadges, newUserRiffId, saveUserRiff, type UserRiff } from
 import { getBadgeMeta } from '@/lib/badges';
 import { publishRiff } from '@/lib/socialApi';
 import { useAuth } from '@/stores/authStore';
-import { useAuthGate } from '@/hooks/useAuthGate';
-import { LoginModal } from '@/components/auth/LoginModal';
 import { useNavigate } from 'react-router-dom';
 import { useSocialStreak } from '@/stores/socialStreakStore';
 import { useToast } from '@/hooks/useToast';
@@ -164,11 +162,7 @@ export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
     setTechniques([]);
   };
 
-  // Gating soft (sess GATE) — publish gaté, toast + LoginModal si pas auth.
-  const { requireAuth, loginOpen, setLoginOpen } = useAuthGate();
-
   const handlePublish = async () => {
-    if (!requireAuth('publier')) return;
     if (!title.trim()) {
       toast.warning('Donne un titre à ton riff');
       setStep(1);
@@ -569,10 +563,6 @@ export function RiffEditor({ open, onClose, onPublished }: RiffEditorProps) {
       <span className="hidden">
         <Music2 size={1} />
       </span>
-
-      {/* Soft gating LoginModal (sess GATE) — ouvert auto via useAuthGate
-          si user clique "Publier" sans être connecté. */}
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </Sheet>
   );
 }

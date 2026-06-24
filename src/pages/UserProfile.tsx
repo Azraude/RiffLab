@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Calendar, Zap, Music2, Award, Sparkles, Bookmark } from 'lucide-react';
+import { ArrowLeft, Calendar, Zap, Music2, Award, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
 import { ProfileHero, type FullProfile } from '@/components/profile/ProfileHero';
@@ -21,26 +21,14 @@ import {
   getFollowCounts,
   getUserXP,
   getUserBadges,
-  getMyBookmarks,
   type PublicRiff,
 } from '@/lib/socialApi';
-import { listBookmarkedRiffIds } from '@/lib/db';
-import { getCommunityRiff, difficultyToLevel } from '@/lib/communityRiffs';
 import { computeLevel } from '@/lib/xpSystem';
 import { BADGE_CATALOG, getBadgeMeta } from '@/lib/badges';
 import { useAuth } from '@/stores/authStore';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
-type Tab = 'riffs' | 'progressions' | 'badges' | 'bookmarks';
-
-/** Item unifié du tab Bookmarks (seed Dexie ou riff public Supabase). */
-type BookmarkItem = {
-  id: string;
-  title: string;
-  artist?: string;
-  bpm: number;
-  difficulty: string;
-};
+type Tab = 'riffs' | 'progressions' | 'badges';
 
 export function UserProfile() {
   const { username } = useParams();
@@ -53,7 +41,6 @@ export function UserProfile() {
   const [badges, setBadges] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('riffs');
   const [editOpen, setEditOpen] = useState(false);
-  const [bookmarkItems, setBookmarkItems] = useState<BookmarkItem[]>([]);
 
   useEffect(() => {
     if (!username) return;
@@ -86,51 +73,6 @@ export function UserProfile() {
       });
     }
   }, [profile, searchParams, setSearchParams, me?.id]);
-
-  // Bookmarks de l'user connecté (union Dexie seeds + Supabase publics).
-  // Affichés uniquement sur son propre profil.
-  const isMyProfile = !!me && !!profile && me.id === profile.id;
-  useEffect(() => {
-    if (!isMyProfile) {
-      setBookmarkItems([]);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const [dexieIds, cloud] = await Promise.all([
-        listBookmarkedRiffIds(),
-        getMyBookmarks(),
-      ]);
-      if (cancelled) return;
-      const cloudRiffs = cloud.data ?? [];
-      const cloudIds = new Set(cloudRiffs.map((r) => r.id));
-      const items: BookmarkItem[] = cloudRiffs.map((r) => ({
-        id: r.id,
-        title: r.title,
-        artist: r.artist ?? undefined,
-        bpm: r.bpm,
-        difficulty: r.difficulty,
-      }));
-      // Seeds bundlés (cr-*) bookmarkés en local, absents du cloud.
-      for (const bid of dexieIds) {
-        if (cloudIds.has(bid)) continue;
-        const seed = getCommunityRiff(bid);
-        if (seed) {
-          items.push({
-            id: bid,
-            title: seed.tab.name,
-            artist: seed.tab.artist,
-            bpm: seed.tab.tempo,
-            difficulty: difficultyToLevel(seed.riff.difficulty),
-          });
-        }
-      }
-      setBookmarkItems(items);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isMyProfile]);
 
   const level = useMemo(() => computeLevel(xp), [xp]);
 
@@ -235,15 +177,6 @@ export function UserProfile() {
           <TabBtn active={tab === 'badges'} onClick={() => setTab('badges')} icon={<Award size={13} />}>
             Badges <span className="font-mono text-text-soft">{badges.length}</span>
           </TabBtn>
-          {isMe && (
-            <TabBtn
-              active={tab === 'bookmarks'}
-              onClick={() => setTab('bookmarks')}
-              icon={<Bookmark size={13} />}
-            >
-              Saves <span className="font-mono text-text-soft">{bookmarkItems.length}</span>
-            </TabBtn>
-          )}
         </div>
 
         {tab === 'riffs' && (
@@ -288,38 +221,6 @@ export function UserProfile() {
               custom_progressions). En attendant : Studio dans la sidebar.
             </p>
           </Card>
-        )}
-
-        {tab === 'bookmarks' && isMe && (
-          <>
-            {bookmarkItems.length === 0 ? (
-              <Card className="text-center">
-                <p className="text-sm text-text-muted">
-                  Aucun riff sauvegardé. Tape sur 🔖 sur un riff pour le retrouver ici.
-                </p>
-              </Card>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {bookmarkItems.map((b) => (
-                  <Link
-                    key={b.id}
-                    to={`/riffs/${b.id}`}
-                    className="block rounded-xl border border-border bg-surface-2 p-4 transition-colors hover:border-gold-soft"
-                  >
-                    <div className="display truncate text-base text-text">{b.title}</div>
-                    {b.artist && (
-                      <div className="truncate text-xs text-text-muted">{b.artist}</div>
-                    )}
-                    <div className="mt-2 flex items-center gap-2 text-[10px] text-text-soft">
-                      <span className="font-mono text-gold">{b.bpm} BPM</span>
-                      <span>·</span>
-                      <span className="capitalize">{b.difficulty}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </>
         )}
 
         {tab === 'badges' && (
