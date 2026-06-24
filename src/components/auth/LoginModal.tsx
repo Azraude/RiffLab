@@ -94,18 +94,20 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               />
             </Dialog.Overlay>
             <Dialog.Content forceMount aria-describedby={undefined} className="outline-none">
-              {/* Wrapper flex centering — évite que framer-motion (scale/y)
-                  écrase le -translate-y-1/2 de Tailwind via transform.
-                  Le motion.div intérieur fait juste l'anim opacity+scale. */}
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-3 pointer-events-none">
+              {/* Mobile-first : bottom-sheet collé en bas (items-end) sur < sm,
+                  modale centrée (sm:items-center) sur desktop. L'anim opacity+
+                  scale+y reste subtile et fonctionne pour les deux positions. */}
+              <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none sm:items-center sm:p-3">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                  initial={{ opacity: 0, scale: 0.98, y: 24 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                  transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
-                  className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl border border-border-gold bg-bg shadow-gold-strong"
+                  exit={{ opacity: 0, scale: 0.98, y: 24 }}
+                  transition={{ duration: 0.24, ease: [0.25, 1, 0.5, 1] }}
+                  className="pointer-events-auto max-h-[90vh] w-full overflow-y-auto overflow-x-hidden rounded-t-3xl border-t border-border-gold bg-bg shadow-gold-strong sm:max-w-md sm:rounded-2xl sm:border"
                 >
-                <div className="p-6">
+                <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6">
+                  {/* Poignée drag — affordance bottom-sheet (mobile uniquement) */}
+                  <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border sm:hidden" aria-hidden />
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="eyebrow">RiffLab</div>
@@ -117,7 +119,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                       <button
                         type="button"
                         aria-label="Fermer"
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-text-soft hover:bg-surface hover:text-text"
+                        className="-mr-1.5 -mt-1 flex h-11 w-11 items-center justify-center rounded-md text-text-soft hover:bg-surface hover:text-text"
                       >
                         <X size={18} />
                       </button>
@@ -130,7 +132,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                       type="button"
                       onClick={() => setTab('signin')}
                       className={clsx(
-                        'flex-1 rounded-lg px-3 py-2 font-semibold transition-colors',
+                        'flex-1 rounded-lg px-3 py-2.5 font-semibold transition-colors',
                         tab === 'signin' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'
                       )}
                     >
@@ -140,7 +142,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                       type="button"
                       onClick={() => setTab('signup')}
                       className={clsx(
-                        'flex-1 rounded-lg px-3 py-2 font-semibold transition-colors',
+                        'flex-1 rounded-lg px-3 py-2.5 font-semibold transition-colors',
                         tab === 'signup' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'
                       )}
                     >
@@ -191,7 +193,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                             placeholder="toi@exemple.com"
                             autoComplete="email"
                             autoFocus
-                            className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm focus:border-gold-soft focus:outline-none"
+                            className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-base focus:border-gold-soft focus:outline-none"
                           />
                         </div>
                         {errorMsg && status === 'error' && (
