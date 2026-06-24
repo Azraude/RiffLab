@@ -18,9 +18,10 @@ import { useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
-import { Plus, SlidersHorizontal } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal } from 'lucide-react';
 import clsx from 'clsx';
 import { RiffCard } from '@/components/riffs/RiffCard';
+import { ChallengeBanner } from '@/components/riffs/ChallengeBanner';
 import {
   RiffFilters,
   EMPTY_FILTERS,
@@ -43,12 +44,32 @@ import { useToast } from '@/hooks/useToast';
 
 const PAGE_SIZE = 12;
 
+/** Défi du jour — mock en attendant la table `daily_challenges` backend. */
+const DAILY_CHALLENGE = {
+  keyLabel: 'Mi mineur',
+  keyShort: 'Em',
+  bpmRange: '90-130',
+  riffCount: 47,
+  endsInHours: 5,
+  title: 'Poste un riff en Mi mineur',
+};
+
+/** Onglets du feed (réseau social). 'friends' = à venir (fallback "pour toi"
+ *  + toast), 'challenge' = filtre sur la tonalité du défi du jour. */
+type RiffTab = 'trending' | 'recent' | 'friends' | 'challenge';
+const TABS: { id: RiffTab; label: string }[] = [
+  { id: 'trending', label: 'Tendances' },
+  { id: 'recent', label: 'Récents' },
+  { id: 'friends', label: 'Tes potes' },
+  { id: 'challenge', label: 'Défi du jour' },
+];
+
 export function Riffs() {
   const navigate = useNavigate();
   const toast = useToast();
   const { playMidi } = useAudio();
 
-  const [sort, setSort] = useState<FeedSort>('for-you');
+  const [tab, setTab] = useState<RiffTab>('trending');
   const [filters, setFilters] = useState<RiffFilterState>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -101,6 +122,11 @@ export function Riffs() {
   const visible = useMemo(() => {
     let arr = [...COMMUNITY_RIFFS];
 
+    // Onglet "Défi du jour" : ne garde que les riffs dans la tonalité du défi.
+    if (tab === 'challenge') {
+      arr = arr.filter((r) => r.key === DAILY_CHALLENGE.keyShort);
+    }
+
     if (filters.genres.length > 0) {
       arr = arr.filter((r) => r.tags.some((t) => filters.genres.includes(t)));
     }
@@ -125,18 +151,21 @@ export function Riffs() {
     if (filters.sort === 'popular') return arr.sort((a, b) => b.baseLikes - a.baseLikes);
     if (filters.sort === 'recent') return arr.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
 
-    return sortFeedRiffs(arr, sort, likedIdsRef.current, {
+    // 'trending'/'recent' → tri direct ; 'friends'/'challenge' → ordre "pour toi".
+    const feedSort: FeedSort =
+      tab === 'recent' ? 'recent' : tab === 'trending' ? 'trending' : 'for-you';
+    return sortFeedRiffs(arr, feedSort, likedIdsRef.current, {
       masteredIds: masteredIdsRef.current,
       userLevel: userLevelRef.current,
       exploreWeight: 25,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, sort]);
+  }, [filters, tab]);
 
   // Reset la pagination quand la liste change (tab/filtres)
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [filters, sort]);
+  }, [filters, tab]);
 
   const shown = visible.slice(0, limit);
   const hasMore = limit < visible.length;
@@ -174,42 +203,78 @@ export function Riffs() {
     }
   };
 
+  const handleTab = (id: RiffTab) => {
+    setTab(id);
+    if (id === 'friends') toast.info('Le feed des potes arrive bientôt 👀');
+  };
+
+  /** "Relève le défi" → ouvre l'éditeur (pas de prefill key dispo encore). */
+  const handleTakeChallenge = () => {
+    setShareOpen(true);
+    toast.info(`Filtre ${DAILY_CHALLENGE.keyLabel} appliqué — poste ton riff !`);
+  };
+
   return (
     <>
       <SEO title="Riffs" description="Découvre et partage des riffs de guitare. Feed communautaire mobile-first — apprends les riffs cultes, partage les tiens." />
-      {/* === Header sticky : titre + tabs + filtres === */}
-      <div className="sticky top-0 z-20 -mx-5 mb-5 border-b border-border/40 bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:px-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="display text-display-md leading-tight">Riffs</h1>
+      {/* === Header sticky : eyebrow Communauté + titre + actions === */}
+      <div className="sticky top-0 z-20 -mx-5 mb-4 border-b border-border/40 bg-bg/85 px-5 py-3 backdrop-blur-md md:-mx-12 md:px-12">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div>
+            <div className="eyebrow">Communauté</div>
+            <h1 className="display text-[30px] leading-none text-text">Riffs</h1>
+          </div>
+          <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setShareOpen(true)}
-              className="hidden h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-bright to-gold px-4 text-sm font-semibold text-bg shadow-gold-strong transition-all hover:-translate-y-px md:inline-flex"
+              aria-label="Recherche"
+              onClick={() => toast.info('Recherche bientôt disponible')}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors hover:border-gold-soft hover:text-text"
             >
-              <Plus size={15} /> Partager mon riff
+              <Search size={20} />
+            </button>
+            <button
+              type="button"
+              aria-label="Poster un riff"
+              onClick={() => setShareOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong transition-transform active:scale-95"
+            >
+              <Plus size={22} strokeWidth={2.2} />
             </button>
           </div>
+        </div>
+      </div>
 
-          {/* Tabs underline + bouton filtres */}
-          <div className="mt-2 flex items-center gap-2">
-            <div className="-mb-px flex flex-1 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <UnderlineTab active={sort === 'for-you'} onClick={() => setSort('for-you')}>
-                Pour toi
-              </UnderlineTab>
-              <UnderlineTab active={sort === 'trending'} onClick={() => setSort('trending')}>
-                Trending
-              </UnderlineTab>
-              <UnderlineTab active={sort === 'recent'} onClick={() => setSort('recent')}>
-                Récents
-              </UnderlineTab>
-            </div>
+      {/* === Feed === */}
+      <div className="mx-auto max-w-7xl pb-24 xl:pb-12">
+        {/* Challenge banner (Riff du jour) */}
+        <ChallengeBanner challenge={DAILY_CHALLENGE} onTakeChallenge={handleTakeChallenge} />
+
+        {/* Tabs chips + bouton filtres (scroll horizontal mobile) */}
+        <div className="-mx-5 mb-4 overflow-x-auto px-5 pb-1 [scrollbar-width:none] md:-mx-12 md:px-12 [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleTab(t.id)}
+                aria-pressed={tab === t.id}
+                className={clsx(
+                  'flex h-9 shrink-0 items-center rounded-full px-4 text-sm font-bold transition-colors',
+                  tab === t.id
+                    ? 'bg-gold text-bg'
+                    : 'border border-border text-text-muted hover:border-gold-soft hover:text-text'
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
               aria-label="Filtrer"
               className={clsx(
-                'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors',
+                'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors',
                 activeFilters > 0
                   ? 'border-gold bg-gold/15 text-gold'
                   : 'border-border bg-surface text-text-muted hover:border-gold-soft hover:text-text'
@@ -224,10 +289,7 @@ export function Riffs() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* === Feed grid responsive === */}
-      <div className="mx-auto max-w-7xl pb-24 xl:pb-12">
         {shown.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
             {shown.map((r, i) => {
@@ -291,38 +353,5 @@ export function Riffs() {
       {/* === Éditeur de publication === */}
       <RiffEditor open={shareOpen} onClose={() => setShareOpen(false)} onPublished={() => {}} />
     </>
-  );
-}
-
-// ─── Sous-composants ────────────────────────────────────────────────
-
-function UnderlineTab({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={clsx(
-        'relative h-11 shrink-0 px-4 text-sm font-semibold transition-colors',
-        active ? 'text-text' : 'text-text-muted hover:text-text'
-      )}
-    >
-      {children}
-      {active && (
-        <motion.div
-          layoutId="riffsTab"
-          className="absolute inset-x-0 bottom-0 h-0.5 bg-gold"
-          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-        />
-      )}
-    </button>
   );
 }

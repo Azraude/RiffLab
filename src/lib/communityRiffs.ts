@@ -71,6 +71,9 @@ export type CommunityRiff = {
   capo?: number;
   /** Tonalité courte affichée ('E', 'Em', 'Dm', 'G'...). */
   key?: string;
+  /** Accords principaux du riff, affichés en chips sur la card (3 max
+   *  visibles). Optionnel — fallback : la tonalité `key` en chip unique. */
+  chords?: string[];
 };
 
 /** Mapping difficulty 1-5 → level nommé. Utilisé par les filtres + UI. */
@@ -132,6 +135,8 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     caption: "Le riff que TOUT le monde connaît. Si t'es débutant, c'est le premier à savoir par cœur 🤘",
     commentsCount: 28,
     techniques: ['palm-mute'],
+    key: 'Gm',
+    chords: ['G', 'Bb', 'C'],
   },
   {
     id: 'cr-iron',
@@ -158,6 +163,8 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     caption: "Le riff qui passe dans tous les stades de foot. Joue-le sur la corde de mi grave, simple comme bonjour.",
     commentsCount: 47,
     techniques: [],
+    key: 'E',
+    chords: ['E', 'G', 'D'],
   },
   {
     id: 'cr-sunshine',
@@ -270,6 +277,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'eb-standard',
     capo: 0,
     key: 'Em',
+    chords: ['Em', 'D'],
   },
   {
     id: 'cr-wish-you-were-here',
@@ -287,6 +295,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'standard',
     capo: 0,
     key: 'G',
+    chords: ['G', 'C', 'D'],
   },
   {
     id: 'cr-smells-like-teen-spirit',
@@ -304,6 +313,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'standard',
     capo: 0,
     key: 'F',
+    chords: ['F', 'Bb', 'Ab', 'Db'],
   },
   {
     id: 'cr-whole-lotta-love',
@@ -357,6 +367,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'standard',
     capo: 2,
     key: 'Em',
+    chords: ['Em', 'G', 'D', 'A'],
   },
   {
     id: 'cr-hotel-california',
@@ -374,6 +385,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'standard',
     capo: 0,
     key: 'Bm',
+    chords: ['Bm', 'F#', 'A', 'E'],
   },
   {
     id: 'cr-sweet-caroline',
@@ -425,6 +437,7 @@ export const COMMUNITY_RIFFS: CommunityRiff[] = [
     tuning: 'eb-standard',
     capo: 0,
     key: 'Em',
+    chords: ['Em', 'C', 'G', 'D'],
   },
   {
     id: 'cr-hey-joe',

@@ -56,6 +56,10 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
   const bookmarked = useLiveQuery(() => isRiffBookmarked(riff.id), [riff.id]) ?? false;
   const likeCount = riff.baseLikes + (liked ? 1 : 0);
 
+  // Chords : explicites si renseignés, sinon fallback chip unique sur la
+  // tonalité. Plafonné à 3 chips visibles (+N) pour ne pas casser le layout.
+  const chords = riff.chords ?? (riff.key ? [riff.key] : []);
+
   const stop = (fn?: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn?.();
@@ -73,7 +77,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
         }
       }}
       aria-label={`Ouvrir ${tab.name} de ${riff.contributor}`}
-      className="group flex h-[320px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-surface-2 outline-none transition-all hover:border-gold-soft focus-visible:border-gold sm:h-[280px] sm:hover:scale-[1.01] sm:hover:shadow-gold active:scale-[0.98]"
+      className="group flex h-[400px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-surface-2 outline-none transition-all hover:border-gold-soft focus-visible:border-gold sm:h-[360px] sm:hover:scale-[1.01] sm:hover:shadow-gold active:scale-[0.98]"
     >
       {/* === Header : avatar + @user · date + badge niveau === */}
       <header className="flex shrink-0 items-center justify-between gap-2 p-3 pb-2">
@@ -111,7 +115,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
         </span>
       </header>
 
-      {/* === Titre + artiste · BPM === */}
+      {/* === Titre + artiste + chord chips à droite === */}
       <div className="flex shrink-0 items-start justify-between gap-2 px-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -120,36 +124,23 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
           </div>
           {tab.artist && <div className="truncate text-xs text-text-muted">{tab.artist}</div>}
         </div>
-        <div className="shrink-0 text-right">
-          <div className="font-mono text-sm font-bold text-gold">{tab.tempo}</div>
-          <div className="text-[9px] uppercase tracking-wider text-text-soft">BPM</div>
-        </div>
+        {chords.length > 0 && (
+          <div className="flex shrink-0 items-center gap-1">
+            {chords.slice(0, 3).map((c) => (
+              <ChordChip key={c} chord={c} />
+            ))}
+            {chords.length > 3 && (
+              <span className="font-mono text-[10px] text-text-soft">+{chords.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* === Tags (2 max) === */}
-      {riff.tags.length > 0 && (
-        <div className="mt-2 flex shrink-0 flex-wrap gap-1 px-3">
-          {riff.tags.slice(0, 2).map((t) => (
-            <Link
-              key={t}
-              to={`/riffs/tag/${t}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded bg-gold/10 px-1.5 py-0.5 font-mono text-[10px] text-gold-soft hover:bg-gold/20"
-            >
-              #{t}
-            </Link>
-          ))}
-          {riff.tags.length > 2 && (
-            <span className="px-1 py-0.5 font-mono text-[10px] text-text-soft">
-              +{riff.tags.length - 2}
-            </span>
-          )}
-          {masteredAt && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-gold">
-              🏆 Maîtrisé
-            </span>
-          )}
-        </div>
+      {/* === Description (caption) italique, 2 lignes max === */}
+      {riff.caption && (
+        <p className="mt-1.5 line-clamp-2 shrink-0 px-3 text-xs italic leading-snug text-text-muted">
+          {riff.caption}
+        </p>
       )}
 
       {/* === Tab mini-preview — absorbe l'espace restant (hauteur fixe) ===
@@ -167,6 +158,29 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface-2 to-transparent"
         />
+      </div>
+
+      {/* === Meta (BPM · tonalité) + tags === */}
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-1">
+        <div className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-text-muted">
+          <span className="font-bold text-gold">♩ {tab.tempo}</span>
+          {riff.key && (
+            <>
+              <span aria-hidden>·</span>
+              <span>{riff.key}</span>
+            </>
+          )}
+        </div>
+        {riff.tags.length > 0 && (
+          <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+            {masteredAt && (
+              <span className="shrink-0 text-[10px] font-bold text-gold">🏆</span>
+            )}
+            <span className="truncate font-mono text-[10px] text-gold-soft/70">
+              {riff.tags.slice(0, 3).map((t) => `#${t}`).join(' ')}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* === Footer actions sociales === */}
@@ -206,6 +220,15 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
 }
 
 // ─── Sous-composants ────────────────────────────────────────────────
+
+/** Pastille accord — bordure or, mono, compacte (tap-safe, décorative). */
+function ChordChip({ chord }: { chord: string }) {
+  return (
+    <span className="inline-flex h-6 items-center rounded-md border border-gold/30 bg-gold/5 px-1.5 font-mono text-[11px] font-bold text-gold">
+      {chord}
+    </span>
+  );
+}
 
 function Avatar({ name }: { name: string }) {
   const initial = (name.replace('@', '')[0] ?? '?').toUpperCase();
