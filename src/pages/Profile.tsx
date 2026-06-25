@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/stores/authStore';
 import { getProfile } from '@/lib/socialApi';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
 
 export function Profile() {
   const user = useAuth((s) => s.user);
@@ -42,14 +43,7 @@ export function Profile() {
 
   // Loading state (auth en cours OU profile fetch en cours)
   if (loading) {
-    return (
-      <>
-        <PageHeader title="Mon profil" />
-        <Card>
-          <p className="text-sm text-text-muted">Chargement…</p>
-        </Card>
-      </>
-    );
+    return <ProfileSkeleton />;
   }
 
   // Pas connecté → écran gracieux avec CTA Se connecter.

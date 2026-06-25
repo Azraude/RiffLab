@@ -27,6 +27,7 @@ import { computeLevel } from '@/lib/xpSystem';
 import { BADGE_CATALOG, getBadgeMeta } from '@/lib/badges';
 import { useAuth } from '@/stores/authStore';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
 
 type Tab = 'riffs' | 'progressions' | 'badges';
 
@@ -94,18 +95,9 @@ export function UserProfile() {
     );
   }
 
-  // Chargement
+  // Chargement (fetch Supabase profil + riffs + counts + xp + badges)
   if (profile === undefined) {
-    return (
-      <>
-        <Link to="/riffs" className="mb-4 inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold">
-          <ArrowLeft size={14} /> Feed des riffs
-        </Link>
-        <Card>
-          <p className="text-sm text-text-muted">Chargement…</p>
-        </Card>
-      </>
-    );
+    return <ProfileSkeleton />;
   }
 
   // Pas trouvé → écran "Profil introuvable" GRACIEUX (plus de redirect

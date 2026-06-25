@@ -24,6 +24,7 @@ type PrefsState = {
   composerTutorialSeen: boolean;
   unlockedSecretTheme: boolean;
   level: PlayerLevel;
+  notificationsEnabled: boolean;
   practicePlan: PracticePlanData | null;
   setTuning: (t: TuningId) => void;
   setCapo: (n: number) => void;
@@ -40,6 +41,7 @@ type PrefsState = {
   setComposerTutorialSeen: (seen: boolean) => void;
   unlockSecretTheme: () => void;
   setLevel: (level: PlayerLevel) => void;
+  setNotificationsEnabled: (v: boolean) => void;
   setPracticePlan: (plan: PracticePlanData | null) => void;
   toggleActivityDone: (dayNumber: number, templateId: string) => void;
 };
@@ -62,6 +64,7 @@ export const usePrefs = create<PrefsState>()(
       composerTutorialSeen: false,
       unlockedSecretTheme: false,
       level: 'beginner',
+      notificationsEnabled: true,
       practicePlan: null,
       setTuning: (tuning) => set({ tuning }),
       setCapo: (capo) => set({ capo }),
@@ -78,6 +81,7 @@ export const usePrefs = create<PrefsState>()(
       setComposerTutorialSeen: (composerTutorialSeen) => set({ composerTutorialSeen }),
       unlockSecretTheme: () => set({ unlockedSecretTheme: true }),
       setLevel: (level) => set({ level }),
+      setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
       setPracticePlan: (practicePlan) => set({ practicePlan }),
       toggleActivityDone: (dayNumber, templateId) =>
         set((s) => {
@@ -126,6 +130,7 @@ export const usePrefs = create<PrefsState>()(
           composerTutorialSeen: p.composerTutorialSeen ?? true, // idem
           unlockedSecretTheme: p.unlockedSecretTheme ?? false,
           level: p.level ?? 'beginner',
+          notificationsEnabled: p.notificationsEnabled ?? true,
           practicePlan: p.practicePlan ?? null,
         } as PrefsState;
       },

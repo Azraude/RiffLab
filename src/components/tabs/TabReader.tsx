@@ -25,6 +25,7 @@
  *  - onSeek : clic sur la tab → seek (temps en secondes)
  */
 import { useEffect, useMemo, useRef } from 'react';
+import clsx from 'clsx';
 import { flattenTab, type Technique, type Tab } from '@/lib/tabsDatabase';
 
 interface TabReaderProps {
@@ -47,6 +48,9 @@ interface TabReaderProps {
   showTechniques?: boolean;
   /** Clic sur la tab → seek (temps en secondes). */
   onSeek?: (time: number) => void;
+  /** Mode preview compact : SVG fit-to-container (au lieu de width fixe).
+   *  La tab entière est compressée pour tenir dans la card (teaser, non jouable). */
+  compact?: boolean;
 }
 
 const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']; // top → bottom (high E first)
@@ -74,6 +78,7 @@ export function TabReader({
   showPlayhead = false,
   showTechniques = false,
   onSeek,
+  compact = false,
 }: TabReaderProps) {
   const flat = useMemo(() => flattenTab(tab), [tab]);
 
@@ -142,13 +147,18 @@ export function TabReader({
   return (
     <div
       ref={scrollRef}
-      className={`relative -mx-1 overflow-x-auto pb-1 [scrollbar-width:thin] ${onSeek ? 'cursor-pointer' : ''}`}
+      className={clsx(
+        'relative pb-1 [scrollbar-width:thin]',
+        compact ? 'overflow-hidden' : '-mx-1 overflow-x-auto',
+        onSeek && 'cursor-pointer'
+      )}
       onClick={onSeek ? handleSeekClick : undefined}
     >
       <svg
         viewBox={`0 0 ${totalWidth} ${totalHeight}`}
-        width={totalWidth}
+        width={compact ? '100%' : totalWidth}
         height={totalHeight}
+        preserveAspectRatio={compact ? 'xMinYMid meet' : undefined}
         className="block"
         aria-label={`Tablature ${tab.name}`}
       >

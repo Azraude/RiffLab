@@ -148,7 +148,7 @@ export function RiffCard({ riff, tab, onOpenDetail, onListen, masteredAt }: Riff
           interne qui parasiterait le scroll vertical du feed. */}
       <div className="relative mt-2 min-h-0 flex-1 overflow-hidden px-3">
         <div className="pointer-events-none">
-          <TabReader tab={tab} lineHeight={11} beatWidth={10} />
+          <TabReader tab={tab} lineHeight={11} beatWidth={10} compact />
         </div>
         <div
           aria-hidden
