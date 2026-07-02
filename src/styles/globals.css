@@ -359,6 +359,23 @@ select:focus-visible {
   transform: translateY(0);
 }
 
+/* Célébration "J'ai pratiqué" — bordure du StreakBanner qui s'embrase
+   pendant 1.5s (one-shot, déclenchée par la classe .streak-celebrating). */
+@keyframes streak-embers {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgb(var(--gold-glow) / 0);
+    border-color: rgb(var(--border));
+  }
+  50% {
+    box-shadow: 0 0 32px rgb(var(--gold-glow) / 0.6);
+    border-color: rgb(var(--gold));
+  }
+}
+.streak-celebrating {
+  animation: streak-embers 1.5s ease-out;
+}
+
 /* prefers-reduced-motion — coupe SEULEMENT les anims permanentes qui
    bouclent à l'infini (gold sheen, sparkles, flicker, trophy pulse,
    skeleton shimmer). On préserve toutes les transitions hover/focus
@@ -372,7 +389,8 @@ select:focus-visible {
   .streak-sparkle-1,
   .streak-sparkle-2,
   .streak-sparkle-3,
-  .rifflab-flame-flicker {
+  .rifflab-flame-flicker,
+  .streak-celebrating {
     animation: none !important;
   }
 }

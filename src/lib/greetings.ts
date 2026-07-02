@@ -36,33 +36,32 @@ const TITLES = {
   morning_returning: [
     'Bon retour, {name}.',
     'Salut {name}, prêt à riffer ?',
-    'Hello {name}, on s\'y remet ?',
+    'Te revoilà {name}.',
     "Café-guitare, {name} ?",
+    'Prêt à jouer, {name} ?',
   ],
   afternoon_returning: [
-    "L'après-midi guitare, {name} ?",
+    'On reprend, {name} ?',
     'Yo {name}, une petite session ?',
     'Bon retour {name}.',
     "C'est l'heure du riff, {name}.",
+    'Rebonjour {name}.',
   ],
   evening_returning: [
     'Bonsoir {name}, un dernier riff ?',
     '{name}, la guitare du soir ?',
     'On se détend avec un riff, {name} ?',
-    'Le coucher de soleil avec {name} et sa guitare.',
+    'Te revoilà {name}.',
+    'Prêt(e) pour un riff, {name} ?',
   ],
   long_absence: [
-    'Ça faisait longtemps {name}.',
-    'Re-bienvenue {name}, t\'as manqué.',
+    'Encore là, {name} ?',
+    'Te revoilà {name}, tu nous as manqué.',
     'Le retour du roi {name}.',
     "Hey {name}, on reprend où on s'est laissés ?",
   ],
-  first_time: [
-    'Salut {name}, on commence ?',
-    'Bienvenue {name}.',
-    'Prêt à attaquer {name} ?',
-    'Hello {name}, ton voyage commence ici.',
-  ],
+  // 1ère visite : TOUJOURS "Bienvenue" (décision Melvin — pas de variante).
+  first_time: ['Bienvenue {name}.'],
   on_streak: [
     '{streak} jours d\'affilée, {name} 🔥',
     'On garde le rythme {name} ?',
