@@ -10,7 +10,15 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Calendar, Zap, Music2, Award, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Zap,
+  Music2,
+  Award,
+  Sparkles,
+  Settings as SettingsIcon,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
 import { ProfileHero, type FullProfile } from '@/components/profile/ProfileHero';
@@ -63,7 +71,8 @@ export function UserProfile() {
     })();
   }, [username]);
 
-  // Auto-open drawer si ?edit=1 dans l'URL (entry point depuis /profile)
+  // Auto-open drawer si ?edit=1 dans l'URL (deep-link conservé — plus
+  // utilisé par /profile depuis la refonte bottom nav 2026-07-03)
   useEffect(() => {
     if (profile && searchParams.get('edit') === '1' && me?.id === profile.id) {
       setEditOpen(true);
@@ -138,9 +147,23 @@ export function UserProfile() {
 
   return (
     <>
-      <Link to="/riffs" className="mb-4 inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold">
-        <ArrowLeft size={14} /> Feed des riffs
-      </Link>
+      <div className="mb-4 flex items-center justify-between">
+        <Link to="/riffs" className="inline-flex items-center gap-1 text-sm text-text-soft hover:text-gold">
+          <ArrowLeft size={14} /> Feed des riffs
+        </Link>
+        {/* Settings n'est plus dans la bottom nav (refonte 2026-07-03) —
+            accès via le profil, gear top-right façon Instagram. Visible
+            uniquement sur MON profil (aucun sens sur celui d'un autre). */}
+        {isMe && (
+          <Link
+            to="/settings"
+            aria-label="Réglages"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors hover:border-gold-soft hover:text-gold"
+          >
+            <SettingsIcon size={18} />
+          </Link>
+        )}
+      </div>
 
       <div className="mx-auto max-w-3xl">
         <ProfileHero

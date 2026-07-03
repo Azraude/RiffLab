@@ -1,26 +1,23 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Music2, Target, Settings as SettingsIcon } from 'lucide-react';
-import { RiffLabLogo } from '@/components/brand/RiffLabLogo';
+import { Home, Flame, Plus, Library, User } from 'lucide-react';
 import clsx from 'clsx';
 
 /**
- * Bottom nav mobile — 5 items avec 🎸 RIFFS au centre proéminent
- * (sess 30bis Phase 3).
+ * Bottom nav mobile — 4 items + FAB central "+".
  *
- * Refonte : avant Home + 4 items uniformes. Maintenant pattern
- * "central FAB" comme Instagram/TikTok : 4 items normaux répartis
- * autour d'un bouton central gros qui déborde vers le haut.
+ * Refonte 2026-07-03 : match design Claude Design ui_kits/app/home/.
+ * - 4 items normaux (2 gauche + 2 droite)
+ * - FAB central "+" protubérant qui ouvre le composer riff (RiffEditor
+ *   monté globalement dans Layout — voir onComposeClick)
+ * - Réglages et plan de pratique retirés du nav → accessibles depuis
+ *   le profil (bouton gear) et depuis Home (badge HelloHero)
  *
  * Items (de gauche à droite) :
  *  1. Aujourd'hui → /dashboard
- *  2. Ma musique → /library (englobe songs/setlists)
- *  3. 🎸 RIFFS (central, 60px rond gold notch protruding)
- *  4. Mon plan → /plan (englobe stats)
- *  5. Préférences → /settings
- *
- * "Outils" plus dans le MobileNav (accessible via /tools URL direct
- * ou sidebar desktop). Justification : l'user fait surtout des riffs,
- * pas du métronome. La sidebar desktop a tous les outils.
+ *  2. Riffs → /riffs (item normal, plus le FAB)
+ *  3. [FAB +] → ouvre RiffEditor (composer)
+ *  4. Ma musique → /library
+ *  5. Profil → /profile (redirect /u/<moi> si connecté)
  */
 
 type Item = {
@@ -33,39 +30,43 @@ type Item = {
 const LEFT_ITEMS: Item[] = [
   {
     to: '/dashboard',
-    label: 'Aujourd\'hui',
-    icon: <LayoutDashboard size={20} />,
+    label: "Aujourd'hui",
+    // NB : pas de '/' dans matchPrefixes — la Landing est hors Layout
+    // (MobileNav jamais rendu dessus) et '/' via startsWith matcherait
+    // toutes les routes.
+    icon: <Home size={20} />,
     matchPrefixes: ['/dashboard'],
   },
   {
-    to: '/library',
-    label: 'Ma musique',
-    icon: <Music2 size={20} />,
-    matchPrefixes: ['/songs', '/setlists', '/riff-of-the-week', '/library'],
+    to: '/riffs',
+    label: 'Riffs',
+    icon: <Flame size={20} />,
+    matchPrefixes: ['/riffs', '/riff-of-the-week'],
   },
 ];
 
 const RIGHT_ITEMS: Item[] = [
   {
-    to: '/plan',
-    label: 'Mon plan',
-    icon: <Target size={20} />,
-    matchPrefixes: ['/plan', '/stats'],
+    to: '/library',
+    label: 'Ma musique',
+    icon: <Library size={20} />,
+    matchPrefixes: ['/songs', '/setlists', '/library'],
   },
   {
-    to: '/settings',
-    label: 'Préférences',
-    icon: <SettingsIcon size={20} />,
-    matchPrefixes: ['/settings', '/profile'],
+    to: '/profile',
+    label: 'Profil',
+    icon: <User size={20} />,
+    matchPrefixes: ['/profile', '/u/'],
   },
 ];
 
-export function MobileNav() {
+interface MobileNavProps {
+  /** Ouvre le composer riff global (RiffEditor monté dans Layout). */
+  onComposeClick: () => void;
+}
+
+export function MobileNav({ onComposeClick }: MobileNavProps) {
   const location = useLocation();
-  const riffsActive =
-    location.pathname === '/riffs' ||
-    location.pathname.startsWith('/riffs/') ||
-    location.pathname.startsWith('/riff-of-the-week');
 
   return (
     <nav
@@ -77,32 +78,18 @@ export function MobileNav() {
           <NavItem key={it.to} item={it} currentPath={location.pathname} />
         ))}
 
-        {/* === BOUTON CENTRAL RIFFS ===
-            Proéminent, déborde de 16px vers le haut (notch).
-            Cercle 60px avec gradient gold + shadow forte. */}
+        {/* === FAB CENTRAL "+" ===
+            Bouton "add" au centre, déborde de 16px vers le haut.
+            Gradient or, shadow forte, ouvre le RiffEditor via prop. */}
         <div className="relative -mt-4 flex justify-center">
-          <NavLink
-            to="/riffs"
-            aria-label="Riffs"
-            className={clsx(
-              'group relative flex h-[60px] w-[60px] items-center justify-center rounded-full',
-              'bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong',
-              'transition-transform active:scale-95',
-              riffsActive && 'ring-2 ring-gold/40 ring-offset-2 ring-offset-surface'
-            )}
+          <button
+            type="button"
+            onClick={onComposeClick}
+            aria-label="Publier un riff"
+            className="group relative flex h-[60px] w-[60px] items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong transition-transform active:scale-95"
           >
-            {/* Pulse subtil quand actif (pas tap, juste indicateur état) */}
-            {riffsActive && (
-              <span
-                aria-hidden
-                className="absolute inset-0 rounded-full bg-gold opacity-30 motion-safe:animate-ping"
-                style={{ animationDuration: '2s' }}
-              />
-            )}
-            <span className="relative flex h-7 w-7 items-center justify-center">
-              <RiffLabLogo size={28} />
-            </span>
-          </NavLink>
+            <Plus size={28} strokeWidth={2.6} />
+          </button>
         </div>
 
         {RIGHT_ITEMS.map((it) => (

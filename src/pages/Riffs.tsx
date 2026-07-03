@@ -330,16 +330,9 @@ export function Riffs() {
         {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden />}
       </div>
 
-      {/* === Mobile FAB "Partager" === */}
-      <button
-        type="button"
-        onClick={() => setShareOpen(true)}
-        aria-label="Partager mon riff"
-        className="fixed right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-bg shadow-gold-strong transition-transform active:scale-95 md:hidden"
-        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 1rem)' }}
-      >
-        <Plus size={26} strokeWidth={2.5} />
-      </button>
+      {/* NOTE : le FAB mobile "Partager" fixed a été retiré (refonte bottom
+          nav 2026-07-03) — le FAB "+" central du MobileNav ouvre le composer
+          global depuis n'importe quelle page, les deux se marchaient dessus. */}
 
       {/* === Sheet filtres === */}
       <RiffFilters

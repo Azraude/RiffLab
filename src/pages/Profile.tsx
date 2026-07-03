@@ -4,8 +4,8 @@
  * Comportement :
  * - Pas connecté → écran "Connecte-toi" GRACIEUX (plus de redirect /
  *   silencieux qui frustre l'user)
- * - Connecté → redirect vers /u/<myUsername>?edit=1 (ProfileEditDrawer
- *   ouvert auto par UserProfile)
+ * - Connecté → redirect vers /u/<myUsername> (vue profil ; l'édition
+ *   s'ouvre via le bouton "Modifier" du ProfileHero)
  * - Connecté sans profil DB → message d'erreur explicite
  */
 import { useEffect, useState } from 'react';
@@ -24,7 +24,7 @@ export function Profile() {
   const [username, setUsername] = useState<string | null | undefined>(undefined);
   const [loginOpen, setLoginOpen] = useState(false);
 
-  // Récupère mon username pour construire l'URL /u/<username>?edit=1
+  // Récupère mon username pour construire l'URL /u/<username>
   useEffect(() => {
     if (!user) {
       setUsername(undefined);
@@ -105,6 +105,9 @@ export function Profile() {
     );
   }
 
-  // Redirect vers /u/<username>?edit=1 → ProfileEditDrawer ouvert auto
-  return <Navigate to={`/u/${username}?edit=1`} replace />;
+  // Redirect vers /u/<username> — SANS ?edit=1 depuis la refonte bottom
+  // nav 2026-07-03 : /profile est devenu le tab "Profil" du MobileNav,
+  // auto-ouvrir le drawer d'édition à chaque tap était insupportable.
+  // L'édition reste à 1 tap via le bouton "Modifier" du ProfileHero.
+  return <Navigate to={`/u/${username}`} replace />;
 }

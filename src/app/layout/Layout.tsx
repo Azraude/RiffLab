@@ -9,7 +9,8 @@ import { ToastViewport, useToast } from '@/hooks/useToast';
 import { StickyPlayer } from '@/components/audio/StickyPlayer';
 import { NotificationBell } from '@/components/social/NotificationBell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useEffect } from 'react';
+import { RiffEditor } from '@/components/riffs/RiffEditor';
+import { useEffect, useState } from 'react';
 
 /** Écoute l'event 'rifflab-badge-unlocked' émis par socialStreakStore +
  *  affiche un toast pour chaque badge. Découplage : le store n'a pas
@@ -38,6 +39,10 @@ function BadgeUnlockListener() {
  */
 export function Layout() {
   const location = useLocation();
+  // Composer riff global — ouvert par le FAB "+" du MobileNav depuis
+  // n'importe quelle page (refonte bottom nav 2026-07-03, Option A :
+  // state élevé au Layout plutôt qu'un store dédié).
+  const [composeOpen, setComposeOpen] = useState(false);
 
   return (
     <KeyboardShortcutsProvider>
@@ -78,7 +83,13 @@ export function Layout() {
           </div>
         </main>
       </div>
-      <MobileNav />
+      <MobileNav onComposeClick={() => setComposeOpen(true)} />
+      {/* Composer global — ouvrable depuis n'importe quelle page via le FAB. */}
+      <RiffEditor
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        onPublished={() => setComposeOpen(false)}
+      />
       <FeedbackButton />
       <ToastViewport />
       <BadgeUnlockListener />
